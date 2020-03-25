@@ -1,0 +1,42 @@
+<p><a href="/MegaBlackLabel" class="user-mention js-hovercard" title="MegaBlackLabel" data-hovercard-target-type="user" data-hovercard-target-name="MegaBlackLabel">@MegaBlackLabel</a></p>
+
+<p>すみません、「production環境」と広義な言葉を使ってしまっていましたが、「ライフサイクルの長い環境」という方が適切でしたので訂正しました。</p>
+
+<p>個人的に上記の場合選択肢には入れないなと感じるのはこのあたりだと感じています</p>
+
+<ul>
+<li>カスタマイズ性は期待できない
+
+<ul>
+<li>例えばESLintルール増やしたくてもできなそう</li>
+<li>思想的に、No Configuration的なところを重視している部分もある</li>
+<li>いわゆるcreate-react-app Wayに乗っからないとうまくこなしづらい
+
+<ul>
+<li>
+<a href="/MegaBlackLabel" class="user-mention js-hovercard" title="MegaBlackLabel" data-hovercard-target-type="user" data-hovercard-target-name="MegaBlackLabel">@MegaBlackLabel</a> さんのおっしゃるファイル分割の話もこれにあたるのではと思われます。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>eject、eject後が色々つらい
+
+<ul>
+<li>
+<code>scripts</code>(react-scripts)がわりと魔改造っぽさがある
+
+<ul>
+<li>webpackの起動まわりを色々ゴリゴリやっていたりして、これを後々メンテしなきゃいけなと考えるとちょっと気が重い。</li>
+</ul>
+</li>
+<li>出力されるwebpack.configもそこそこメンテコスト考えると重い（最初から自分で作っとけばよかった感が・・・）</li>
+<li>package.jsonのdependencyが多くて遅くなる（yarnで解決かも？）</li>
+<li>ejectするとsurveyのURLがあるのを見ると、あまりcreate-react-appはejectしてほしくないのでは？とも思う</li>
+</ul>
+</li>
+</ul>
+
+<p>後々設定をカスタマイズしたり、ejectする必要性を感じているのであれば自分であれば使いたいと思わないのが正直な所です。</p>
+
+<p>逆に、ライフサイクルが短いLP作成のような場合であれば、プロダクションでもcreate-react-appでさくっとやってしまうのは良いかとも思います。<br>
+また、ejectについてはPhilosophyの中で重要視はされている項目のようですので、今後改善したりする可能性はあるかなという期待感は感じております。</p>

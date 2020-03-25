@@ -1,0 +1,50 @@
+<p>CircleCI 2.0において、複数のworkflow間で処理を共通化したい。<br>
+shellで共通化するなども出来るが、<code>run</code>で直接記載するのにくらべてかなり遅くなる（理由は不明だが、runの場合は何か裏でキャッシュをしてくれてるように見える）</p>
+
+<p>しかし、workflowで複数のjobの処理を共通するときにどちらにも同じことを書くのはまた面倒になる。</p>
+
+<p>そこでymlのアンカーとエイリアスで共通化することで解決できた</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre><span class="c1"># アンカーをまとめる場所</span>
+<span class="na">references</span><span class="pi">:</span>
+  <span class="na">commands</span><span class="pi">:</span>
+    <span class="na">setup_php</span><span class="pi">:</span> <span class="nl">&amp;setup_php</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">Setup PHP</span>
+      <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+        <span class="s">sudo docker-php-ext-install mcrypt &amp;&amp; sudo docker-php-ext-enable mcrypt</span>
+        <span class="s">sudo docker-php-ext-install pdo_mysql &amp;&amp; sudo docker-php-ext-enable pdo_mysql</span>
+        <span class="s">sudo docker-php-ext-enable xdebug</span>
+        <span class="s">composer install -n --prefer-dist</span>
+
+    <span class="na">setup_node</span><span class="pi">:</span> <span class="nl">&amp;setup_node</span>
+      <span class="na">name</span><span class="pi">:</span> <span class="s">Setup Node</span>
+      <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+        <span class="s">npm install</span>
+        <span class="s">npm run gulp</span>
+
+<span class="c1"># circle-ciの設定</span>
+<span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">test1</span><span class="pi">:</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="nv">*setup_php</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="nv">*setup_node</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">some command</span>
+
+  <span class="na">test2</span><span class="pi">:</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="nv">*setup_php</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="nv">*setup_node</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">some command2</span>
+
+<span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">test_and_buld</span><span class="pi">:</span>
+    <span class="na">tests</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">test1</span>
+      <span class="pi">-</span> <span class="s">test2</span>
+</pre></div></div>
+
+<p><code>referecnes</code>を上の方でまとめる手法はドキュメント化されてないが、「Add Project」時に「Others」を選ぶとアンカーとエイリアスを利用したサンプルが出て来る。</p>

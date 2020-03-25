@@ -1,0 +1,46 @@
+<p>CALayerなんかを使ってUIVewに線を追加するやり方なんかはわりとよくあるのだけど、InterfaceBuilder上でいい感じの位置に線を出したいとなるとちょいと工夫が必要だったのでメモ</p>
+
+<h2>
+<span id="まずは結果から" class="fragment"></span><a href="#%E3%81%BE%E3%81%9A%E3%81%AF%E7%B5%90%E6%9E%9C%E3%81%8B%E3%82%89"><i class="fa fa-link"></i></a>まずは結果から</h2>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F676f09f6-0c6a-f8a1-8ee2-ce39d7a1527b.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=44b82e838a5ad5723dc022196a1be5e1" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F676f09f6-0c6a-f8a1-8ee2-ce39d7a1527b.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=44b82e838a5ad5723dc022196a1be5e1" width="300" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/676f09f6-0c6a-f8a1-8ee2-ce39d7a1527b.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F676f09f6-0c6a-f8a1-8ee2-ce39d7a1527b.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=ae7f656cf222c5918c15be414235c201 1x" loading="lazy"></a><br>
+求められているのは0.5の線。<br>
+いまいち理解が甘いのですがAutolayoutでHeight=1を設定しても2px程度になるようです。</p>
+
+<h2>
+<span id="新規に設定する場合" class="fragment"></span><a href="#%E6%96%B0%E8%A6%8F%E3%81%AB%E8%A8%AD%E5%AE%9A%E3%81%99%E3%82%8B%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>新規に設定する場合</h2>
+
+<p>まずはさくっとviewを配置<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F52ae843e-0d99-d8e4-2440-ed14cd0d2ad2.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=812039c76e01a0480898455e4a60f25d" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F52ae843e-0d99-d8e4-2440-ed14cd0d2ad2.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=812039c76e01a0480898455e4a60f25d" width="300" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/52ae843e-0d99-d8e4-2440-ed14cd0d2ad2.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F52ae843e-0d99-d8e4-2440-ed14cd0d2ad2.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=70508302d3b18739fab98af595575100 1x" loading="lazy"></a></p>
+
+<p>そしてAutolayoutの設定で <strong>Heightに.5と入力</strong><br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc71eb2c6-60ce-2744-25ac-c8d85e4b7479.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=83d4853142fb741c910cd9ac558d13a9" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc71eb2c6-60ce-2744-25ac-c8d85e4b7479.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=83d4853142fb741c910cd9ac558d13a9" width="300" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/c71eb2c6-60ce-2744-25ac-c8d85e4b7479.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc71eb2c6-60ce-2744-25ac-c8d85e4b7479.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=a23f26433344cacebe18ff3d774d19b5 1x" loading="lazy"></a></p>
+
+<p>ここまではOK。</p>
+
+<h2>
+<span id="途中から設定する場合" class="fragment"></span><a href="#%E9%80%94%E4%B8%AD%E3%81%8B%E3%82%89%E8%A8%AD%E5%AE%9A%E3%81%99%E3%82%8B%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>途中から設定する場合</h2>
+
+<p>しかし上記のHeight 0.5、初回にかけてあげることはできるようですが、<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F5471306f-9258-0cef-a755-2cbfee247414.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=ba0eede748da1766f7dbcbeea2b54f89" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F5471306f-9258-0cef-a755-2cbfee247414.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=ba0eede748da1766f7dbcbeea2b54f89" width="300" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/5471306f-9258-0cef-a755-2cbfee247414.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F5471306f-9258-0cef-a755-2cbfee247414.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=524982ec3873cacd356428480feb33f3 1x" loading="lazy"></a><br>
+こちらのSize Inspectorからは設定できない模様・・・・</p>
+
+<p>ちょっと新規でやりなおすのもな・・・という時は、下記のやり方もあるようです。</p>
+
+<p>こんな感じでconstraintとoutletを紐付けて<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fba03ba4f-bc1b-cb6d-775c-c136119822ee.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=9119193763db92f87bf4ccc299018f84" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fba03ba4f-bc1b-cb6d-775c-c136119822ee.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=9119193763db92f87bf4ccc299018f84" width="400" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/ba03ba4f-bc1b-cb6d-775c-c136119822ee.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fba03ba4f-bc1b-cb6d-775c-c136119822ee.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=46fdfabba98bada1d9b69bd8f66c1fc4 1x" loading="lazy"></a> </p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="kd">class</span> <span class="kt">ViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
+    <span class="c1">// constraint outlet</span>
+    <span class="kd">@IBOutlet</span> <span class="k">weak</span> <span class="k">var</span> <span class="nv">heightConstraint</span><span class="p">:</span> <span class="kt">NSLayoutConstraint</span><span class="o">!</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">viewDidLoad</span><span class="p">()</span>
+        <span class="c1">// Do any additional setup after loading the view, typically from a nib.</span>
+        <span class="n">heightConstraint</span><span class="o">.</span><span class="n">constant</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div></div>
+
+<p>こんな具合でconstraintを変更してやることでも可能なようです。</p>

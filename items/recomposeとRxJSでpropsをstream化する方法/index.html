@@ -1,0 +1,136 @@
+<p>長年recomposeでのObservable利用というのが理解出来なかったが、一部唐突に理解できたので忘れる前にメモ。</p>
+
+<h1>
+<span id="前提の考えpropsだけをstreamとして考える" class="fragment"></span><a href="#%E5%89%8D%E6%8F%90%E3%81%AE%E8%80%83%E3%81%88props%E3%81%A0%E3%81%91%E3%82%92stream%E3%81%A8%E3%81%97%E3%81%A6%E8%80%83%E3%81%88%E3%82%8B"><i class="fa fa-link"></i></a>前提の考え：propsだけをstreamとして考える</h1>
+
+<p>とにかくRxを考える上で自分の理解を妨げていたのが「Everything is stream」という考え方だった。</p>
+
+<p><a href="https://medium.com/@terrierscript/redux-observable%E3%82%92%E9%80%9A%E3%81%98%E3%81%A6rx%E3%82%92%E5%AD%A6%E3%82%93%E3%81%A0%E8%A9%B1-e9eadc75161d" rel="nofollow noopener" target="_blank">redux-observableを覚えた際</a>は、streamとなるのがReduxのActionだけであると限定出来たから理解できたと考えている。</p>
+
+<p>そのため今回は <code>mapPropsStream</code> の使い方のみフォーカスする。そのためstreamになるのはコンポーネントに渡され続けるpropsだけだ。<br>
+（それ以外のものは未だに使い方がいまいちわかってない所がある。特に <code>componentFromStream</code>はいまいち用途を想像出来てない。）</p>
+
+<h1>
+<span id="例文字数カウンター" class="fragment"></span><a href="#%E4%BE%8B%E6%96%87%E5%AD%97%E6%95%B0%E3%82%AB%E3%82%A6%E3%83%B3%E3%82%BF%E3%83%BC"><i class="fa fa-link"></i></a>例：文字数カウンター</h1>
+
+<p>例えばこんな文字数カウンターを考える</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>    <span class="k">export</span> <span class="kd">class</span> <span class="nx">TextArea</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+      <span class="kd">constructor</span><span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">super</span><span class="p">(</span><span class="nx">props</span><span class="p">)</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{</span>
+          <span class="na">text</span><span class="p">:</span> <span class="dl">""</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+      <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">(</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">textarea</span>
+              <span class="na">value=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">text</span><span class="si">}</span>
+              <span class="na">onChange=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span> <span class="na">text</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span> <span class="p">})</span>
+              <span class="p">}</span><span class="si">}</span>
+            <span class="p">/&gt;</span>
+            <span class="p">&lt;</span><span class="nc">TextCounter</span> <span class="na">text=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">text</span><span class="si">}</span> <span class="p">/&gt;</span>
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">)</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+</pre></div></div>
+
+<p>TextCounterの実装は一番愚直に考えればこんな感じだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>    <span class="kd">const</span> <span class="nx">TextCounter</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">text</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">count</span> <span class="o">=</span> <span class="nx">text</span><span class="p">.</span><span class="nx">count</span>
+      <span class="k">return</span> <span class="p">(</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+            <span class="si">{</span><span class="nx">count</span><span class="si">}</span>
+            文字
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">text</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">)</span>
+    <span class="p">}</span>
+</pre></div></div>
+
+<p>ここで文字入力の度に更新が走ることを危惧した場合、class化してメモ化するなど様々手段は考えられるが、今回ここでpropsをObservableにする方法で解決してみたい。</p>
+
+<h2>
+<span id="まずはobservable使わずmappropsだけで解決する" class="fragment"></span><a href="#%E3%81%BE%E3%81%9A%E3%81%AFobservable%E4%BD%BF%E3%82%8F%E3%81%9Amapprops%E3%81%A0%E3%81%91%E3%81%A7%E8%A7%A3%E6%B1%BA%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>まずはObservable使わずmapPropsだけで解決する</h2>
+
+<p>ひとまずcounterの計算処理をComponentから剥がしてみよう。</p>
+
+<p>それだけであればObservableは不要で <code>mapProps</code> で十分だ。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>    <span class="kd">const</span> <span class="nx">withTextCounter</span> <span class="o">=</span> <span class="nx">mapProps</span><span class="p">(({</span> <span class="nx">text</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span>
+        <span class="nx">text</span><span class="p">,</span>
+        <span class="na">count</span><span class="p">:</span> <span class="nx">text</span><span class="p">.</span><span class="nx">length</span>
+      <span class="p">}</span>
+    <span class="p">})</span>
+    <span class="kd">const</span> <span class="nx">TextCounterInner</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">text</span><span class="p">,</span> <span class="nx">count</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="c1">// const count = text.count</span>
+    <span class="err">　</span><span class="c1">// カウンターはもう外からもらっているので計算不要</span>
+      <span class="k">return</span> <span class="p">(</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+            <span class="si">{</span><span class="nx">count</span><span class="si">}</span>
+            文字
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">text</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">)</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="nx">TextCounter</span> <span class="o">=</span> <span class="nx">withTextCounter</span><span class="p">(</span><span class="nx">TextCounterInner</span><span class="p">)</span>
+</pre></div></div>
+
+<h2>
+<span id="更新回数をmappropsstreamを利用して間引く" class="fragment"></span><a href="#%E6%9B%B4%E6%96%B0%E5%9B%9E%E6%95%B0%E3%82%92mappropsstream%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%A6%E9%96%93%E5%BC%95%E3%81%8F"><i class="fa fa-link"></i></a>更新回数をmapPropsStreamを利用して間引く。</h2>
+
+<p>ここで例えば更新回数が多すぎるということでObservableで更新を間引きたい。</p>
+
+<p>今回はRxJSを使う。<br>
+不幸にもRxJS@6で上手く動いてないバグを踏み抜いてしまったので、<code>rxjsObservableConfig</code>  は今回使わずにセットアップする</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>    <span class="k">import</span> <span class="p">{</span> <span class="nx">tap</span><span class="p">,</span> <span class="nx">auditTime</span><span class="p">,</span> <span class="nx">map</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs/operators</span><span class="dl">"</span>
+    <span class="k">import</span> <span class="p">{</span> <span class="nx">mapPropsStreamWithConfig</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">recompose</span><span class="dl">"</span>
+    <span class="k">import</span> <span class="p">{</span> <span class="k">from</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs</span><span class="dl">"</span>
+
+    <span class="kd">const</span> <span class="nx">rxjsConfig</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="na">fromESObservable</span><span class="p">:</span> <span class="k">from</span><span class="p">,</span>
+      <span class="na">toESObservable</span><span class="p">:</span> <span class="p">(</span><span class="nx">stream</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">stream</span>
+    <span class="p">}</span>
+    <span class="c1">// configを与えてmapPropsStreamを作成</span>
+    <span class="kd">const</span> <span class="nx">mapPropsStream</span> <span class="o">=</span> <span class="nx">mapPropsStreamWithConfig</span><span class="p">(</span><span class="nx">rxjsConfig</span><span class="p">)</span>
+</pre></div></div>
+
+<p>これで <code>mapPropsStream</code> の準備が出来たので、今回のcomponent用のstreamを作成する。</p>
+
+<p>これはredux-observableのEpicととても良く似ている記述になる。今回は <code>audiTime</code>を利用して200msに一度だけ更新されるようにする</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>    <span class="kd">const</span> <span class="nx">withTextCounter</span> <span class="o">=</span> <span class="nx">mapPropsStream</span><span class="p">((</span><span class="nx">props$</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">props$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+        <span class="c1">// tap(props =&gt; console.log("before props", props)), </span>
+        <span class="c1">// -&gt; before props, {text: "aaa"}</span>
+
+        <span class="nx">auditTime</span><span class="p">(</span><span class="mi">200</span><span class="p">),</span> 
+        <span class="c1">// 200msの入力をまとめる。throttleやdebounceと似てるが最後にemitするので一番都合が良い</span>
+
+        <span class="nx">map</span><span class="p">(({</span> <span class="nx">text</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="p">{</span>
+            <span class="nx">text</span><span class="p">,</span>
+            <span class="na">count</span><span class="p">:</span> <span class="nx">text</span><span class="p">.</span><span class="nx">length</span>
+          <span class="p">}</span>
+        <span class="p">}),</span>
+        <span class="c1">// textとcountに分岐する。ここは先程のmapPropsと一緒</span>
+
+        <span class="c1">// tap(props =&gt; console.log("after props", props)),</span>
+        <span class="c1">// -&gt; after props, { text: "aaa", count: 3 }</span>
+      <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="kd">const</span> <span class="nx">TextCounter</span> <span class="o">=</span> <span class="nx">withTextCounter</span><span class="p">(</span><span class="nx">TextCounterInner</span><span class="p">)</span>
+</pre></div></div>
+
+<p>カウンターは先程までのものと同じのが利用できるだろう</p>

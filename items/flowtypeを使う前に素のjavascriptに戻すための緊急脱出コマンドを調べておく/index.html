@@ -1,0 +1,84 @@
+<p>flowtypeがぼちぼち良い感じになりつつあるので使ってみたいが<br>
+心配症なので、転ばぬ先の杖として使う前に退路も準備しておきたいと思った。</p>
+
+<hr>
+
+<h1>
+<span id="緊急脱出コマンド" class="fragment"></span><a href="#%E7%B7%8A%E6%80%A5%E8%84%B1%E5%87%BA%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89"><i class="fa fa-link"></i></a>緊急脱出コマンド</h1>
+
+<p>ざっくりこう。<br>
+（既にbabel利用されている環境を前提にしているので悪しからず）</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% npm i babel-cli
+
+# out-dirをsourceと同じにしているので注意！
+% $(npm bin)/babel src --no-babelrc --plugins transform-flow-strip-types --out-dir src/
+</pre></div></div>
+
+<h2>
+<span id="解説など" class="fragment"></span><a href="#%E8%A7%A3%E8%AA%AC%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>解説など</h2>
+
+<p><code>bable-cli</code>と<code>transform-flow-strip-types</code>をベースにして、flowの型処理だけをする。<br>
+<code>babel-cli</code>はコード結合とかするものではないので、ソースコードの変換したいみたいな目的にも使える。<br>
+<code>--no-babelrc</code>もつけて、通常利用しているような変換は行ないようにする。<br>
+これをやらないとソースコードが変換されて望まない結果になりがち。</p>
+
+<p>また、上記コマンドは<code>src</code>からそのまま<code>src</code>に吐くので、事前にgitの差分が無い状態で実行すること。<br>
+dry-run的に別ディレクトリに吐き出したいなら、<code>--out-dir</code>を任意に変更すると良い。</p>
+
+<h2>
+<span id="構文エラーとかで怒られる場合" class="fragment"></span><a href="#%E6%A7%8B%E6%96%87%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%A8%E3%81%8B%E3%81%A7%E6%80%92%E3%82%89%E3%82%8C%E3%82%8B%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>構文エラーとかで怒られる場合</h2>
+
+<p>jsxなどbabelのみが認識するような構文を扱っている場合は、それぞれに構文に対応する<a href="https://babeljs.io/docs/plugins/#syntax-plugins" rel="nofollow noopener" target="_blank"><code>syntax</code></a>をpluginとして追加する必要もある。<br>
+<code>transform</code>ではなく<code>syntax</code>を利用するので、パースはするがコードが変換されることはない。</p>
+
+<p>自分の場合は<code>syntax-object-rest-spread</code>, <code>syntax-jsx</code>を追加すればよさそうだった。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% $(npm bin)/babel src \
+  --no-babelrc \
+  --plugins=transform-flow-strip-types,syntax-object-rest-spread,syntax-jsx \
+  --compact=false \
+  --out-dir=src/
+</pre></div></div>
+
+<p>syntaxだけをまとめた<a href="https://www.npmjs.com/package/babel-preset-syntax-from-presets" rel="nofollow noopener" target="_blank">babel-preset-syntax-from-presets</a>というのもあるらしい（未検証）</p>
+
+<h2>
+<span id="微妙に変わっている部分をeslint---fixでなるべく戻す" class="fragment"></span><a href="#%E5%BE%AE%E5%A6%99%E3%81%AB%E5%A4%89%E3%82%8F%E3%81%A3%E3%81%A6%E3%81%84%E3%82%8B%E9%83%A8%E5%88%86%E3%82%92eslint---fix%E3%81%A7%E3%81%AA%E3%82%8B%E3%81%B9%E3%81%8F%E6%88%BB%E3%81%99"><i class="fa fa-link"></i></a>微妙に変わっている部分を<code>eslint --fix</code>でなるべく戻す</h2>
+
+<p><code>babel-cli</code>を通しても大きくコードは変更されないとはいえ、インデントやら改行周りやらセミコロンなど、細々した構文が変わる。<br>
+全部戻そうとするとかなり労力かかるが、<code>eslint</code>でそれなりに戻すことが出来る。<br>
+なのでdiff小さく保ちたければ、事前、事後でeslintを利用して、<code>--fix</code>をかけると良い。</p>
+
+<p>このあたりが使われそうなルールだった。</p>
+
+<ul>
+<li>arrow-parens</li>
+<li>space-before-blocks</li>
+<li>keyword-spacing</li>
+<li>semi</li>
+<li>jsx-wrap-multilines (eslint-plugin-react)</li>
+<li>jsx-curly-spacing (eslint-plugin-react)</li>
+</ul>
+
+<h2>
+<span id="雑感" class="fragment"></span><a href="#%E9%9B%91%E6%84%9F"><i class="fa fa-link"></i></a>雑感</h2>
+
+<ul>
+<li>TypeScriptも検討したが、このぐらいのコマンド程度で素のJavascriptに戻せるflow悪くなさそう。</li>
+<li>「OCamlで書かれている！」という触れ込みにビビっていたが、OCaml使ってる部分は<code>flow-bin</code>の型チェックする部分のみっぽい。
+
+<ul>
+<li>ビルド時に作用するのはbabel(=Javascriptオンリー)なので、「ビルド時にOCamlがうまくいかなくて詰んだ」みたいなのはそんなに無いはず。</li>
+<li>逆に、ビルド時にチェックしてくれないと困る！というユースケースには一工夫いりそうな予感</li>
+</ul>
+</li>
+<li>初期段階ではテスト<code>@JSDoc</code>的な奴、ぐらいなゆるいつきあい方をしていくほうがいいのかもなーと思ったりしている。
+
+<ul>
+<li>TODO: <a href="https://github.com/codemix/babel-plugin-typecheck" rel="nofollow noopener" target="_blank">babel-plugin-typecheck</a> とかは良いかもしれないので調べる</li>
+<li>参考: <a href="http://qiita.com/mizchi/items/30a5f9560e86e0d5ab31" class="autolink" id="reference-440099b839846f13ea5f">http://qiita.com/mizchi/items/30a5f9560e86e0d5ab31</a>
+</li>
+</ul>
+</li>
+</ul>

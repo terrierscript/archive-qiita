@@ -1,0 +1,34 @@
+<p>React 0.14から入ったStateless functional components</p>
+
+<p>どうもnullを返してしまうとRenderが無いと怒られてしまうらしい。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">FooItem</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">show</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">show</span><span class="p">){</span>
+    <span class="k">return</span> <span class="kc">null</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">some</span> <span class="nx">component</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>解決策としてはこんな感じ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">FooItem</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">show</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">show</span><span class="p">){</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">noscript</span> <span class="o">/&gt;</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">some</span> <span class="nx">component</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><code>&lt;noscript&gt;</code>に深い意味があるわけでもないが、Reactの標準的な動作がこれらしいのであわせた。<br>
+spanでも多分別に良い。</p>
+
+<p>Animation関連でもnull返した際にエラーがあったので、もしかするとnull返すComponentはそもそもあんまり良くないのかもしれない。</p>
+
+<p>ちなみに、現象としてはissueに上がっていた。<br>
+<a href="https://github.com/facebook/react/issues/5218" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/facebook/react/issues/5218</a><br>
+でもshadowRenderに限定されてしまっている。</p>

@@ -1,0 +1,152 @@
+<p>React0.13になってから触ってみたらいくらかflux事情も変わっていたので調べた話</p>
+
+<h1>
+<span id="react-013で何が変わったのか" class="fragment"></span><a href="#react-013%E3%81%A7%E4%BD%95%E3%81%8C%E5%A4%89%E3%82%8F%E3%81%A3%E3%81%9F%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>React 0.13で何が変わったのか？</h1>
+
+<ul>
+<li>mixinのdepreacted化
+
+<ul>
+<li><a href="http://qiita.com/mizchi/items/ce9a128aa2a47804e083" class="autolink" id="reference-71a8509ed0aa4fde1f4e">http://qiita.com/mizchi/items/ce9a128aa2a47804e083</a></li>
+</ul>
+</li>
+<li>React.ComponentによりES6な記法で書ける</li>
+</ul>
+
+<p>fluxに絡むところでいうとこのへんがでかい。</p>
+
+<p>やっぱり0.13からはclass使いたい！</p>
+
+<p>今までのfluxライブラリは今まで概ね<code>mixin</code>を使うことでviewとstoreを紐付けてきた。</p>
+
+<p>じゃあこれからどうすんの？？？</p>
+
+<h1>
+<span id="各flux達の対応具合" class="fragment"></span><a href="#%E5%90%84flux%E9%81%94%E3%81%AE%E5%AF%BE%E5%BF%9C%E5%85%B7%E5%90%88"><i class="fa fa-link"></i></a>各flux達の対応具合</h1>
+
+<h2>
+<span id="flummox" class="fragment"></span><a href="#flummox"><i class="fa fa-link"></i></a><a href="http://acdlite.github.io/flummox" rel="nofollow noopener" target="_blank">flummox</a>
+</h2>
+
+<p><del>個人的には今後はこれを使っていこうかなと思っているのがflummox。</del></p>
+
+<p><strong>2015/07/23追記：<a href="https://github.com/acdlite/flummox#40-will-likely-be-the-last-major-release-use-redux-instead-its-really-great" rel="nofollow noopener" target="_blank">flummoxは4.0で更新止めるからこれからはreduxを使ってね！</a></strong>だそうだ・・</p>
+
+<p>fluxxorと名前似ててややこしい。</p>
+
+<p><a href="https://github.com/acdlite/flummox/blob/master/docs/docs/guides/why-flux-component-is-better-than-flux-mixin.md" rel="nofollow noopener" target="_blank">Why flux component is better than flux mixin</a>という記事があるので詳しくはこちら。</p>
+
+<p>具体的にはざっくりこんな感じ</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">class</span> <span class="nx">Container</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="c1">//一個storeとつなぐ親コンポーネントがラップする</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nc">FluxComponent</span> <span class="na">flux=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">flux</span><span class="si">}</span> <span class="na">connectToStores=</span><span class="si">{</span><span class="p">{</span>
+        <span class="na">messages</span><span class="p">:</span> <span class="nx">store</span> <span class="o">=&gt;</span> <span class="p">({</span>
+          <span class="na">foo</span><span class="p">:</span> <span class="nx">store</span><span class="p">.</span><span class="nx">getFoo</span><span class="p">(),</span>
+          <span class="na">baz</span><span class="p">:</span> <span class="nx">store</span><span class="p">.</span><span class="nx">getBaz</span><span class="p">()</span>
+        <span class="p">})</span>
+      <span class="p">}</span><span class="si">}</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">InnderCompoent</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nc">FluxComponent</span><span class="p">&gt;</span>
+    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nx">InnderCompoent</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="c1">// 取り出したstoreはpropとして子に伝播</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">foo</span><span class="p">,</span> <span class="nx">baz</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>概要で言うと、FluxComponentというElementを外側に配置し、それがStoreからデータを呼び出しpropsとして子要素に流してくれる。<br>
+結構このパターン多い。みたい。</p>
+
+<p>余談だがflummoxにおいてstoreのサンプルではasync/awaitを利用していた。ナウい。</p>
+
+<h2>
+<span id="alt" class="fragment"></span><a href="#alt"><i class="fa fa-link"></i></a><a href="http://alt.js.org/" rel="nofollow noopener" target="_blank">Alt</a>
+</h2>
+
+<p>だいたいflummoxと同様な対応っぽいので省略<br>
+<a href="http://alt.js.org/docs/components/altContainer/" class="autolink" rel="nofollow noopener" target="_blank">http://alt.js.org/docs/components/altContainer/</a><br>
+Altは先鋭的ではあったけど若干複雑さを感じて断念</p>
+
+<h2>
+<span id="marty" class="fragment"></span><a href="#marty"><i class="fa fa-link"></i></a><a href="http://martyjs.org/" rel="nofollow noopener" target="_blank">Marty</a>
+</h2>
+
+<p>以前自分で<a href="http://qiita.com/suisho/items/22ad9efcac90127f87a1" id="reference-acd18c34624fd020c4b7">こんな紹介記事</a>を書いてみたりしていたくせにというのがありつつ、今回のReact0.13の対応の話だと若干微妙かもなあというのがMarty。<br>
+どことなく場当たりな雰囲気を感じざる負えない。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">class</span> <span class="nx">User</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"User"</span><span class="p">&gt;</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">user</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// createContainerで今までと似たような記法をする</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">createContainer</span><span class="p">(</span><span class="nx">User</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">listenTo</span><span class="p">:</span> <span class="nx">UserStore</span><span class="p">,</span>
+  <span class="na">fetch</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">user</span><span class="p">()</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="nx">UserStore</span><span class="p">.</span><span class="k">for</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">getUser</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">id</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nx">failed</span><span class="p">(</span><span class="nx">errors</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"User User-failedToLoad"</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">errors</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;;</span>
+  <span class="p">},</span>
+  <span class="nx">pending</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">done</span><span class="p">({</span>
+      <span class="na">user</span><span class="p">:</span> <span class="p">{}</span>
+    <span class="p">});</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+</pre></div></div>
+
+<p>結構やっていることが今までのmixinっぽさなのだが、結局ES6っぽくなくてうーんな感じ。</p>
+
+<h2>
+<span id="未対応っぽいflux達" class="fragment"></span><a href="#%E6%9C%AA%E5%AF%BE%E5%BF%9C%E3%81%A3%E3%81%BD%E3%81%84flux%E9%81%94"><i class="fa fa-link"></i></a>未対応っぽいFlux達</h2>
+
+<p>あまりちゃんとは追ってないけどこのあたりの初期からある者達対応追いつけてない感じがある。<br>
+issueやRoadmapまでは未確認。</p>
+
+<ul>
+<li>Reflux
+
+<ul>
+<li><a href="https://github.com/spoike/refluxjs#convenience-mixin-for-react" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/spoike/refluxjs#convenience-mixin-for-react</a></li>
+</ul>
+</li>
+<li>Fluxxor
+
+<ul>
+<li><a href="http://fluxxor.com/guides/quick-start.html" class="autolink" rel="nofollow noopener" target="_blank">http://fluxxor.com/guides/quick-start.html</a></li>
+</ul>
+</li>
+<li>delorean
+
+<ul>
+<li><a href="https://github.com/deloreanjs/delorean/blob/master/docs/views.md" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/deloreanjs/delorean/blob/master/docs/views.md</a></li>
+</ul>
+</li>
+<li>McFly
+
+<ul>
+<li><a href="https://github.com/kenwheeler/mcfly#stores" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/kenwheeler/mcfly#stores</a></li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="結論" class="fragment"></span><a href="#%E7%B5%90%E8%AB%96"><i class="fa fa-link"></i></a>結論</h1>
+
+<p>もうflummoxでいいんじゃないかな</p>

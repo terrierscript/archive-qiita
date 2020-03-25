@@ -1,0 +1,416 @@
+<p>入力フォームを利用するとやっぱり大事になってくるValidationについてあれこれ悩んだ。<br>
+結論が完全に自分の中でも出てないが、とりあえず考え尽くした所まで</p>
+
+<h1>
+<span id="前提など" class="fragment"></span><a href="#%E5%89%8D%E6%8F%90%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>前提など</h1>
+
+<h2>
+<span id="validation" class="fragment"></span><a href="#validation"><i class="fa fa-link"></i></a>validation</h2>
+
+<p>validationとひとくちに言っても色々考える事がある</p>
+
+<ul>
+<li>出力するエラーは一つ？複数？</li>
+<li>エラーが出たフォームを赤くしたいとかある？</li>
+<li>複数の値を見てvalidationしたいとかある？</li>
+<li>validateするタイミングは随時？ボタン押されたら？</li>
+</ul>
+
+<h2>
+<span id="今回の話" class="fragment"></span><a href="#%E4%BB%8A%E5%9B%9E%E3%81%AE%E8%A9%B1"><i class="fa fa-link"></i></a>今回の話</h2>
+
+<ul>
+<li>Redux + Reactを使う</li>
+<li>簡易なTodoリストを想定する</li>
+<li>Actionの形式は<a href="https://github.com/acdlite/flux-standard-action" rel="nofollow noopener" target="_blank">Flux Standad Action</a>を使う</li>
+<li>一旦細かいことは脇に置きつつ、下記のvalidationを想定して実装してみる
+
+<ul>
+<li>エラーメッセージは一つ</li>
+<li>Todoのinputが空だったらエラーとする</li>
+<li>Todoの追加ボタンが押されたタイミングでvalidateする</li>
+</ul>
+</li>
+<li>
+<a href="http://erikras.github.io/redux-form" rel="nofollow noopener" target="_blank">redux-form</a>、<a href="https://www.npmjs.com/package/redux-validator" rel="nofollow noopener" target="_blank">redux-validator</a>など、外部ライブラリが存在しているが、しっくり来るのが無かったので今回は一旦考えない
+
+<ul>
+<li>個人的にこれだ！というものが無かったため</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="todoリスト" class="fragment"></span><a href="#todo%E3%83%AA%E3%82%B9%E3%83%88"><i class="fa fa-link"></i></a>Todoリスト</h2>
+
+<p>シンプルにこんな感じ。<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc544c395-e593-1a8e-7988-924bdf88f17f.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=b3240f2e6d38d9148eff38c58bebbba3" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc544c395-e593-1a8e-7988-924bdf88f17f.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=b3240f2e6d38d9148eff38c58bebbba3" alt="TODO.png" title="Electron_App.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/c544c395-e593-1a8e-7988-924bdf88f17f.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc544c395-e593-1a8e-7988-924bdf88f17f.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=70423fa2c3f59f95923f6fc98c41f0ad 1x" loading="lazy"></a></p>
+
+<p>ベースとなるコードはこちらに配置した<a href="https://github.com/inuscript/example-validator-comparison/tree/without-validate" rel="nofollow noopener" target="_blank">ソース</a></p>
+
+<h3>
+<span id="validationについて" class="fragment"></span><a href="#validation%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6"><i class="fa fa-link"></i></a>validationについて</h3>
+
+<p>空白が入力されたらエラーを出す、みたいなことを考える<br>
+validate自体は、一旦Redux、Reactから切り離してシンプルな関数があることを想定する</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">validate.js</span></div>
+<div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">isValidTodo</span> <span class="o">=</span> <span class="p">(</span><span class="nx">task</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">task</span> <span class="o">===</span> <span class="dl">""</span><span class="p">){</span>
+    <span class="k">return</span> <span class="kc">false</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>また、エラーメッセージはreducerとして状態を持つことにする</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">reducer/error-message.js</span></div>
+<div class="highlight"><pre><span class="kd">const</span> <span class="nx">errorMessage</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">case</span> <span class="dl">'</span><span class="s1">ERROR_MESSAGE</span><span class="dl">'</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+
+</pre></div>
+</div>
+
+<h1>
+<span id="実装パターン" class="fragment"></span><a href="#%E5%AE%9F%E8%A3%85%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3"><i class="fa fa-link"></i></a>実装パターン</h1>
+
+<h2>
+<span id="案1smart-componentで行う" class="fragment"></span><a href="#%E6%A1%881smart-component%E3%81%A7%E8%A1%8C%E3%81%86"><i class="fa fa-link"></i></a>案1:Smart Componentで行う</h2>
+
+<p>propsを受けるSmart Componentでvalidateを行うやり方。<br>
+送信ボタンが行われたタイミングでvalidationをかませる。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">component.js</span></div>
+<div class="highlight"><pre><span class="kd">class</span> <span class="nx">InputComponent</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="p">{</span>
+     <span class="p">:</span>
+  <span class="nx">handleClick</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+    <span class="kd">let</span> <span class="nx">currentInput</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">currentInput</span>
+    <span class="c1">// handle内でvalidate。</span>
+    <span class="c1">// ダメなら値を入れない</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">isValidTodo</span><span class="p">(</span><span class="nx">currentInput</span><span class="p">)){</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">actions</span><span class="p">.</span><span class="nx">errorMsg</span><span class="p">(</span><span class="dl">"</span><span class="s2">Input some word</span><span class="dl">"</span><span class="p">)</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">actions</span><span class="p">.</span><span class="nx">appendTask</span><span class="p">(</span><span class="nx">currentInput</span><span class="p">)</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+      <span class="na">currentInput</span><span class="p">:</span> <span class="dl">""</span>
+    <span class="p">})</span>
+  <span class="p">}</span>
+  <span class="nx">render</span><span class="p">(){</span>
+        <span class="p">:</span>
+      <span class="o">&lt;</span><span class="nx">TodoInput</span>
+        <span class="nx">onSend</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">handleClick</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="k">this</span><span class="p">)}</span> 
+        <span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">currentInput</span><span class="p">}</span>
+        <span class="sr">/</span><span class="err">&gt;
+</span>        <span class="p">:</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">class</span> <span class="nx">TodoInput</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="kd">const</span> <span class="p">{</span><span class="nx">onChange</span><span class="p">,</span> <span class="nx">onSend</span><span class="p">,</span> <span class="nx">value</span><span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">onChange</span><span class="o">=</span><span class="p">{</span><span class="nx">onChange</span><span class="p">}</span> <span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="nx">value</span><span class="p">}</span> <span class="nx">onKeyPress</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">handleKeydown</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="k">this</span><span class="p">)}</span><span class="sr">/</span><span class="err">&gt;
+</span>        <span class="o">&lt;</span><span class="nx">button</span> <span class="nx">onClick</span><span class="o">=</span><span class="p">{</span><span class="nx">onSend</span><span class="p">}</span> <span class="o">&gt;</span><span class="nx">Append</span><span class="o">&lt;</span><span class="sr">/button</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</pre></div>
+</div>
+
+<p>寸感：まあ、悪くはない。</p>
+
+<h3>
+<span id="利点" class="fragment"></span><a href="#%E5%88%A9%E7%82%B9"><i class="fa fa-link"></i></a>利点</h3>
+
+<ul>
+<li>簡易なvalidationであればこれで十分事足りてる感。</li>
+<li>後で「エラーが出たらそのフォームを赤くしたい」とかやりたくなったら割りとやりやすそう</li>
+<li>AとBの値を見てvalidateしたい。みたいな要望がある程度かなえられるかもしれない</li>
+</ul>
+
+<h3>
+<span id="欠点" class="fragment"></span><a href="#%E6%AC%A0%E7%82%B9"><i class="fa fa-link"></i></a>欠点</h3>
+
+<ul>
+<li>そもそもView層ってコードが肥大化しがちな所なのでそこに押し込めるのって微妙・・・</li>
+<li>エラーメッセージをReducerに流したいがために複雑度が上がっている感じがある</li>
+</ul>
+
+<h2>
+<span id="案2dumb-componentで行う" class="fragment"></span><a href="#%E6%A1%882dumb-component%E3%81%A7%E8%A1%8C%E3%81%86"><i class="fa fa-link"></i></a>案2:Dumb Componentで行う</h2>
+
+<p>今回、前提としてreducerでエラーメッセージをやりとりすることを前提としたが、stateを利用することまで想定すれば、このぐらいまで出来そう</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>  <span class="nx">handleClick</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+    <span class="kd">let</span> <span class="nx">currentInput</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">currentInput</span>
+
+    <span class="c1">// validationエラーをstateでやる</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">isValidTodo</span><span class="p">(</span><span class="nx">currentInput</span><span class="p">)){</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+        <span class="na">errorMessage</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Input some word</span><span class="dl">"</span>
+      <span class="p">})</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">actions</span><span class="p">.</span><span class="nx">appendTask</span><span class="p">(</span><span class="nx">currentInput</span><span class="p">)</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+      <span class="na">currentInput</span><span class="p">:</span> <span class="dl">""</span>
+    <span class="p">})</span>
+  <span class="p">}</span>
+</pre></div></div>
+
+<p>寸感：これはナシかな・・・</p>
+
+<h3>
+<span id="利点-1" class="fragment"></span><a href="#%E5%88%A9%E7%82%B9-1"><i class="fa fa-link"></i></a>利点</h3>
+
+<ul>
+<li>正直あんまりない・・・</li>
+<li>flux使ってないほど簡易で良いならこれでも良いかもしれない</li>
+</ul>
+
+<h3>
+<span id="欠点-1" class="fragment"></span><a href="#%E6%AC%A0%E7%82%B9-1"><i class="fa fa-link"></i></a>欠点</h3>
+
+<ul>
+<li>そもそもstate使うのあんまりやりたくない感じ</li>
+<li>AとBの値でvalidateしたい〜とかやりだすとstate肥大化の予感。</li>
+</ul>
+
+<h2>
+<span id="案3actionで行う" class="fragment"></span><a href="#%E6%A1%883action%E3%81%A7%E8%A1%8C%E3%81%86"><i class="fa fa-link"></i></a>案3:Actionで行う</h2>
+
+<p>次にviewの一個奥のactionでやることを考える</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">appendTask</span> <span class="o">=</span> <span class="p">(</span><span class="nx">task</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// エラーかどうかで返すactionを変える</span>
+  <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">isValidTodo</span><span class="p">(</span><span class="nx">task</span><span class="p">)){</span>
+    <span class="k">return</span> <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ERROR_MESSAGE</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Input Some word</span><span class="dl">"</span><span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">TODO_ADD</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="nx">task</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>寸感：良さそう</p>
+
+<h3>
+<span id="利点-2" class="fragment"></span><a href="#%E5%88%A9%E7%82%B9-2"><i class="fa fa-link"></i></a>利点</h3>
+
+<ul>
+<li>一番まとまりが良さそう</li>
+<li>viewでやるよりも責務としては正しい気がする</li>
+<li>コンパクトに収まる</li>
+<li>サーバーサイドvalidationとかも透過的に扱えるかも</li>
+</ul>
+
+<h3>
+<span id="欠点-2" class="fragment"></span><a href="#%E6%AC%A0%E7%82%B9-2"><i class="fa fa-link"></i></a>欠点</h3>
+
+<ul>
+<li>task追加のactionを投げて別なactionが発火されるのは場合によっては驚きが大きいかも</li>
+<li>これもAとBの値を見つつCのvalidateしたいとかなったら辛い気がする。
+
+<ul>
+<li>
+<code>meta</code>を利用して他のstoreの値も受け取れるようにしておけばギリ可能かもしれない・・・</li>
+</ul>
+</li>
+<li>（良し悪しだが）エラー出た表示を赤くしたい、とかなると<code>HOGEHOGE_VALIDATE_ERROR</code>みたいなaction typeが膨大になってしまうかも。</li>
+</ul>
+
+<h3>
+<span id="欄外actionでリアルタイムvalidation的な事やりたかったら" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96action%E3%81%A7%E3%83%AA%E3%82%A2%E3%83%AB%E3%82%BF%E3%82%A4%E3%83%A0validation%E7%9A%84%E3%81%AA%E4%BA%8B%E3%82%84%E3%82%8A%E3%81%9F%E3%81%8B%E3%81%A3%E3%81%9F%E3%82%89"><i class="fa fa-link"></i></a>欄外:Actionでリアルタイムvalidation的な事やりたかったら？</h3>
+
+<p>上記のやり方、当然だが「片方のactionをキャンセルする」というやり方で、即時validationみたいなことをしたかった時にこまるのでちょっと考えてみた。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">component.js</span></div>
+<div class="highlight"><pre><span class="kd">class</span> <span class="nx">InputComponent</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="p">{</span>
+    <span class="p">:</span>
+  <span class="nx">handleClick</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+       <span class="p">:</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">actions</span><span class="p">.</span><span class="nx">appendTask</span><span class="p">(</span><span class="nx">currentInput</span><span class="p">)</span>
+    <span class="c1">// validation用にもactionを飛ばす</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">actions</span><span class="p">.</span><span class="nx">checkTaskError</span><span class="p">(</span><span class="nx">currentInput</span><span class="p">)</span>
+       <span class="p">:</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">actions.js</span></div>
+<div class="highlight"><pre><span class="c1">// 値は値でreducerに返す</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">appendTask</span> <span class="o">=</span> <span class="p">(</span><span class="nx">task</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">TODO_ADD</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="nx">task</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// 別途、エラーがあれば、そちらもactionを生成する</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">checkTaskError</span> <span class="o">=</span> <span class="p">(</span><span class="nx">task</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">isValidTodo</span><span class="p">(</span><span class="nx">task</span><span class="p">)){</span>
+    <span class="k">return</span> <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ERROR_MESSAGE</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Input Some word</span><span class="dl">"</span><span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ERROR_MESSAGE</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="dl">""</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>考えとして複数の作用をさせるのだから複数のactionを発火させるというのは悪く無い気がするが、多分もうちょい色々考えたほうが良さそうな感じもしている。。。</p>
+
+<h2>
+<span id="案4reducerで行う" class="fragment"></span><a href="#%E6%A1%884reducer%E3%81%A7%E8%A1%8C%E3%81%86"><i class="fa fa-link"></i></a>案4:Reducerで行う</h2>
+
+<p>reducerでやるとしたパターンを考えると、<br>
+複数のreducerで同じaction.typeを処理する必要が出そうだ。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">reducer/tasks.js</span></div>
+<div class="highlight"><pre><span class="kd">const</span> <span class="nx">tasks</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="p">[],</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">case</span> <span class="dl">'</span><span class="s1">TODO_ADD</span><span class="dl">'</span><span class="p">:</span>
+    <span class="kd">let</span> <span class="nx">task</span> <span class="o">=</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span>
+    <span class="c1">// validate通った時だけpushする</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">isValidTodo</span><span class="p">(</span><span class="nx">task</span><span class="p">)){</span>
+      <span class="nx">state</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">task</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nx">state</span><span class="p">.</span><span class="nx">concat</span><span class="p">()</span>
+  <span class="k">case</span> <span class="dl">'</span><span class="s1">TODO_REMOVE</span><span class="dl">'</span><span class="p">:</span>
+     <span class="p">:</span>
+</pre></div>
+</div>
+
+<p>単に「データを入れないようにしたい」というだけであれば、taskのreducerで上記ようにpushを抑制すればいいが、エラーメッセージまで出したいなら下記まで必要だろう</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">error-message.js</span></div>
+<div class="highlight"><pre><span class="kd">const</span> <span class="nx">errorMessage</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">TODO_ADD</span><span class="dl">"</span><span class="p">:</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">isValidTodo</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">)){</span>
+      <span class="k">return</span> <span class="dl">"</span><span class="s2">Invalid Task</span><span class="dl">"</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>寸感：とても微妙・・・<br>
+あとReducerでやるにしてももっと別なやり方ありそうな気がしてくる・・・</p>
+
+<h3>
+<span id="利点-3" class="fragment"></span><a href="#%E5%88%A9%E7%82%B9-3"><i class="fa fa-link"></i></a>利点</h3>
+
+<ul>
+<li>「値をどう扱うべきか」という事の責務をreducerが担うのはただしそう</li>
+<li>エラーメッセージのことを考えなければナシとはいえない。</li>
+</ul>
+
+<h3>
+<span id="欠点-3" class="fragment"></span><a href="#%E6%AC%A0%E7%82%B9-3"><i class="fa fa-link"></i></a>欠点</h3>
+
+<ul>
+<li>エラーメッセージのことを考えた途端結構微妙な感じになる。</li>
+<li>1action typeに対して複数箇所での処理ってどうなのか？
+
+<ul>
+<li>保守性悪そう・・・</li>
+</ul>
+</li>
+<li>多分そうでなくても、複雑なvalidationになったら途端に副作用起きるReducerが出来上がる危なさありそう</li>
+</ul>
+
+<h2>
+<span id="案5middlewareで行う" class="fragment"></span><a href="#%E6%A1%885middleware%E3%81%A7%E8%A1%8C%E3%81%86"><i class="fa fa-link"></i></a>案5:Middlewareで行う</h2>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">middleware.js</span></div>
+<div class="highlight"><pre><span class="kd">const</span> <span class="nx">doValidate</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">let</span> <span class="nx">errors</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">switch</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">){</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">TODO_ADD</span><span class="dl">"</span><span class="p">:</span>
+      <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">isValidTodo</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">)){</span>
+        <span class="k">return</span> <span class="dl">"</span><span class="s2">Invalid Task</span><span class="dl">"</span>
+      <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">validateMiddleware</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">dispatch</span><span class="p">,</span> <span class="nx">getStore</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="nx">next</span> <span class="o">=&gt;</span> <span class="nx">action</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">let</span> <span class="nx">error</span> <span class="o">=</span> <span class="nx">doValidate</span><span class="p">(</span><span class="nx">action</span><span class="p">)</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">error</span><span class="p">){</span>
+    <span class="c1">// errorがあったらerrorMsgのactionだけ発火させる</span>
+    <span class="nx">dispatch</span><span class="p">(</span><span class="nx">actions</span><span class="p">.</span><span class="nx">errorMsg</span><span class="p">(</span><span class="nx">error</span><span class="p">))</span>
+    <span class="k">return</span>
+  <span class="p">}</span>
+  <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">next</span><span class="p">(</span><span class="nx">action</span><span class="p">)</span>
+  <span class="k">return</span> <span class="nx">result</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>寸感：アリかもしれない</p>
+
+<h3>
+<span id="利点-4" class="fragment"></span><a href="#%E5%88%A9%E7%82%B9-4"><i class="fa fa-link"></i></a>利点</h3>
+
+<ul>
+<li>実装としては素直な感じ</li>
+<li>
+<code>getStore</code>で全ての値が取れるのである程度複雑なvalidationでも出来そう</li>
+<li>validateの処理が一箇所に収まる</li>
+</ul>
+
+<h3>
+<span id="欠点-4" class="fragment"></span><a href="#%E6%AC%A0%E7%82%B9-4"><i class="fa fa-link"></i></a>欠点</h3>
+
+<ul>
+<li>なんかreducerでやってることをやっている感じ・・・</li>
+<li>Middlewareもちょっと慣れるまで学習コスト高めかも？</li>
+</ul>
+
+<h2>
+<span id="案6reselectorselectorで行う20161215追加" class="fragment"></span><a href="#%E6%A1%886reselectorselector%E3%81%A7%E8%A1%8C%E3%81%8620161215%E8%BF%BD%E5%8A%A0"><i class="fa fa-link"></i></a>案6:reselector(selector)で行う(2016/12/15追加)</h2>
+
+<p>詳しい実装に関しては有益な記事があったので追記</p>
+
+<ul>
+<li><a href="http://qiita.com/notsunohito/items/76d912c5e266670f2662" id="reference-a1f50f9e4b9adf4a4e5e">reselectを用いてReact Reduxにvalidationの仕組みを実装する 1/2</a></li>
+<li><a href="http://qiita.com/notsunohito/items/a3a8324b40bbaea4bf9a" id="reference-1069e398727627c1d072">reselectを用いてReact Reduxにvalidationの仕組みを実装する 2/2</a></li>
+</ul>
+
+<blockquote>
+<p>validationとはstateのある状態がvalidな状態なのかどうかを計算することに他なりません。</p>
+</blockquote>
+
+<p>案3や案5の場合、冗長にstateが増えてしまう所を、上記のように「validateはあくまでstateのCompouted propsである」という発想のもと扱うことで、無駄にreducerやstateを増やすことを防止出来る。</p>
+
+<p>発想としては案1のSmart Componentで行うのに近い。<br>
+Smart Componentよりもっと手前のselectorのレイヤーで行うようなイメージになるだろう。<br>
+また、案1はComponentが責務としている値でしかvalidateしづらかったのに対してstate全体の値でvalidationしやすくなることも良い部分だろうと思われる。</p>
+
+<p>ただし、注意点として、この手法を取る場合、「reducerを通してstoreに入ったデータしかvalidate出来ない」という問題がある。validでないデータをstoreにも入れたくないというケースの場合、validateのロジックを切り出して、その値をComponentとselectorがどちらからも呼べるようにするなどの工夫が必要そうだ。</p>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>一定以上複雑なことになってきたら <strong>Middleware</strong> でのやり方に移植するとかは検討しても良いかもしれない
+
+<ul>
+<li>とはいえぶっちゃけそこまで複雑なパターンも無い（または回避出来る）気もしている。</li>
+<li>複雑なvalidationは、必要以上にクライアントサイドではやらないでサーバーサイドにまかせてしまうという割り切りも必要かも</li>
+</ul>
+</li>
+<li>Smart Componentsでやるのは簡易ならよさそうだが、ごく１部にのみ使う場合かもしれない。とはいえ使いどころはありそう</li>
+<li>案2 Dumb Component, 案4 Reducerはバッドパターンな気がする</li>
+</ul>

@@ -1,0 +1,475 @@
+<p>個人的にやってみてうまくいった事中心の網羅的な小技集。</p>
+
+<p><strong>書くこと</strong></p>
+
+<ul>
+<li>React.Componentの話</li>
+<li>多分中級者ぐらい向け</li>
+<li>プロダクションコード向け</li>
+<li>目指したい所・ゴール
+
+<ul>
+<li>よりデザイナ・フレンドリーなコンポーネント</li>
+<li>よりテスタブルなコンポーネント</li>
+</ul>
+</li>
+<li>（単一のプロダクトなど狭いスコープにおける）コンポーネントの再利用性</li>
+</ul>
+
+<p><strong>[ほとんど]書かない事</strong></p>
+
+<ul>
+<li>Flux・ReduxみたいなState管理の話</li>
+<li>全体的なプロジェクト構造の話</li>
+<li>ライブラリ向けのコンポーネントの話、再利用性の話</li>
+<li>パフォーマンスの事
+
+<ul>
+<li>パフォーマンスは大事な項目ではあるが、今回はあまり重点を置かない</li>
+</ul>
+</li>
+</ul>
+
+<hr>
+
+<h1>
+<span id="stateless-functional-componentで書けるだけ書く" class="fragment"></span><a href="#stateless-functional-component%E3%81%A7%E6%9B%B8%E3%81%91%E3%82%8B%E3%81%A0%E3%81%91%E6%9B%B8%E3%81%8F"><i class="fa fa-link"></i></a><a href="https://facebook.github.io/react/docs/reusable-components.html#stateless-functions" rel="nofollow noopener" target="_blank">Stateless Functional Component</a>で書けるだけ書く</h1>
+
+<p>最新のReactでは、Componentは関数として記載することが出来る。<br>
+Stateless Functional Componentと呼ばれる。<br>
+（以下、SFCと略す）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Foo</span> <span class="o">=</span> <span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">props</span><span class="p">.</span><span class="nx">baz</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>体感で言うと、ほぼ8割ぐらいのコンポーネントはSFCで書けるなと感じた。<br>
+SFCにすることで、このあたりのメリット/デメリットがあるがある。</p>
+
+<ul>
+<li>
+<p>メリット</p>
+
+<ul>
+<li>ピュアFunctionなので可読性が高くなりやすい。
+
+<ul>
+<li>考えることが減る</li>
+</ul>
+</li>
+<li>本質的なビューレイヤーとロジックが絡むレイヤーを分離出来る
+
+<ul>
+<li>デザイナーとのやりとりで「ここいじって！」というのがすごくやりやすくなる</li>
+</ul>
+</li>
+<li>Storybookでの表示やスナップショットテストがやりやすい（スナップショットテストについては後述）</li>
+<li>将来的に高速されることが期待できる。</li>
+</ul>
+</li>
+<li>
+<p>デメリット（<code>class Component</code>を使わないと使えない物）</p>
+
+<ul>
+<li>lifecycle系のメソッド（componentDidMountなど）</li>
+<li>stateの管理</li>
+<li>Context</li>
+<li>refs</li>
+<li>サードパーティライブラリのインスタンス管理</li>
+</ul>
+</li>
+</ul>
+
+<p><code>class Component</code>を使う場合でも、下記に気を使いながら組み立てていく。</p>
+
+<ul>
+<li>全て<code>class Component</code>にねじ込む必要はない。部分的にSFCにしたらどうだろうか？</li>
+<li>親と子に分けて考えられないか？
+
+<ul>
+<li>親がstateやlifecycleを面倒見る事に集中して、子は表示に集中させたりしたら良くならないか？
+
+<ul>
+<li>結構このパターンでうまくいくことが多い</li>
+</ul>
+</li>
+<li>もっと小さくコンポーネントを切り出せないか？</li>
+</ul>
+</li>
+<li>Hihger Order Componentで記述したら簡易に解決出来ないか？
+
+<ul>
+<li>
+<a href="https://github.com/acdlite/recompose/" rel="nofollow noopener" target="_blank">recompose</a> でいい感じにならないか？</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="propsをspread展開propsして全ての値をそのまま渡すだけのコンポーネントを作る" class="fragment"></span><a href="#props%E3%82%92spread%E5%B1%95%E9%96%8Bprops%E3%81%97%E3%81%A6%E5%85%A8%E3%81%A6%E3%81%AE%E5%80%A4%E3%82%92%E3%81%9D%E3%81%AE%E3%81%BE%E3%81%BE%E6%B8%A1%E3%81%99%E3%81%A0%E3%81%91%E3%81%AE%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%82%92%E4%BD%9C%E3%82%8B"><i class="fa fa-link"></i></a>propsをspread展開(<code>{...props}</code>)して全ての値をそのまま渡すだけのコンポーネントを作る</h1>
+
+<p><a href="https://facebook.github.io/react/docs/jsx-spread.html" rel="nofollow noopener" target="_blank">公式にも載っている</a>方法</p>
+
+<p><code>{...props}</code>という記法でObjectを展開して、子のpropsを流す手法。<br>
+覚えておくとちょこちょこ使える。</p>
+
+<p>例えば下記のような場合に使えるテクニック</p>
+
+<ul>
+<li>標準のDOMにちょっとクラスだけつけときたい</li>
+<li>WrapperなコンポーネントやHigher Order Componentを利用するときに中身をそのまま渡したい</li>
+</ul>
+
+<p>Statleess Functionと組み合わせて素朴に使っていける。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">MyInput</span> <span class="o">=</span> <span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">input</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">my-input-class</span><span class="dl">"</span> <span class="p">{...</span><span class="nx">props</span><span class="p">}</span> <span class="sr">/&gt;</span><span class="err">)
+</span>
+<span class="kd">const</span> <span class="nx">SomeComponent</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">MyInput</span> <span class="nx">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span><span class="nx">foo</span><span class="p">()</span> <span class="p">}}</span> <span class="sr">/</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>restを利用して一部の値だけ加工することも可能</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">MyInput</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">someValue</span><span class="p">,</span> <span class="p">...</span><span class="nx">rest</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">cls</span> <span class="o">=</span> <span class="nx">someValue</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span> <span class="p">?</span> <span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">bar</span><span class="dl">"</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="nx">cls</span><span class="p">}</span> <span class="p">{...</span><span class="nx">props</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="propsやstateは関数内でなるべく引き回さずローカル変数に展開しておく" class="fragment"></span><a href="#props%E3%82%84state%E3%81%AF%E9%96%A2%E6%95%B0%E5%86%85%E3%81%A7%E3%81%AA%E3%82%8B%E3%81%B9%E3%81%8F%E5%BC%95%E3%81%8D%E5%9B%9E%E3%81%95%E3%81%9A%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E5%A4%89%E6%95%B0%E3%81%AB%E5%B1%95%E9%96%8B%E3%81%97%E3%81%A6%E3%81%8A%E3%81%8F"><i class="fa fa-link"></i></a>propsやstateは、関数内でなるべく引き回さず、ローカル変数に展開しておく</h1>
+
+<p>好き好みだと思うが、個人的に好きなやり方。</p>
+
+<p>propsやstateをそのまま引き回すよりも、関数の序盤でSpread構文を利用してバラしてしまったほうが見通しが良く、メンテしやすいと感じる事が多い。</p>
+
+<p>後々SFCにもしやすい。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Foo</span> <span class="o">=</span> <span class="p">({</span><span class="nx">some</span><span class="p">,</span> <span class="nx">values</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">some</span><span class="p">}</span> <span class="nx">Hello</span> <span class="p">{</span><span class="nx">values</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="kd">class</span> <span class="nx">Foo</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="kd">const</span> <span class="p">{</span><span class="nx">some</span><span class="p">,</span> <span class="nx">values</span><span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span>
+    <span class="kd">const</span> <span class="p">{</span><span class="nx">foo</span><span class="p">,</span> <span class="nx">baz</span><span class="p">,</span> <span class="nx">bar</span><span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span>
+    <span class="kd">const</span> <span class="p">{</span><span class="nx">hoge</span><span class="p">,</span> <span class="nx">fuga</span><span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">context</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">some</span><span class="p">}</span> <span class="nx">Hello</span> <span class="p">{</span><span class="nx">values</span><span class="p">}</span> <span class="p">{</span><span class="nx">foo</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>stateとpropsが同名の場合に使えなくなるという欠点は存在している。<br>
+しかしその場合は、既にちょっとコンポーネントが肥大化してるかも？ということに目を向けて切り出したほうが良いかを一回検討することにしている。</p>
+
+<p>どうしても同名のstateとpropsを扱わなければならないなら、spread構文で別名にアサインする事も出来る。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="p">{</span><span class="na">foo</span> <span class="p">:</span> <span class="nx">fooProps</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span>
+<span class="kd">const</span> <span class="p">{</span><span class="na">foo</span> <span class="p">:</span> <span class="nx">fooState</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span>
+<span class="kd">const</span> <span class="p">{</span><span class="na">foo</span> <span class="p">:</span> <span class="nx">fooContext</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">context</span>
+</pre></div></div>
+
+<h1>
+<span id="意味付け出来る単位で細かめにコンポーネントを切り分ける" class="fragment"></span><a href="#%E6%84%8F%E5%91%B3%E4%BB%98%E3%81%91%E5%87%BA%E6%9D%A5%E3%82%8B%E5%8D%98%E4%BD%8D%E3%81%A7%E7%B4%B0%E3%81%8B%E3%82%81%E3%81%AB%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%82%92%E5%88%87%E3%82%8A%E5%88%86%E3%81%91%E3%82%8B"><i class="fa fa-link"></i></a>意味付け出来る単位で細かめにコンポーネントを切り分ける</h1>
+
+<p>Reactだけでなく、slimなどのテンプレート言語全般な知識だが、なるべく意味付け出来る単位があればコンポーネントはわけてしまう方がスッキリする。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">SomeForm</span> <span class="o">=</span> <span class="p">({</span><span class="nx">name</span><span class="p">,</span> <span class="nx">onChangeName</span><span class="p">,</span> <span class="nx">mail</span><span class="p">,</span> <span class="nx">onChangeMail</span> <span class="nx">onSubmit</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="k">from</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">label</span><span class="o">&gt;</span>
+        <span class="na">Name</span><span class="p">:</span> <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">onChange</span><span class="o">=</span><span class="p">{</span><span class="nx">onChangeName</span><span class="p">}</span> <span class="nx">name</span><span class="o">=</span><span class="p">{</span><span class="nx">name</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/label</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">label</span><span class="o">&gt;</span>
+        <span class="na">Email</span><span class="p">:</span> <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">onChange</span><span class="o">=</span><span class="p">{</span><span class="nx">onChangeMail</span><span class="p">}</span> <span class="nx">name</span><span class="o">=</span><span class="p">{</span><span class="nx">mail</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/label</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">type</span><span class="o">=</span><span class="p">{</span><span class="nx">onSubmit</span><span class="p">}</span> <span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="dl">"</span><span class="s2">send</span><span class="dl">"</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/from</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>たとえばこんなコンポーネントなら、こんなわけ方を出来る</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">SomeInput</span> <span class="o">=</span> <span class="p">({</span><span class="nx">name</span><span class="p">,</span> <span class="nx">onChangeName</span><span class="p">,</span> <span class="nx">mail</span><span class="p">,</span> <span class="nx">onChangeMail</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="p">{</span><span class="cm">/* NameとEmailのinputで切り分けたり共通化しても良い。*/</span><span class="p">}</span>
+    <span class="o">&lt;</span><span class="nx">label</span><span class="o">&gt;</span>
+      <span class="na">Name</span><span class="p">:</span> <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">onChange</span><span class="o">=</span><span class="p">{</span><span class="nx">onChangeName</span><span class="p">}</span> <span class="nx">name</span><span class="o">=</span><span class="p">{</span><span class="nx">name</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/label</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">label</span><span class="o">&gt;</span>
+      <span class="na">Email</span><span class="p">:</span> <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">onChange</span><span class="o">=</span><span class="p">{</span><span class="nx">onChangeMail</span><span class="p">}</span> <span class="nx">name</span><span class="o">=</span><span class="p">{</span><span class="nx">mail</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/label</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+<span class="kd">const</span> <span class="nx">SomeSendButton</span> <span class="o">=</span> <span class="p">({</span><span class="nx">onSubmit</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">type</span><span class="o">=</span><span class="p">{</span><span class="nx">onSubmit</span><span class="p">}</span> <span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="dl">"</span><span class="s2">send</span><span class="dl">"</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">SomeForm</span> <span class="o">=</span> <span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="k">from</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">SomeInput</span> <span class="p">{...</span><span class="nx">props</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">SomeSendButton</span> <span class="p">{...</span><span class="nx">props</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/from</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p><code>{...props}</code>で不要なpropsまで渡しているのはちょっと手抜きになっているポイント。<br>
+子コンポーネントが薄い状態であればさほど問題にはならない部分ではあるが、気になるなら値を絞り込んで渡してあげること。</p>
+
+<p>Reactの場合、変数で分離するだけでコンポーネントを分離できるので、コンポーネントの分離コストが安い。<br>
+なので「意味付けが出来る」ぐらいな単位でわけてしまって良いと思う。<br>
+可読性が上がるだけでなく、後々デザインなど変わる場合にも変更する単位というのを明確に考えやすいので、捨てやすく作り直しやすい。</p>
+
+<p>ただし、要件が固まりきってない実装初期段階でやりすぎると逆にやりづらくなったりするので、ある程度固まってきたタイミングでリファクタするなどでも良いだろう。</p>
+
+<h1>
+<span id="sfc内で条件分岐で分離して結果を返すのであればそれぞれの状態を子のsfcとして切り分ける" class="fragment"></span><a href="#sfc%E5%86%85%E3%81%A7%E6%9D%A1%E4%BB%B6%E5%88%86%E5%B2%90%E3%81%A7%E5%88%86%E9%9B%A2%E3%81%97%E3%81%A6%E7%B5%90%E6%9E%9C%E3%82%92%E8%BF%94%E3%81%99%E3%81%AE%E3%81%A7%E3%81%82%E3%82%8C%E3%81%B0%E3%81%9D%E3%82%8C%E3%81%9E%E3%82%8C%E3%81%AE%E7%8A%B6%E6%85%8B%E3%82%92%E5%AD%90%E3%81%AEsfc%E3%81%A8%E3%81%97%E3%81%A6%E5%88%87%E3%82%8A%E5%88%86%E3%81%91%E3%82%8B"><i class="fa fa-link"></i></a>SFC内で条件分岐で分離して結果を返すのであれば、それぞれの状態を子のSFCとして切り分ける</h1>
+
+<p>例えばアイテムが存在しない場合に何かを出す、などの場合。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// よくやるパターン</span>
+<span class="kd">const</span> <span class="nx">SomeList</span> <span class="o">=</span> <span class="p">({</span><span class="nx">someItem</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">someItem</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">){</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="err">アイテムが存在しません</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">someItem</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>こんな感じに書きがちだが、結構あっという間に肥大化して辛くなる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// 辛くなったパターン</span>
+<span class="kd">const</span> <span class="nx">SomeList</span> <span class="o">=</span> <span class="p">({</span><span class="nx">someItem</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">someItem</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">){</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Mecha</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">Sugoi</span><span class="o">&gt;</span>
+          <span class="o">&lt;</span><span class="nx">Decoration</span><span class="o">&gt;</span>
+          <span class="err">アイテムが存在しません</span>
+          <span class="o">&lt;</span><span class="sr">/Decoration</span><span class="err">&gt;
+</span>        <span class="o">&lt;</span><span class="sr">/Sugoi</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/Mecha</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">someItem</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">fuga</span><span class="dl">"</span><span class="p">){</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="err">アイテムが</span><span class="nx">fuga</span><span class="err">です</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">Sugoi</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Mendokusai</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">Decoration</span><span class="o">&gt;</span>
+          <span class="p">{</span><span class="nx">someItem</span><span class="p">}</span>
+        <span class="o">&lt;</span><span class="sr">/Decoration</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/Mendokusai</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/Sugoi</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>自分の場合は、極力条件分岐ごとでコンポーネントを切ってしまう。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// 細かめにコンポーネント切るパターン</span>
+
+<span class="kd">const</span> <span class="nx">ItemNotFound</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="err">アイテムが存在しません</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="kd">const</span> <span class="nx">Item</span> <span class="o">=</span> <span class="p">({</span><span class="nx">someItem</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">someItem</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>
+<span class="kd">const</span> <span class="nx">SomeList</span> <span class="o">=</span> <span class="p">({</span><span class="nx">someItem</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">someItem</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">){</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">ItemNotFound</span> <span class="o">/&gt;</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">Item</span> <span class="nx">someItem</span><span class="o">=</span><span class="p">{</span><span class="nx">someItem</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>こうして置くと、下記のような利点がある</p>
+
+<ul>
+<li>条件分岐に対して、デザインするタイミングで意識することが減る</li>
+<li>Storybookなどで試しやすい</li>
+<li>肥大化に対しても対処しやすい</li>
+</ul>
+
+<h1>
+<span id="react-wayにchildrenを活用していく" class="fragment"></span><a href="#react-way%E3%81%ABchildren%E3%82%92%E6%B4%BB%E7%94%A8%E3%81%97%E3%81%A6%E3%81%84%E3%81%8F"><i class="fa fa-link"></i></a>React wayに<code>children</code>を活用していく</h1>
+
+<p>子要素にあたるようなものがstringの場合、<code>props</code>で値を渡しがちだが、独自なpropertyを使わずに<code>children</code>を利用すると、スッキリ書けて良い事が多い。</p>
+
+<p><a href="https://facebook.github.io/react/docs/multiple-components.html#children" class="autolink" rel="nofollow noopener" target="_blank">https://facebook.github.io/react/docs/multiple-components.html#children</a></p>
+
+<p>よくやリがちなパターンから見ていく。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">FooButton</span> <span class="o">=</span> <span class="p">({</span><span class="nx">label</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">button</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">label</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/button</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>Labelを表示させる分には良いが、「ラベルの中身を加工したい！」みたいなあるあるなパターンでわりとすぐ死ぬ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="p">{</span><span class="cm">/* propsでしか定義出来ない */</span><span class="p">}</span>
+<span class="o">&lt;</span><span class="nx">FooButton</span> <span class="nx">label</span><span class="o">=</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span> <span class="o">/&gt;</span>
+
+<span class="p">{</span><span class="cm">/* 色を設定したくなったりするとこんな感じになる */</span><span class="p">}</span>
+<span class="o">&lt;</span><span class="nx">FooButton</span> <span class="nx">label</span><span class="o">=</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span> <span class="nx">color</span><span class="o">=</span><span class="dl">"</span><span class="s2">red</span><span class="dl">"</span><span class="o">/&gt;</span>
+<span class="p">{</span><span class="cm">/* 拡張がどんどん増えて地獄になるパターン */</span> <span class="p">}</span>
+<span class="o">&lt;</span><span class="nx">FooButton</span> <span class="nx">label</span><span class="o">=</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span> <span class="nx">color</span><span class="o">=</span><span class="dl">"</span><span class="s2">red</span><span class="dl">"</span> <span class="nx">weight</span><span class="o">=</span><span class="dl">"</span><span class="s2">bold</span><span class="dl">"</span> <span class="nx">img</span><span class="o">=</span><span class="dl">"</span><span class="s2">dog</span><span class="dl">"</span> <span class="nx">animate</span><span class="o">=</span><span class="dl">"</span><span class="s2">false</span><span class="dl">"</span><span class="o">/&gt;</span>
+
+</pre></div></div>
+
+<p><code>children</code>を利用するパターンだと、ある程度解決させられる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">GoodButton</span> <span class="o">=</span> <span class="p">({</span><span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">button</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">children</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/button</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>要素で挟んでいた子要素が自動的に<code>children</code>に割り当てられる。「囲むことが必須」ではなく「囲むことも出来る」なので、propsとしてchildrenを指定することも出来る。</p>
+
+<p>内部要素の装飾が増えたとしても、装飾に関しては責務を追い出すことがしやすい。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="p">{</span><span class="cm">/* どっちもいける */</span><span class="p">}</span>
+<span class="o">&lt;</span><span class="nx">GoodButton</span> <span class="nx">children</span><span class="o">=</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span> <span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="nx">GoodButton</span><span class="o">&gt;</span><span class="nx">foo</span><span class="o">&lt;</span><span class="sr">/GoodLabel</span><span class="err">&gt;
+</span>
+<span class="p">{</span><span class="cm">/* 色々な装飾への依存は、別なコンポーネントに責務を移譲出来る */</span><span class="p">}</span>
+<span class="o">&lt;</span><span class="nx">GoodButton</span><span class="o">&gt;&lt;</span><span class="nx">FooDecorate</span><span class="o">&gt;</span><span class="nx">foo</span><span class="o">&lt;</span><span class="sr">/FooDecorate&gt;&lt;/</span><span class="nx">GoodLabel</span><span class="o">&gt;</span>
+</pre></div></div>
+
+<p>あわせて、PropTypesを仕掛けるなら<code>node</code>というのを仕掛けておくと、表示可能なものに限定することが出来る。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">GoodLabel</span><span class="p">.</span><span class="nx">propTypes</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">children</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">PropTypes</span><span class="p">.</span><span class="nx">node</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><code>children</code>の方がオススメではあるが、最初に例示した<code>&lt;FooButton&gt;</code>も<code>label</code>にnodeを渡すことで同様のことは再現出来る。このあたりは使い分け。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">FooButton</span> <span class="nx">label</span><span class="o">=</span><span class="p">{</span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">item</span><span class="o">&lt;</span><span class="sr">/div&gt;} /</span><span class="o">&gt;</span>
+</pre></div></div>
+
+<p>更に複雑にchildrenを扱う場合については下記に記載した。</p>
+
+<ul>
+<li><a href="http://qiita.com/inuscript/items/3afee284621bbe126332" id="reference-db251e4f23f1ace7e823">Reactで複数のChildrenを扱う場合の方法を考える</a></li>
+</ul>
+
+<h1>
+<span id="componentの実装に不安があるならcreate-react-appで素振りしてみる" class="fragment"></span><a href="#component%E3%81%AE%E5%AE%9F%E8%A3%85%E3%81%AB%E4%B8%8D%E5%AE%89%E3%81%8C%E3%81%82%E3%82%8B%E3%81%AA%E3%82%89create-react-app%E3%81%A7%E7%B4%A0%E6%8C%AF%E3%82%8A%E3%81%97%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>Componentの実装に不安があるならcreate-react-appで素振りしてみる。</h1>
+
+<p>いきなりコンポーネントをゴリゴリ作り出すと結構難しい事がある。「どうもうまくいかない（or いかなそう）」という場合は、素振りをするのが良い。<br>
+しかし、ちょっと進めてしまった場合だと、既存のプロジェクトの上でそのあたりを試していくのは結構難しい場合が多い。</p>
+
+<p>なのでまっさらな場所からスタートさせるのに、<a href="https://github.com/facebookincubator/create-react-app" rel="nofollow noopener" target="_blank">create-react-app</a>を使うのが良いだろう。<br>
+個人的に、（今のところ）ライフサイクルが長いproduction用途にcreate-react-appを使う事はちょっと懐疑的だが、プロト目的ならすごく良いボイラープレートツールだと思う。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm install -g create-react-app
+
+$ create-react-app my-prototype
+$ cd my-prototype/
+</pre></div></div>
+
+<p><code>src/App.js</code>というところがエントリになっている。ここに書いてもいいが、なんとなく頭をすっきりさせたい事多いので、中身をごっそり入れ替えて使う方が個人的には好き。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+<span class="c1">// src/SomePrototypeComponent.js に色々試すの書く</span>
+<span class="k">import</span> <span class="nx">SomePrototypeComponent</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./SomePrototypeComponent</span><span class="dl">'</span>
+
+<span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">App</span><span class="dl">"</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">SomePrototypeComponent</span> <span class="o">/&gt;</span>
+      <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">App</span><span class="p">;</span>
+</pre></div></div>
+
+<p>そしてstart</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm start
+</pre></div></div>
+
+<p><a href="https://getstorybook.io/" rel="nofollow noopener" target="_blank">storybook</a>を導入して、その上でプロトタイプしてみても良いかもしれないが、storybookはプロトタイプ目的と言うよりはスタイルガイド目的の側面<br>
+のほうが強いので、そんな素振り用途には向いてないかもしれない。</p>
+
+<h1>
+<span id="テスタブルにコンポーネントを管理する" class="fragment"></span><a href="#%E3%83%86%E3%82%B9%E3%82%BF%E3%83%96%E3%83%AB%E3%81%AB%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%82%92%E7%AE%A1%E7%90%86%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>テスタブルにコンポーネントを管理する</h1>
+
+<p>コンポーネントのテストにどのぐらい割くべきなのか？みたいなことを考えるのはなかなか難しい課題だが、個人的には「さらっとでもやっとくと良い」ぐらいな認識。</p>
+
+<p>そこの温度感にちょうどいいSnapshot Testingというのが最近にわかに出てきている。</p>
+
+<p>幾つか利用方法があるので記載する</p>
+
+<ul>
+<li>
+<a href="http://facebook.github.io/jest/" rel="nofollow noopener" target="_blank">jest</a>のスナップショットモードを利用する
+
+<ul>
+<li> <a href="http://facebook.github.io/jest/docs/tutorial-react.html#snapshot-testing" rel="nofollow noopener" target="_blank">snapshot-testing</a>の項目に詳しく記載してある</li>
+</ul>
+</li>
+<li>
+<a href="getstorybook.io">Storybook</a> + <a href="https://github.com/kadirahq/storyshots" rel="nofollow noopener" target="_blank">StoryShots</a>を利用する
+
+<ul>
+<li>スタイルガイドとして運用しつつ、テストとしても活用していける。</li>
+</ul>
+</li>
+<li>
+<a href="https://www.npmjs.com/package/react-test-renderer" rel="nofollow noopener" target="_blank">react-test-renderer</a>を直接使う
+
+<ul>
+<li>jestやstoryshotsが内部的に利用しているのはこのreact-test-renderer。facebookが提供している。（react-test-renderとか類似名のパッケージがあるので注意）</li>
+<li>諸般の事情で他のテストツールに依存できない（したくない）ならこれを利用するのも一つの手だろう。</li>
+</ul>
+</li>
+</ul>
+
+<p>個人的にはStorybook + StoryShotsをよく使っている。<br>
+テストコマンドが分散してしまうのだが、表示確認が簡易になる部分が気に入っている</p>
+
+<h1>
+<span id="proptypesとは良い距離感で付き合う" class="fragment"></span><a href="#proptypes%E3%81%A8%E3%81%AF%E8%89%AF%E3%81%84%E8%B7%9D%E9%9B%A2%E6%84%9F%E3%81%A7%E4%BB%98%E3%81%8D%E5%90%88%E3%81%86"><i class="fa fa-link"></i></a>PropTypesとは良い距離感で付き合う</h1>
+
+<p><a href="https://speakerdeck.com/koba04/the-state-of-react-dot-js-2016?slide=31" rel="nofollow noopener" target="_blank">PropTypesはオワコン</a>、flowかTypescriptを使え！という話があったりもするが、どちらもなかなか手を出すには万人に勧めづらいハードルの高さがある現状。</p>
+
+<p>今のところだいたいこんな気持ちで向き合っている</p>
+
+<ul>
+<li>そんなにガチガチに考えずに、ゆるーく使ったほうがよさそうな所は使う。
+
+<ul>
+<li>あると便利だが、こだわりすぎてもしょうがないかなという気持ち。</li>
+<li>ライブラリなどを書いてるならガチガチに書いて良いと思う。</li>
+<li>普通のプロダクション利用だと全部に書いて回るのはコスパが悪いこともある</li>
+<li>もしプロダクションで「全部書きたい」というならflowとかを入れるほうが将来性を考えると有効そう。</li>
+</ul>
+</li>
+<li>書くタイミングは、なるべく要件固まってからにする。
+
+<ul>
+<li>要件固まってないViewは、書いておいても書き直すとかになってしまいがち。</li>
+<li>要件が固まった後に書いたほうが嬉しい事が多い。</li>
+</ul>
+</li>
+<li>onXXXなどの関数ハンドラ系については積極的に書いていく </li>
+<li>書くタイミングは、なるべく要件固まってから。固まってないものは無理に書かない。
+
+<ul>
+<li>どうしても要件固まってないViewは、書いておいても書き直すとかになってしまうのでそんなに費用対効果良くないなと感じている。</li>
+<li>要件が固まった後に書いたほうが嬉しい事が多い。</li>
+</ul>
+</li>
+<li>同じPropTypesを一箇所にまとめる管理方法もあるので、必要なら使う
+
+<ul>
+<li><a href="https://github.com/ReactTraining/react-router/blob/v4/modules/PropTypes.js" rel="nofollow noopener" target="_blank">react-router@v4</a></li>
+</ul>
+</li>
+</ul>

@@ -1,0 +1,120 @@
+<p>TypeScriptをしばらく触って、「あれ、もっと型推論に頼っていいじゃん！」と今更判ってきたのでまとめる。</p>
+
+<p>今回は<a href="https://github.com/reactjs/reselect" rel="nofollow noopener" target="_blank"><code>reselect</code></a>を例に挙げる</p>
+
+<h3>
+<span id="reselectについて" class="fragment"></span><a href="#reselect%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6"><i class="fa fa-link"></i></a>reselectについて</h3>
+
+<p><code>reselect</code>において<code>createSelector</code>の型定義は下記のような具合で列挙されている</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// 本当はもうちょっと複雑だが、説明用に簡略化している</span>
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">createSelector</span><span class="o">&lt;</span><span class="nx">S</span><span class="p">,</span> <span class="nx">R1</span><span class="p">,</span> <span class="nx">R2</span><span class="p">,</span> <span class="nx">T</span><span class="o">&gt;</span><span class="p">(</span>
+  <span class="nx">selector1</span><span class="p">:</span> <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">S</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">R1</span><span class="p">,</span>
+  <span class="nx">selector2</span><span class="p">:</span> <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">S</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">R2</span><span class="p">,</span>
+  <span class="nx">combiner</span><span class="p">:</span> <span class="p">(</span><span class="nx">res</span><span class="p">:</span> <span class="nx">R1</span><span class="p">,</span> <span class="nx">res</span><span class="p">:</span> <span class="nx">R2</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">T</span><span class="p">,</span>
+<span class="p">):</span> <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">S</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">T</span>
+</pre></div></div>
+
+<p>つまり、<code>selector1</code>, <code>selector2</code>でそれぞれ計算された結果を、<code>combiner</code>でまとめて、<code>&lt;T&gt;</code>型を返す、という具合に定義されている。</p>
+
+<h3>
+<span id="型パラメータを明示する型推論しない場合" class="fragment"></span><a href="#%E5%9E%8B%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%82%92%E6%98%8E%E7%A4%BA%E3%81%99%E3%82%8B%E5%9E%8B%E6%8E%A8%E8%AB%96%E3%81%97%E3%81%AA%E3%81%84%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>型パラメータを明示する（型推論しない）場合</h3>
+
+<p><code>reslect</code>を利用するときに型パラメータを指定する場合、下記のような具合になる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">createSelector</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">reselect</span><span class="dl">"</span>
+
+<span class="kr">interface</span> <span class="nx">Item</span><span class="p">{</span>
+  <span class="nl">price</span><span class="p">:</span> <span class="nx">number</span>
+<span class="p">}</span>
+<span class="kr">interface</span> <span class="nx">State</span> <span class="p">{</span>
+  <span class="nl">items</span><span class="p">:</span> <span class="nx">Item</span><span class="p">[]</span>
+<span class="p">}</span>
+
+<span class="c1">// それぞれ</span>
+<span class="c1">// &lt;元のstateの型, 最初の関数の返り値, 最後の返り値&gt;</span>
+<span class="kd">const</span> <span class="nx">itemSumPrice</span> <span class="o">=</span> <span class="nx">createSelector</span><span class="o">&lt;</span><span class="nx">State</span><span class="p">,</span> <span class="nx">number</span><span class="p">[],</span> <span class="nx">number</span><span class="o">&gt;</span><span class="p">(</span> 
+  <span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">item</span> <span class="o">=&gt;</span> <span class="nx">item</span><span class="p">.</span><span class="nx">price</span><span class="p">),</span>
+  <span class="p">(</span><span class="nx">prices</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">prices</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span> <span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">a</span> <span class="o">+</span> <span class="nx">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">)</span>
+
+</pre></div></div>
+
+<p>これはかなり保守がしんどい。ちょっと拡張しようとして、例えば「消費税を計算して、単位もつける」となるとこんな具合になる。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kr">interface</span> <span class="nx">State</span> <span class="p">{</span>
+  <span class="nl">items</span><span class="p">:</span> <span class="nx">Item</span><span class="p">[]</span>
+  <span class="nx">tax</span><span class="p">:</span> <span class="nx">number</span>
+  <span class="nx">unit</span><span class="p">:</span> <span class="nx">string</span>
+<span class="p">}</span>
+
+<span class="c1">// &lt;Stateの型、最初の関数の返り値,二番目の関数の返り値.... 最終的な返り値&gt;</span>
+<span class="kd">const</span> <span class="nx">itemSumPrice</span> <span class="o">=</span> <span class="nx">createSelector</span><span class="o">&lt;</span><span class="nx">State</span><span class="p">,</span> <span class="nx">number</span><span class="p">[],</span> <span class="nx">string</span><span class="p">,</span> <span class="nx">number</span><span class="p">,</span><span class="nx">string</span><span class="o">&gt;</span><span class="p">(</span> 
+  <span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">item</span> <span class="o">=&gt;</span> <span class="nx">item</span><span class="p">.</span><span class="nx">price</span><span class="p">),</span>
+  <span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">unit</span><span class="p">,</span>
+  <span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">tax</span><span class="p">,</span>
+  <span class="p">(</span><span class="nx">prices</span><span class="p">,</span> <span class="nx">unit</span><span class="p">,</span> <span class="nx">tax</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s2">`</span><span class="p">${</span><span class="nx">prices</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span> <span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">a</span> <span class="o">+</span> <span class="nx">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="o">*</span> <span class="nx">tax</span><span class="p">}</span><span class="s2"> </span><span class="p">${</span><span class="nx">unit</span><span class="p">}</span><span class="s2">`</span>
+  <span class="p">}</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>型が多くなってだいぶ読み辛い。脳内スタックが追いつかない</p>
+
+<h3>
+<span id="型推論に頼る" class="fragment"></span><a href="#%E5%9E%8B%E6%8E%A8%E8%AB%96%E3%81%AB%E9%A0%BC%E3%82%8B"><i class="fa fa-link"></i></a>型推論に頼る</h3>
+
+<p>ということで、型推論に頼る。<code>createSelector</code>の型パラメータをあえて省略する。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">itemSumPrice</span> <span class="o">=</span> <span class="nx">createSelector</span><span class="p">(</span> 
+  <span class="p">(</span><span class="nx">state</span> <span class="p">:</span> <span class="nx">State</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">item</span> <span class="o">=&gt;</span> <span class="nx">item</span><span class="p">.</span><span class="nx">price</span><span class="p">),</span>
+  <span class="c1">// pricesはnumber[]型として推論されてくれる</span>
+  <span class="p">(</span><span class="nx">prices</span><span class="p">)</span> <span class="p">:</span> <span class="nx">number</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">prices</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span> <span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">a</span> <span class="o">+</span> <span class="nx">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p><code>State</code>を明示することで、その後の<code>prices</code>の型が推論される。</p>
+
+<p><code>State</code>の型をつけるのがしんどい場合は、あまり褒められ無いやり方だが、anyにしてしまって返り値を指定することである程度推論してくれる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">itemSumPrice</span> <span class="o">=</span> <span class="nx">createSelector</span><span class="p">(</span> 
+  <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="p">:</span> <span class="nx">number</span><span class="p">[]</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">item</span> <span class="o">=&gt;</span> <span class="nx">item</span><span class="p">.</span><span class="nx">price</span><span class="p">),</span>
+  <span class="c1">// pricesがnumber[]として推論されてくれる</span>
+  <span class="p">(</span><span class="nx">prices</span><span class="p">)</span> <span class="p">:</span> <span class="nx">number</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">prices</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span> <span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">a</span> <span class="o">+</span> <span class="nx">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">)</span>
+
+</pre></div></div>
+
+<p>この方法を使えば、複雑化しても見通しがそこそこ良くなる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">itemSumPrice</span> <span class="o">=</span> <span class="nx">createSelector</span><span class="p">(</span> 
+  <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">State</span><span class="p">):</span> <span class="nx">number</span><span class="p">[]</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">item</span> <span class="o">=&gt;</span> <span class="nx">item</span><span class="p">.</span><span class="nx">price</span><span class="p">),</span>
+  <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">State</span><span class="p">):</span> <span class="nx">string</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">unit</span><span class="p">,</span>
+  <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">State</span><span class="p">):</span> <span class="nx">number</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">tax</span><span class="p">,</span>
+  <span class="c1">// prices, unit, taxがそれぞれ推論される。</span>
+  <span class="p">(</span><span class="nx">prices</span><span class="p">,</span> <span class="nx">unit</span><span class="p">,</span> <span class="nx">tax</span><span class="p">):</span> <span class="nx">string</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s2">`</span><span class="p">${</span><span class="nx">prices</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span> <span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">a</span> <span class="o">+</span> <span class="nx">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="o">*</span> <span class="nx">tax</span><span class="p">}</span><span class="s2"> </span><span class="p">${</span><span class="nx">unit</span><span class="p">}</span><span class="s2">`</span>
+  <span class="p">}</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>また、下記のような矛盾するselectorを書いてもちゃんと怒ってくれる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">invalidCreator</span><span class="o">=</span> <span class="nx">createSelector</span><span class="p">(</span> 
+  <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">number</span><span class="p">):</span> <span class="nx">number</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">,</span>
+  <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">string</span><span class="p">):</span> <span class="nx">string</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">,</span>
+  <span class="p">(</span><span class="nx">item1</span><span class="p">,</span> <span class="nx">item2</span><span class="p">):</span> <span class="nx">string</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s2">`</span><span class="p">${</span><span class="nx">item1</span><span class="p">}</span><span class="s2"> </span><span class="p">${</span><span class="nx">item2</span><span class="p">}</span><span class="s2">`</span>
+  <span class="p">}</span>
+<span class="p">)</span>
+<span class="c1">// =&gt;</span>
+<span class="c1">// The type argument for type parameter 'S' cannot be // inferred from the usage. Consider specifying the type arguments explicitly.</span>
+</pre></div></div>
+
+<p><code>react-redux</code>の<code>connect</code>でも似たような感じで推論させたほうが良かったりするので、どんどん推論に頼っていきたい</p>

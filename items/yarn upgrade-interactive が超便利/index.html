@@ -1,0 +1,39 @@
+<p>rails 5.1で取り込まれそうになっていたりまた熱い動きがありそうなyarnさん。<br>
+いつの間にか入っていた<code>upgrade-interactive</code>コマンドが非常に便利だった。</p>
+
+<p><a href="https://github.com/yarnpkg/yarn/pull/1444" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/yarnpkg/yarn/pull/1444</a></p>
+
+<p>今日現在（2016/12/05）、公式ドキュメントにまだ載ってないが、便利すぎるのでみんな使ったほうが良いと思う</p>
+
+<h3>
+<span id="準備" class="fragment"></span><a href="#%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>準備</h3>
+
+<p>yarnを最新にしておく。<br>
+v0.17.0 以上であれば利用できる。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn self-update
+</pre></div></div>
+
+<h3>
+<span id="何が出来るか" class="fragment"></span><a href="#%E4%BD%95%E3%81%8C%E5%87%BA%E6%9D%A5%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>何が出来るか？</h3>
+
+<p>npm outdatedの超すごい奴という認識で良い気がする。<br>
+upgradeをinteractiveに出来る。（名前のまま）</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn upgrade-interactive
+</pre></div></div>
+
+<p>これを叩くとこんな画面が出て来る</p>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fef478d4d-1e8f-b96b-e308-ec1e8c222c0a.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=d0e526d539934da66f814b0752d6ea22" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fef478d4d-1e8f-b96b-e308-ec1e8c222c0a.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=d0e526d539934da66f814b0752d6ea22" alt="9__yarn_upgrade-interactive__node_.png" title="9__yarn_upgrade-interactive__node_.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/ef478d4d-1e8f-b96b-e308-ec1e8c222c0a.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fef478d4d-1e8f-b96b-e308-ec1e8c222c0a.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=6594287363b07280892f4313acc0d9bb 1x" loading="lazy"></a></p>
+
+<p>アップグレードが出来るパッケージが表示される。<br>
+カーソルを動かしてアップグレードしたいパッケージを選び、<kbd>Space</kbd>キーで選択する。<kbd>a</kbd>キー（all)を押すと、全選択、<kbd>i</kbd>キーを押すとフラグが反転する。</p>
+
+<p>選んだら<kbd>Enter</kbd>キーで実行</p>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fdbefa563-551b-dda1-758c-f6e1867a6323.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=ea0e2d88a80d0958c605dec394c7e3c6" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fdbefa563-551b-dda1-758c-f6e1867a6323.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=ea0e2d88a80d0958c605dec394c7e3c6" alt="7__inuscript_MacBook-Air____office_some_project__zsh_.png" title="7__inuscript_MacBook-Air____office_some_project__zsh_.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/dbefa563-551b-dda1-758c-f6e1867a6323.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fdbefa563-551b-dda1-758c-f6e1867a6323.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=a5e743fde4fe966ae819826bc909c0ca 1x" loading="lazy"></a></p>
+
+<p>これだけでアップグレード完了！</p>
+
+<p>マジで便利すぎる。yarn依存症になってしまいそう。</p>

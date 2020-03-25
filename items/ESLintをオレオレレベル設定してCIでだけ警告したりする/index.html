@@ -1,0 +1,116 @@
+
+<h1>
+<span id="eslintでciのときだけエラー警告してほしい" class="fragment"></span><a href="#eslint%E3%81%A7ci%E3%81%AE%E3%81%A8%E3%81%8D%E3%81%A0%E3%81%91%E3%82%A8%E3%83%A9%E3%83%BC%E8%AD%A6%E5%91%8A%E3%81%97%E3%81%A6%E3%81%BB%E3%81%97%E3%81%84"><i class="fa fa-link"></i></a>ESLintでCIのときだけエラー警告してほしい</h1>
+
+<h2>
+<span id="おさらいeslint-の標準的なレベル分け" class="fragment"></span><a href="#%E3%81%8A%E3%81%95%E3%82%89%E3%81%84eslint-%E3%81%AE%E6%A8%99%E6%BA%96%E7%9A%84%E3%81%AA%E3%83%AC%E3%83%99%E3%83%AB%E5%88%86%E3%81%91"><i class="fa fa-link"></i></a>おさらい：ESLint の標準的なレベル分け</h2>
+
+<p>ESLintでのレベル分けは３つ定義されている</p>
+
+<p><a href="http://eslint.org/docs/user-guide/configuring#configuring-rules" class="autolink" rel="nofollow noopener" target="_blank">http://eslint.org/docs/user-guide/configuring#configuring-rules</a></p>
+
+<ul>
+<li>
+<code>off</code>, <code>0</code> - オフ。何も警告しない</li>
+<li>
+<code>warn</code>, <code>1</code> - 警告するが、exit codeに影響を与えない（CIではコケない）</li>
+<li>
+<code>error</code>, <code>2</code> - 警告する。exit codeを1にする</li>
+</ul>
+
+<h2>
+<span id="問題いい具合のレベル感がない" class="fragment"></span><a href="#%E5%95%8F%E9%A1%8C%E3%81%84%E3%81%84%E5%85%B7%E5%90%88%E3%81%AE%E3%83%AC%E3%83%99%E3%83%AB%E6%84%9F%E3%81%8C%E3%81%AA%E3%81%84"><i class="fa fa-link"></i></a>問題：いい具合のレベル感がない</h2>
+
+<p>プロダクション環境でESLintをかけていると、<code>no-console</code>や<code>no-unused-var</code>など、「これproductionビルドまでにはエラーとして検出したいのだけど、開発中は見逃してほしい」みたいなのがたまにある。<br>
+（<code>error</code>にしてしまうとstorybookとかでエグくなって辛い等もあった）</p>
+
+<p>ESLint自体のエラーレベルは三段階のみで、CLIからwarnがあってもexit codeを1で返すようなコマンドも見つからなかった（多分このへんはレベル管理をシンプルにしているからだと推測できる）</p>
+
+<h2>
+<span id="解決法レベル分けの定数管理を利用してci判定" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA%E6%B3%95%E3%83%AC%E3%83%99%E3%83%AB%E5%88%86%E3%81%91%E3%81%AE%E5%AE%9A%E6%95%B0%E7%AE%A1%E7%90%86%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%A6ci%E5%88%A4%E5%AE%9A"><i class="fa fa-link"></i></a>解決法：レベル分けの定数管理を利用してCI判定</h2>
+
+<p>reactの<a href="https://github.com/facebook/react/blob/v15.4.1/.eslintrc.js" rel="nofollow noopener" target="_blank"><code>eslintrc.js</code></a>を見てみるとこのエラーレベルを定数定義していることがわかる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">OFF</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">WARNING</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">ERROR</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+ <span class="p">:</span>
+ <span class="nx">rules</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">'</span><span class="s1">accessor-pairs</span><span class="dl">'</span><span class="p">:</span> <span class="nx">OFF</span><span class="p">,</span>
+    <span class="dl">'</span><span class="s1">brace-style</span><span class="dl">'</span><span class="p">:</span> <span class="p">[</span><span class="nx">ERROR</span><span class="p">,</span> <span class="dl">'</span><span class="s1">1tbs</span><span class="dl">'</span><span class="p">],</span>
+ <span class="p">}</span>
+</pre></div></div>
+
+<p>なるほど。そういうのもあるのか。</p>
+
+<p>これを応用して、CIの場合だけWARNINGの挙動をエラー化させれば良い。circle-ci, travis-ciはどちらも<code>CI=true</code>という環境変数を設定しているので、これを利用する</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">ERROR</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">error</span><span class="dl">"</span>
+<span class="kd">const</span> <span class="nx">WARNING</span> <span class="o">=</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">CI</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span> <span class="p">?</span> <span class="dl">"</span><span class="s2">error</span><span class="dl">"</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">warn</span><span class="dl">"</span>
+<span class="kd">const</span> <span class="nx">OFF</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">off</span><span class="dl">"</span>
+
+</pre></div></div>
+
+<p>これでCI時のみ警告出来るようなった。</p>
+
+<ul>
+<li><a href="https://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables" class="autolink" rel="nofollow noopener" target="_blank">https://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables</a></li>
+<li><a href="https://circleci.com/docs/environment-variables/" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/environment-variables/</a></li>
+</ul>
+
+<p><code>process.env.CI</code>が使えないなら自前で変数設定してもいいんじゃないかと思う</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">ERROR</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">error</span><span class="dl">"</span>
+<span class="kd">const</span> <span class="nx">WARNING</span> <span class="o">=</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">STRICT_LINT</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span> <span class="p">?</span> <span class="dl">"</span><span class="s2">error</span><span class="dl">"</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">warn</span><span class="dl">"</span>
+<span class="kd">const</span> <span class="nx">OFF</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">off</span><span class="dl">"</span>
+
+<span class="c1">// こんな感じもアリだろう</span>
+<span class="c1">// const WARNING = (process.env.STRICT_LINT == true || process.env.CI == true) ? "error" : "warn"</span>
+
+
+
+</pre></div></div>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"lint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"STRICT_LINT=true eslint"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<h1>
+<span id="応用編意味付けでオレオレレベル設定をする" class="fragment"></span><a href="#%E5%BF%9C%E7%94%A8%E7%B7%A8%E6%84%8F%E5%91%B3%E4%BB%98%E3%81%91%E3%81%A7%E3%82%AA%E3%83%AC%E3%82%AA%E3%83%AC%E3%83%AC%E3%83%99%E3%83%AB%E8%A8%AD%E5%AE%9A%E3%82%92%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>応用編：意味付けでオレオレレベル設定をする</h1>
+
+<p>上記のレベルの定数管理を見て思いついてやってみてる案。</p>
+
+<p>ESLintはレベル分割を最低限の挙動の違いだけをシンプルに分割している。</p>
+
+<p>だが実は実務上だと「このルールなんでつけたんだっけ？」みたいなのもあって、もうちょっと意味を持たせたくなったりする。ということで色々細分化させてみたら良いんじゃないかと思いついている（逆にわかりづらくなったりするかもしれない）</p>
+
+<p>だいたいこんなイメージ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// no-evalとかコードの書き方が変わる禁止事項</span>
+<span class="kd">const</span> <span class="nx">CRITICAL</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">error</span><span class="dl">"</span>
+
+<span class="c1">// エラーなのだけどデバッグ時には無視していい警告だけする</span>
+<span class="kd">const</span> <span class="nx">ERROR</span> <span class="o">=</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">CI</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span> <span class="p">?</span> <span class="dl">"</span><span class="s2">error</span><span class="dl">"</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">warn</span><span class="dl">"</span>
+
+<span class="c1">// たまに気が向いたら直すルール（無い方が良いかも？）</span>
+<span class="kd">const</span> <span class="nx">WARNING</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">warn</span><span class="dl">"</span>
+
+<span class="c1">// OFFはそのまま</span>
+<span class="kd">const</span> <span class="nx">OFF</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">off</span><span class="dl">"</span>
+
+<span class="c1">//// ここから読み手向けなど ////</span>
+
+<span class="c1">// 「手で治すのめんどいけどfixableだったらつけとくか」的なルール。dev時は出さない</span>
+<span class="kd">const</span> <span class="nx">FIXABLE</span> <span class="o">=</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">CI</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span> <span class="p">?</span> <span class="dl">"</span><span class="s2">error</span><span class="dl">"</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">off</span><span class="dl">"</span>
+
+<span class="c1">// おためしルール。きつかったらチームで相談しようね、という宣言</span>
+<span class="kd">const</span> <span class="nx">TRIAL</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">error</span><span class="dl">"</span>
+
+<span class="c1">// 本当はつけたいけど、直すの重くて妥協しているやつ。rubocop_todo的なやつに近いイメージ</span>
+<span class="kd">const</span> <span class="nx">TODO</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">off</span><span class="dl">"</span>
+</pre></div></div>
+
+<p>FIXABLEは結構「これなんでやったんだっけ」ってなるやつが多いので、結構いいと思っている。TRIALとTODOは思いついたものの使い所が無くて今のところ運用出来てない</p>

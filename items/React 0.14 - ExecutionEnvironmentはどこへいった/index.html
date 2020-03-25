@@ -1,0 +1,15 @@
+<p>さくっとreact 0.14にあげてみたらこれがコケた</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">ExecutionEnvironment</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react/lib/ExecutionEnvironment</span><span class="dl">'</span>
+</pre></div></div>
+
+<p>そもそもテストで行っているハックっぽいことなので、ドキュメントにも載ってなさげだった。<br>
+色々探して<code>fbjs</code>に含まれるようになったことがわかった</p>
+
+<p>ということでこんなんで解決</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm i -D fbjs
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">ExecutionEnvironment</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">fbjs/lib/ExecutionEnvironment</span><span class="dl">'</span>
+</pre></div></div>

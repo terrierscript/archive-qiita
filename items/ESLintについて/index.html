@@ -1,0 +1,179 @@
+
+<h1>
+<span id="大本命eslint" class="fragment"></span><a href="#%E5%A4%A7%E6%9C%AC%E5%91%BDeslint"><i class="fa fa-link"></i></a>大本命。ESLint</h1>
+
+<p>2015年現在、JavaScriptのLinting toolといえばJSHintかJSLintみたいな風潮ありますが、もうESLintで行きましょう。</p>
+
+<ul>
+<li><a href="http://eslint.org/" rel="nofollow noopener" target="_blank">公式ページ</a></li>
+<li><a href="https://github.com/eslint/eslint" rel="nofollow noopener" target="_blank">github</a></li>
+</ul>
+
+<h3>
+<span id="大きな特徴" class="fragment"></span><a href="#%E5%A4%A7%E3%81%8D%E3%81%AA%E7%89%B9%E5%BE%B4"><i class="fa fa-link"></i></a>大きな特徴</h3>
+
+<ul>
+<li>プラガブルな実装
+
+<ul>
+<li>全てのルールのON/OFFが可能</li>
+<li>独自のルールの追加が可能</li>
+</ul>
+</li>
+<li>独自のフォーマッターでの出力が可能</li>
+<li>
+<a href="http://eslint.org/blog/2014/11/es6-jsx-support/" rel="nofollow noopener" target="_blank">ECMAScript 6 / React JSX</a>をサポート</li>
+</ul>
+
+<h2>
+<span id="philosophy" class="fragment"></span><a href="#philosophy"><i class="fa fa-link"></i></a><a href="http://eslint.org/docs/about/#philosophy" rel="nofollow noopener" target="_blank">Philosophy</a>
+</h2>
+
+<p>ESLintは下記のPhilosophyを掲げています。</p>
+
+<h4>
+<span id="全てはpluggableである" class="fragment"></span><a href="#%E5%85%A8%E3%81%A6%E3%81%AFpluggable%E3%81%A7%E3%81%82%E3%82%8B"><i class="fa fa-link"></i></a>全てはPluggableである。</h4>
+
+<ul>
+<li>Rule APIはバンドルされたものもカスタムもどっちも使える</li>
+<li>Formatterはバンドルされたものもカスタムもどっちも使える</li>
+<li>追加のルールとフォーマッターは実行時に指定できる</li>
+<li>バンドルされたルールとフォーマットを使わなくても良い</li>
+</ul>
+
+<h4>
+<span id="全てのルールは" class="fragment"></span><a href="#%E5%85%A8%E3%81%A6%E3%81%AE%E3%83%AB%E3%83%BC%E3%83%AB%E3%81%AF"><i class="fa fa-link"></i></a>全てのルールは</h4>
+
+<ul>
+<li>独立している</li>
+<li>全てのルールはoffにもonにもできる（どのルールも「オフにするには重要すぎる」とはみなさない）</li>
+<li>個別にwarningかerrorに指定することができる</li>
+<li>non-zeroな値を与えてonにできてzeroを与えてオフにできる</li>
+</ul>
+
+<h4>
+<span id="加えて" class="fragment"></span><a href="#%E5%8A%A0%E3%81%88%E3%81%A6"><i class="fa fa-link"></i></a>加えて</h4>
+
+<ul>
+<li>ルールは「アジェンダフリー」 - ESLintはどのようなコーディングスタイルをも促進させるものではない</li>
+<li>バンドルされるルールは一般化できるもの</li>
+</ul>
+
+<h4>
+<span id="プロジェクトは" class="fragment"></span><a href="#%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E3%81%AF"><i class="fa fa-link"></i></a>プロジェクトは</h4>
+
+<ul>
+<li>豊富でクリーンにドキュメンテーションする</li>
+<li>できるだけ透過に</li>
+<li>テストを重んじる。</li>
+</ul>
+
+<h2>
+<span id="使い方とか" class="fragment"></span><a href="#%E4%BD%BF%E3%81%84%E6%96%B9%E3%81%A8%E3%81%8B"><i class="fa fa-link"></i></a>使い方とか</h2>
+
+<p>ESLintの基本的な使い方についてはすでに先行の記事もあるのでそちらにお任せ。<br>
+<a href="http://qiita.com/makotot/items/822f592ff8470408be18" class="autolink" id="reference-58fbf12090dee28efcdf">http://qiita.com/makotot/items/822f592ff8470408be18</a></p>
+
+<p>個人的にはファイルごとに書くのはルールが散って気持ちがよくないので<code>.eslintrc</code>にまとめて書く方をおすすめしたいところ。</p>
+
+<h3>
+<span id="grunt--gulp" class="fragment"></span><a href="#grunt--gulp"><i class="fa fa-link"></i></a>grunt / gulp</h3>
+
+<p>grunt: <a href="https://www.npmjs.com/package/grunt-eslint" class="autolink" rel="nofollow noopener" target="_blank">https://www.npmjs.com/package/grunt-eslint</a><br>
+gulp: <a href="https://www.npmjs.com/package/gulp-eslint" class="autolink" rel="nofollow noopener" target="_blank">https://www.npmjs.com/package/gulp-eslint</a><br>
+未調査だけどそれなりに利用されているっぽい。</p>
+
+<h2>
+<span id="ルールの種類" class="fragment"></span><a href="#%E3%83%AB%E3%83%BC%E3%83%AB%E3%81%AE%E7%A8%AE%E9%A1%9E"><i class="fa fa-link"></i></a>ルールの種類</h2>
+
+<p>bundleなものでも<a href="http://eslint.org/docs/rules/" rel="nofollow noopener" target="_blank">結構な量が用意されている</a>ので一つ一つ説明をこの記事ではしきれないが、だいたい名前だけで理解できるものが多い。<br>
+（全てデフォルトでonというわけではない。後述）</p>
+
+<p>カテゴリとしては</p>
+
+<ul>
+<li>エラーになりうるもの</li>
+<li>ベストプラクティス</li>
+<li>変数について</li>
+<li>Node.js関連</li>
+<li>コーディングスタイル関連</li>
+<li>ECMAScript 6に関連</li>
+<li>JSHint / JSLint互換を保つためのLegacy Rule</li>
+</ul>
+
+<p>というふうになされている。</p>
+
+<p>それぞれしっかり名前がついているので、どのルールなのかがJSHintに比べてわかりやすいと思う。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">eshint.js</span></div>
+<div class="highlight"><pre><span class="cm">/* eslint radix:1 */</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">jshint.js</span></div>
+<div class="highlight"><pre><span class="cm">/* jshint -W065 */</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="デフォルトでonになっているルール" class="fragment"></span><a href="#%E3%83%87%E3%83%95%E3%82%A9%E3%83%AB%E3%83%88%E3%81%A7on%E3%81%AB%E3%81%AA%E3%81%A3%E3%81%A6%E3%81%84%E3%82%8B%E3%83%AB%E3%83%BC%E3%83%AB"><i class="fa fa-link"></i></a>デフォルトでonになっているルール</h3>
+
+<p><strong>「Pluggableである」</strong> とはいえそれはデフォルトで <strong>「何も設定されていない」というわけではない</strong>。ESLintのPhilosopyに従い精査されたルールがデフォルトで適応されている。このあたりはrubyの<a href="https://github.com/bbatsov/rubocop" rel="nofollow noopener" target="_blank">rubocop</a>などがイメージとして近いかもしれない。</p>
+
+<p>offになっているものに関しては<code>(off by default)</code>という記述がなされているので、どんなルールがどんな理由でoffになっているか知りたい方は各ルールのドキュメントを確認されたい。</p>
+
+<p>そうでない方はデフォルトの状態で使うで問題ないだろう。<br>
+エラーになりうるものなどは多くがデフォルトONになっているので、そのままの状態で使ってみるというスタンスでそれほど問題ないはずだ。</p>
+
+<p>JavaScriptにおいては、プロジェクトチームの利用したいスタイルだけではなく、対応ブラウザなどでも適応すべきルールが変わって来るので、そのプロダクトにあわせて適応するのがよいだろう。</p>
+
+<h2>
+<span id="jslint--jshintとの比較" class="fragment"></span><a href="#jslint--jshint%E3%81%A8%E3%81%AE%E6%AF%94%E8%BC%83"><i class="fa fa-link"></i></a><a href="https://github.com/eslint/eslint#eslint" rel="nofollow noopener" target="_blank">JSLint / JSHintとの比較</a>
+</h2>
+
+<p>公式リポジトリで、このように説明がされている。</p>
+
+<ul>
+<li>ESLintは内部のパーサーとして<a href="https://github.com/eslint/espree" rel="nofollow noopener" target="_blank">Espree</a>という<a href="https://github.com/jquery/esprima" rel="nofollow noopener" target="_blank">Esprima</a>のforkが使われている
+
+<ul>
+<li>forkの理由は<a href="http://eslint.org/blog/2014/12/espree-esprima/" rel="nofollow noopener" target="_blank">こちら</a>原文がある。<a href="http://azu.github.io/slide/crosushi/shift-ast.html" rel="nofollow noopener" target="_blank">こちらのスライド</a>にこの理由についてが要約されているが、ざっくり言えばES6/JSXのサポートをESLintに含めたいのと、Esprimaの動きが遅かった事が原因のようだ。</li>
+</ul>
+</li>
+<li>ESLintはAST（抽象構文木）評価を使っている
+
+<ul>
+<li>なのでプラガブルにルールが書きやすいのだろう。</li>
+</ul>
+</li>
+<li>plugableである（前述通り）
+
+<ul>
+<li>元々このあたりがJSHintでは実装されなそうという理由でプロジェクトがスタートしたようだ。</li>
+<li><a href="https://github.com/eslint/eslint#why-dont-you-like-jshint" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/eslint/eslint#why-dont-you-like-jshint</a></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="速度が弱点" class="fragment"></span><a href="#%E9%80%9F%E5%BA%A6%E3%81%8C%E5%BC%B1%E7%82%B9"><i class="fa fa-link"></i></a><a href="https://github.com/eslint/eslint#how-does-eslint-performance-compare-to-jshint" rel="nofollow noopener" target="_blank">速度が弱点</a>
+</h2>
+
+<p>ESLintはどうしてもASTを使う都合上、JSHintより1ファイルあたり2-3倍時間がかかってしまうとのことだ。</p>
+
+<p>とはいえ筆者がそれなりの規模のプロジェクトにESLintを試しにかけた感じでは、十分に実用に耐えうるレベルの速度感ではあった。Lintをとにかく早くさせたい！という目的にはそぐわないようだ。</p>
+
+<h2>
+<span id="es6サポート" class="fragment"></span><a href="#es6%E3%82%B5%E3%83%9D%E3%83%BC%E3%83%88"><i class="fa fa-link"></i></a>ES6サポート</h2>
+
+<p>version 0.12.0から（現在は0.14.1)一つ一つ対応の実装をしている。</p>
+
+<h1>
+<span id="終わりに" class="fragment"></span><a href="#%E7%B5%82%E3%82%8F%E3%82%8A%E3%81%AB"><i class="fa fa-link"></i></a>終わりに</h1>
+
+<p>個人的な思い出で、JSHintは昔<a href="https://github.com/jshint/jshint/issues/628" rel="nofollow noopener" target="_blank">Missing radix prameter</a>をdisableに出来ず、更にそのIssueが解決してないタイミングでクローズされたというところで見限って「これからは俺が俺を信じていくんだ！」という謎決意して数年が経ちました。<br>
+これからしばらくはESLintで良いJavaScript生活を送れそうです。</p>
+
+<p>あと哲学って大事だなと思いました。</p>

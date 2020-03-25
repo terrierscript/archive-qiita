@@ -1,0 +1,346 @@
+<p>typescript-fsaなど、TypeScriptとReduxを利用する上でサードパーティライブラリが勧められる事があったが、現状のTypeScript　2.9、3.0-rcで普通に書いてみたところ、素reduxでもVSCodeでわりとサクサク補完されるようだ。</p>
+
+<p>追記：<a href="https://qiita.com/terrierscript/items/b3f9dd95a4c7afe0b102#%E6%9C%80%E7%B5%82%E5%9E%8B">色々考えた結果最終型</a>を追加した</p>
+
+<h1>
+<span id="本題古いバージョン" class="fragment"></span><a href="#%E6%9C%AC%E9%A1%8C%E5%8F%A4%E3%81%84%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3"><i class="fa fa-link"></i></a>本題（古いバージョン）</h1>
+
+<p>とりあえず最初に考えたのはこんな感じ</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span>
+  <span class="nx">createStore</span><span class="p">,</span>
+  <span class="nx">Reducer</span><span class="p">,</span>
+  <span class="nx">Action</span><span class="p">,</span>
+  <span class="nx">combineReducers</span><span class="p">,</span>
+  <span class="nx">ActionCreatorsMapObject</span><span class="p">,</span>
+  <span class="nx">ReducersMapObject</span><span class="p">,</span>
+  <span class="nx">ActionCreator</span>
+<span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+
+<span class="c1">//// State全体の定義</span>
+<span class="k">export</span> <span class="nx">type</span> <span class="nx">AppState</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">counter</span><span class="p">:</span> <span class="nx">number</span>
+<span class="p">}</span>
+
+<span class="c1">//// ActionとActionCreatorの定義</span>
+<span class="c1">// type CounterAction = Action&lt;"INCREMENT" | "DECREMENT"&gt; でも可</span>
+<span class="nx">type</span> <span class="nx">CounterActionType</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span> <span class="o">|</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span>
+<span class="nx">type</span> <span class="nx">CounterAction</span> <span class="o">=</span> <span class="nx">Action</span><span class="o">&lt;</span><span class="nx">CounterActionType</span><span class="o">&gt;</span>
+
+<span class="c1">// これだけだるいが利用側のために二重定義してる。後述</span>
+<span class="k">export</span> <span class="kr">interface</span> <span class="nx">CounterActionCreators</span>
+  <span class="kd">extends</span> <span class="nx">ActionCreatorsMapObject</span><span class="o">&lt;</span><span class="nx">CounterAction</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="na">increment</span><span class="p">:</span> <span class="nx">ActionCreator</span><span class="o">&lt;</span><span class="nx">CounterAction</span><span class="o">&gt;</span>
+  <span class="na">decrement</span><span class="p">:</span> <span class="nx">ActionCreator</span><span class="o">&lt;</span><span class="nx">CounterAction</span><span class="o">&gt;</span>
+<span class="p">}</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">counterActions</span><span class="p">:</span> <span class="nx">CounterActionCreators</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">increment</span><span class="p">:</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span> <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="na">decrement</span><span class="p">:</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span> <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">//// Reducer。genericsらへんはちょっと怠けてる</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="na">counterReducer</span><span class="p">:</span> <span class="nx">Reducer</span><span class="o">&lt;</span><span class="nx">any</span><span class="p">,</span> <span class="nx">CounterAction</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">(</span>
+  <span class="nx">state</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="nx">action</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span><span class="p">:</span> <span class="c1">// このへんVSCode補完効いて最高の気分</span>
+      <span class="k">return</span> <span class="nx">state</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">state</span> <span class="o">-</span> <span class="mi">1</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">generateStore</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="na">reducerMap</span><span class="p">:</span> <span class="nx">ReducersMapObject</span><span class="o">&lt;</span><span class="nx">AppState</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">counter</span><span class="p">:</span> <span class="nx">counterReducer</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">createStore</span><span class="p">(</span><span class="nx">combineReducers</span><span class="p">(</span><span class="nx">reducerMap</span><span class="p">))</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>で、利用側</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="c1">// Counter sample</span>
+<span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">connect</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react-redux</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">bindActionCreators</span><span class="p">,</span> <span class="nx">Dispatch</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span>
+  <span class="nx">counterActions</span><span class="p">,</span>
+  <span class="nx">AppState</span><span class="p">,</span>
+  <span class="nx">CounterActionCreators</span>
+<span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">../store</span><span class="dl">"</span>
+
+<span class="c1">// State -&gt; Propsに変換する例。</span>
+<span class="c1">// 変換不要なら type StateProps = AppState でいいだろう</span>
+<span class="nx">type</span> <span class="nx">StateProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">cnt</span><span class="p">:</span> <span class="nx">number</span>
+<span class="p">}</span>
+<span class="c1">// 子のPropsはStatePropsとCounterActionCreatorsを持つ</span>
+<span class="nx">type</span> <span class="nx">ChildProps</span> <span class="o">=</span> <span class="nx">StateProps</span> <span class="o">&amp;</span> <span class="nx">CounterActionCreators</span>
+
+<span class="kd">class</span> <span class="nx">CounterInner</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="o">&lt;</span><span class="nx">ChildProps</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">cnt</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">increment</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">decrement</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">connectCounter</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span>
+  <span class="p">(</span><span class="na">state</span><span class="p">:</span> <span class="nx">AppState</span><span class="p">):</span> <span class="nx">StateProps</span> <span class="o">=&gt;</span> <span class="p">({</span>
+    <span class="na">cnt</span><span class="p">:</span> <span class="nx">state</span><span class="p">.</span><span class="nx">counter</span>
+  <span class="p">}),</span>
+  <span class="p">(</span><span class="na">dispatch</span><span class="p">:</span> <span class="nx">Dispatch</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">bindActionCreators</span><span class="p">(</span><span class="nx">counterActions</span><span class="p">,</span> <span class="nx">dispatch</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">Counter</span> <span class="o">=</span> <span class="nx">connectCounter</span><span class="p">(</span><span class="nx">CounterInner</span><span class="p">)</span>
+
+</pre></div></div>
+
+<p>この流れで一点だけヒジョーにイケてないのが <code>export interface CounterActionCreators extends ActionCreatorsMapObject&lt;CounterAction&gt;</code>の部分。</p>
+
+<p>ActionCreatorsとして定義されているプロパティが例えば<code>keyof typeof counterActions</code>などで<code>increment | decrement</code>など推論がとれてくれればこんなものは不要になるのだが、現状上記のようなものだと<code>string | number</code>となってしまうため、致し方なく<code>CounterActionCreators</code>を定義している。</p>
+
+<p>ここらへんもっといい方法を考えたい</p>
+
+<h3>
+<span id="解決策1-bindactioncreatorを使わない" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA%E7%AD%961-bindactioncreator%E3%82%92%E4%BD%BF%E3%82%8F%E3%81%AA%E3%81%84"><i class="fa fa-link"></i></a>解決策1: bindActionCreatorを使わない。</h3>
+
+<p>今回のイケてない部分、結局の所bindActionCreatorに頼っていることが面倒の原因と言える。</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">Dispatch</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">AppState</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">~/client/store/store</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">counterActions</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">~/client/store/counter</span><span class="dl">"</span>
+<span class="nx">type</span> <span class="nx">StateProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">cnt</span><span class="p">:</span> <span class="nx">number</span>
+<span class="p">}</span>
+<span class="nx">type</span> <span class="nx">DispatchProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">dispatch</span><span class="p">:</span> <span class="nx">Dispatch</span>
+<span class="p">}</span>
+<span class="nx">type</span> <span class="nx">ChildProps</span> <span class="o">=</span> <span class="nx">StateProps</span> <span class="o">&amp;</span> <span class="nx">DispatchProps</span>
+<span class="kd">class</span> <span class="nx">CounterInner</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="o">&lt;</span><span class="nx">ChildProps</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">dispatch</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">increment</span><span class="p">,</span> <span class="nx">decrement</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">counterActions</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">cnt</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">(</span><span class="nx">increment</span><span class="p">())</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">(</span><span class="nx">decrement</span><span class="p">())</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>多少記述量が増えたと言えるが、どう考えても型のための記述量を考えたらマシとは十分言えそうだ</p>
+
+<h3>
+<span id="解決案2-mapped-type使うボツ案" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA%E6%A1%882-mapped-type%E4%BD%BF%E3%81%86%E3%83%9C%E3%83%84%E6%A1%88"><i class="fa fa-link"></i></a>解決案2: Mapped Type使う（ボツ案）</h3>
+
+<p>ちょっとイマイチポイントは残るが、かなりマシな感じでいける。</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">increment</span> <span class="o">=</span> <span class="p">():</span> <span class="nx">CounterAction</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">decrement</span> <span class="o">=</span> <span class="p">():</span> <span class="nx">CounterAction</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">force</span> <span class="o">=</span> <span class="p">(</span><span class="na">num</span><span class="p">:</span> <span class="nx">number</span><span class="p">):</span> <span class="nx">CounterAction</span> <span class="o">=&gt;</span> <span class="p">{</span><span class="err">　</span><span class="c1">// 引数をとる例</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">FORCE</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">count</span><span class="p">:</span> <span class="nx">num</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// ここでまとめ直しが必要</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">counterActions</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">increment</span><span class="p">,</span> <span class="nx">decrement</span><span class="p">,</span> <span class="nx">force</span> <span class="p">}</span>
+</pre></div></div>
+
+<p>で、利用側はこうなる</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="c1">// typeof counterActionsをしてる。ただしこのactionが引数を正しくは認識出来ない</span>
+<span class="nx">type</span> <span class="nx">ChildProps</span> <span class="o">=</span> <span class="nx">StateProps</span> <span class="o">&amp;</span> <span class="k">typeof</span> <span class="nx">counterActions</span>
+<span class="kd">class</span> <span class="nx">CounterInner</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="o">&lt;</span><span class="nx">ChildProps</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+     <span class="c1">// 省略</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="createactionをもっと推論する" class="fragment"></span><a href="#createaction%E3%82%92%E3%82%82%E3%81%A3%E3%81%A8%E6%8E%A8%E8%AB%96%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>CreateActionをもっと推論する</h2>
+
+<p>Actionについてももう少しなんとかしたい。<br>
+例えばActionをここまで書いてしまえばpayloadまで推論出来る</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// 元</span>
+<span class="c1">// type CounterActionType = "INCREMENT" | "DECREMENT"</span>
+<span class="c1">// type CounterAction = Action&lt;CounterActionType&gt;</span>
+
+<span class="nx">type</span> <span class="nx">CounterAction</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span>
+<span class="p">}</span> <span class="o">|</span> <span class="p">{</span> 
+  <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span> 
+<span class="p">}</span> <span class="o">|</span> <span class="p">{</span>
+  <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">FORCE</span><span class="dl">"</span>
+  <span class="na">count</span><span class="p">:</span> <span class="nx">number</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="actioncreatorとの重複を避ける" class="fragment"></span><a href="#actioncreator%E3%81%A8%E3%81%AE%E9%87%8D%E8%A4%87%E3%82%92%E9%81%BF%E3%81%91%E3%82%8B"><i class="fa fa-link"></i></a>ActionCreatorとの重複を避ける</h2>
+
+<p>actionCreatorと重複するのを避けるなら下記のようにすると多少マシになる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre>
+<span class="c1">// Flux-standardなaction。typescript-fsaからほぼパクってきた</span>
+<span class="kr">interface</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="nx">ActionName</span> <span class="kd">extends</span> <span class="nx">string</span><span class="p">,</span> <span class="nx">Payload</span> <span class="o">=</span> <span class="kc">null</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="na">type</span><span class="p">:</span> <span class="nx">ActionName</span>
+  <span class="nx">payload</span><span class="p">?:</span> <span class="nx">Payload</span>
+  <span class="nx">error</span><span class="p">?:</span> <span class="nx">boolean</span>
+  <span class="nx">meta</span><span class="p">?:</span> <span class="nb">Object</span>
+<span class="p">}</span>
+
+<span class="nx">type</span> <span class="nx">CounterAction</span> <span class="o">=</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span><span class="o">&gt;</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span><span class="o">&gt;</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="dl">"</span><span class="s2">FORCE</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span> <span class="na">count</span><span class="p">:</span> <span class="nx">number</span> <span class="p">}</span><span class="o">&gt;</span>
+</pre></div></div>
+
+<p>上記の例ではpayloadを必須にしてない。必須にする場合は、combineReducerの部分を<code>ReducersMapObject&lt;AppState, any&gt;</code>などにすればなんとかなるようだ（ちょっと型がうまくあわせられなかった）</p>
+
+<h3>
+<span id="さらにひと手間mapped-typeを使い再現する" class="fragment"></span><a href="#%E3%81%95%E3%82%89%E3%81%AB%E3%81%B2%E3%81%A8%E6%89%8B%E9%96%93mapped-type%E3%82%92%E4%BD%BF%E3%81%84%E5%86%8D%E7%8F%BE%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>さらにひと手間:Mapped Typeを使い再現する</h3>
+
+<p>MappedTypeでこういう感じに落ち着く</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">Action</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+
+<span class="c1">// Actionに対して、Extraな値をMappedTypeにして追加する形で認識させたものを定義。AnyActionの改良版。</span>
+<span class="k">export</span> <span class="nx">type</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="nx">T</span> <span class="kd">extends</span> <span class="nx">string</span><span class="p">,</span> <span class="nx">Extra</span> <span class="kd">extends</span> <span class="p">{}</span> <span class="o">=</span> <span class="p">{}</span><span class="o">&gt;</span> <span class="o">=</span> 
+  <span class="nx">Action</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span> <span class="o">&amp;</span>
+  <span class="p">{</span> <span class="p">[</span><span class="nx">K</span> <span class="k">in</span> <span class="nx">keyof</span> <span class="nx">Extra</span><span class="p">]:</span> <span class="nx">Extra</span><span class="p">[</span><span class="nx">K</span><span class="p">]</span> <span class="p">}</span>
+
+<span class="nx">type</span> <span class="nx">CounterAction</span> <span class="o">=</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span><span class="o">&gt;</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span><span class="o">&gt;</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="dl">"</span><span class="s2">FORCE</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span> <span class="na">count</span><span class="p">:</span> <span class="nx">number</span> <span class="p">}</span><span class="o">&gt;</span>
+</pre></div></div>
+
+<p>これであればReducersMapObjectも受け入れてくれる。<br>
+この例ではpayloadは無くFlux Standard Action形式ではないが、TypeScriptであればFSAにこだわる理由も薄かろう</p>
+
+<p>それと<code>|</code>や<code>&amp;</code>が先頭に来ているが、これはprettierの結果なので深い意味はない。<br>
+<a href="https://github.com/prettier/prettier/issues/3986" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/prettier/prettier/issues/3986</a></p>
+
+<h3>
+<span id="actiontypeをenumにしちゃう" class="fragment"></span><a href="#actiontype%E3%82%92enum%E3%81%AB%E3%81%97%E3%81%A1%E3%82%83%E3%81%86"><i class="fa fa-link"></i></a>ActionTypeをEnumにしちゃう</h3>
+
+<p>オプショナルな話なので無くても良いが、ActionTypeをenumにしておくのも良い</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kr">enum</span> <span class="nx">ActionType</span> <span class="p">{</span>
+  <span class="nx">increment</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span><span class="p">,</span>
+  <span class="nx">decrement</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span><span class="p">,</span>
+  <span class="nx">force</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">FORCE</span><span class="dl">"</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>あとでActionTypeの名前変えたくなった！みたいなときにVSCodeにお任せ一発リファクタリングみたいなことが出来て夢がある。</p>
+
+<h1>
+<span id="最終型" class="fragment"></span><a href="#%E6%9C%80%E7%B5%82%E5%9E%8B"><i class="fa fa-link"></i></a>最終型</h1>
+
+<p>とここまで考えてたらこのぐらいスッキリさせることが出来る</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="k">export</span> <span class="nx">type</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="nx">T</span> <span class="kd">extends</span> <span class="nx">string</span><span class="p">,</span> <span class="nx">Extra</span> <span class="kd">extends</span> <span class="p">{}</span> <span class="o">=</span> <span class="p">{}</span><span class="o">&gt;</span> <span class="o">=</span> 
+  <span class="nx">Action</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span> <span class="o">&amp;</span> 
+  <span class="p">{</span> <span class="p">[</span><span class="nx">K</span> <span class="k">in</span> <span class="nx">keyof</span> <span class="nx">Extra</span><span class="p">]:</span> <span class="nx">Extra</span><span class="p">[</span><span class="nx">K</span><span class="p">]</span> <span class="p">}</span>
+
+<span class="kr">enum</span> <span class="nx">ActionType</span> <span class="p">{</span>
+  <span class="nx">increment</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span><span class="p">,</span>
+  <span class="nx">decrement</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span><span class="p">,</span>
+  <span class="nx">force</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">FORCE</span><span class="dl">"</span>
+<span class="p">}</span>
+
+<span class="nx">type</span> <span class="nx">CounterAction</span> <span class="o">=</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">increment</span><span class="o">&gt;</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">decrement</span><span class="o">&gt;</span>
+  <span class="o">|</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">force</span><span class="p">,</span> <span class="p">{</span> <span class="na">count</span><span class="p">:</span> <span class="nx">number</span> <span class="p">}</span><span class="o">&gt;</span>
+
+<span class="kd">const</span> <span class="nx">increment</span> <span class="o">=</span> <span class="p">():</span> <span class="nx">CounterAction</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="nx">ActionType</span><span class="p">.</span><span class="nx">increment</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">decrement</span> <span class="o">=</span> <span class="p">():</span> <span class="nx">CounterAction</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="nx">ActionType</span><span class="p">.</span><span class="nx">decrement</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">force</span> <span class="o">=</span> <span class="p">(</span><span class="na">num</span><span class="p">:</span> <span class="nx">number</span><span class="p">):</span> <span class="nx">CounterAction</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="na">type</span><span class="p">:</span> <span class="nx">ActionType</span><span class="p">.</span><span class="nx">force</span><span class="p">,</span>
+    <span class="na">count</span><span class="p">:</span> <span class="nx">num</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">counterActions</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">increment</span><span class="p">,</span> <span class="nx">decrement</span><span class="p">,</span> <span class="nx">force</span> <span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="na">counterReducer</span><span class="p">:</span> <span class="nx">Reducer</span><span class="o">&lt;</span><span class="nx">number</span><span class="p">,</span> <span class="nx">CounterAction</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">(</span>
+  <span class="nx">state</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="nx">action</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nx">ActionType</span><span class="p">.</span><span class="na">increment</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">state</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">case</span> <span class="nx">ActionType</span><span class="p">.</span><span class="na">decrement</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">state</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">case</span> <span class="nx">ActionType</span><span class="p">.</span><span class="na">force</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">action</span><span class="p">.</span><span class="nx">count</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre>
+<span class="nx">type</span> <span class="nx">StateProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">cnt</span><span class="p">:</span> <span class="nx">number</span>
+<span class="p">}</span>
+
+<span class="nx">type</span> <span class="nx">ChildProps</span> <span class="o">=</span> <span class="nx">StateProps</span> <span class="o">&amp;</span> <span class="k">typeof</span> <span class="nx">counterActions</span>
+<span class="kd">class</span> <span class="nx">CounterInner</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="o">&lt;</span><span class="nx">ChildProps</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">increment</span><span class="p">,</span> <span class="nx">decrement</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">cnt</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">increment</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">decrement</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">connectCounter</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span>
+  <span class="p">(</span><span class="na">state</span><span class="p">:</span> <span class="nx">AppState</span><span class="p">):</span> <span class="nx">StateProps</span> <span class="o">=&gt;</span> <span class="p">({</span>
+    <span class="na">cnt</span><span class="p">:</span> <span class="nx">state</span><span class="p">.</span><span class="nx">counter</span>
+  <span class="p">}),</span>
+  <span class="p">(</span><span class="nx">dispatch</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">bindActionCreators</span><span class="p">(</span><span class="nx">counterActions</span><span class="p">,</span> <span class="nx">dispatch</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">Counter</span> <span class="o">=</span> <span class="nx">connectCounter</span><span class="p">(</span><span class="nx">CounterInner</span><span class="p">)</span>
+</pre></div></div>
+
+<h1>
+<span id="ts-30-redux-actionのcreateactionを作る" class="fragment"></span><a href="#ts-30-redux-action%E3%81%AEcreateaction%E3%82%92%E4%BD%9C%E3%82%8B"><i class="fa fa-link"></i></a>[TS 3.0] redux-actionのcreateActionを作る。</h1>
+
+<p>↓こっちの記事に分離した。<br>
+<a href="https://qiita.com/terrierscript/items/b9687f610a96ab964ab2" class="autolink" id="reference-ee2beee996e49f50d22f">https://qiita.com/terrierscript/items/b9687f610a96ab964ab2</a></p>

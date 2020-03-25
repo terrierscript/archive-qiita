@@ -1,0 +1,73 @@
+<p>備忘録</p>
+
+<p>webpack2で下記のような警告が出る</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>WARNING in asset size limit: The following asset(s) exceed the recommended size limit (250 kB).
+This can impact web performance.
+Assets:
+  my-file.min.js (251 kB)
+
+WARNING in entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (250 kB). This can impact web performance.
+Entrypoints:
+  main (251 kB)
+      my-file.min.js
+
+
+WARNING in webpack performance recommendations:
+You can limit the size of your bundles by using import() or require.ensure to lazy load some parts of your application.
+For more info visit https://webpack.js.org/guides/code-splitting/
+</pre></div></div>
+
+<p>警告は直せるほうが良いとはいえ、デフォルト設定がかなりきつく（多分require.ensureとかSystem.importをベースに考えられている）<br>
+真正面から向き合おうとするとなかなか簡易じゃないパターンがあったり、ライブラリビルドの場合そもそも無用なものだったりするパターンがある。</p>
+
+<h1>
+<span id="解決編" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA%E7%B7%A8"><i class="fa fa-link"></i></a>解決編</h1>
+
+<p>ざっくりオフにしてしまうなら下記</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">module</span><span class="p">:</span> <span class="p">{</span>
+   <span class="c1">//...</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+   <span class="c1">//...</span>
+  <span class="p">],</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+   <span class="c1">//...</span>
+  <span class="p">},</span>
+  <span class="c1">// ...</span>
+  <span class="na">performance</span><span class="p">:</span> <span class="p">{</span> <span class="na">hints</span><span class="p">:</span> <span class="kc">false</span> <span class="p">}</span> <span class="c1">// これ</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>詳しくは下記参照</p>
+
+<p><a href="https://webpack.js.org/configuration/performance/#performance-hints" class="autolink" rel="nofollow noopener" target="_blank">https://webpack.js.org/configuration/performance/#performance-hints</a></p>
+
+<p>全部オフにせず閾値を変えるのも出来る</p>
+
+<ul>
+<li>maxEntrypointSize
+
+<ul>
+<li>entrypointサイズの警告の閾値を変更する。</li>
+<li>defaultは250kb</li>
+</ul>
+</li>
+<li>maxAssetSize
+
+<ul>
+<li>assetのファイルサイズ警告の閾値を変更する</li>
+<li>defaultは250kb</li>
+</ul>
+</li>
+<li>assetFilter
+
+<ul>
+<li>asset警告を出すファイルを決定する関数</li>
+<li>
+<code>.map</code>ファイルは無視するとか出来る</li>
+</ul>
+</li>
+</ul>

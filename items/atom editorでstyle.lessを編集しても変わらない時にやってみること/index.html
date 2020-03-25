@@ -1,0 +1,21 @@
+<p>割りと最近だとエディタ部分がShadow DOMなのでスタイルが効かないことがある模様</p>
+
+<div class="code-frame" data-lang="less">
+<div class="code-lang"><span class="bold">style.less</span></div>
+<div class="highlight"><pre>::shadow{
+  .line {
+    .trailing-whitespace{
+      background-color: #F92672;  
+      color: white;
+    }
+  }
+}
+</pre></div>
+</div>
+
+<p>こんな具合で<code>::shadow</code>でくくってやると無事色がつく</p>
+
+<h5>
+<span id="参考" class="fragment"></span><a href="#%E5%8F%82%E8%80%83"><i class="fa fa-link"></i></a>参考</h5>
+
+<p><a href="https://github.com/atom/atom/blob/master/docs/upgrading/upgrading-your-ui-theme.md" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/atom/atom/blob/master/docs/upgrading/upgrading-your-ui-theme.md</a></p>

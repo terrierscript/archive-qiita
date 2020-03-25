@@ -1,0 +1,195 @@
+<p>Vueにはmixinという機能がある。</p>
+
+<p><a href="https://vuejs.org/v2/guide/mixins.html" class="autolink" rel="nofollow noopener" target="_blank">https://vuejs.org/v2/guide/mixins.html</a></p>
+
+<p>同一の機能を複数のコンポーネントに適応させるというものだ。</p>
+
+<p>共通の機能を提供する便利なものだが、あまり楽観的に使えるものではない。</p>
+
+<p>例えばReactでも過去には存在していたが、既に廃止されている。<br>
+なぜ廃止されたかは理由を読めばmixinのどのような点が危険な点かが見えてくるだろう。</p>
+
+<ul>
+<li><a href="https://reactjs.org/blog/2016/07/13/mixins-considered-harmful.html" class="autolink" rel="nofollow noopener" target="_blank">https://reactjs.org/blog/2016/07/13/mixins-considered-harmful.html</a></li>
+<li><a href="https://medium.com/@dan_abramov/mixins-are-dead-long-live-higher-order-components-94a0d2f9e750" class="autolink" rel="nofollow noopener" target="_blank">https://medium.com/@dan_abramov/mixins-are-dead-long-live-higher-order-components-94a0d2f9e750</a></li>
+</ul>
+
+<p>ざっくりと要約するとこのへんが上げられている</p>
+
+<ul>
+<li>暗黙の依存関係を導入してしまう</li>
+<li>名前の衝突を起こす
+
+<ul>
+<li>複数のmixinがあり、それらがプロパティを上書きするために名前が衝突してしまう</li>
+</ul>
+</li>
+<li>拡張のたびに雪崩的に複雑さを引き起こす</li>
+</ul>
+
+<p>そこでVue.jsでもmixinを使わない方法を今回は記述したい</p>
+
+<h1>
+<span id="どうするか" class="fragment"></span><a href="#%E3%81%A9%E3%81%86%E3%81%99%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>どうするか？</h1>
+
+<p>Reactでは高次コンポーネントを導入することで解決している。<br>
+Vue.jsにおいては<code>&lt;slot&gt;</code>を使えばこれは多くの場合解決出来そうだ。</p>
+
+<p>（render propsによる方法もあるが、こちらは下記の記事におまかせしたい。<br>
+<a href="https://qiita.com/seya/items/abccdd7b502535844659" id="reference-a06ff746b06f6b483f8c">Vue.jsにおけるRender PropとScoped Slotsについて</a> ）</p>
+
+<p>今回は例としてマウスイベントをトラッキングする処理を考える。</p>
+
+<h2>
+<span id="まずはmixinを使った実装" class="fragment"></span><a href="#%E3%81%BE%E3%81%9A%E3%81%AFmixin%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E5%AE%9F%E8%A3%85"><i class="fa fa-link"></i></a>まずはmixinを使った実装</h2>
+
+<p>マウスイベントをとるmixinはこんな感じ。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// mouseMixin.js</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="nx">data</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">x</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="na">y</span><span class="p">:</span> <span class="mi">0</span>
+    <span class="p">};</span>
+  <span class="p">},</span>
+  <span class="na">methods</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">mousemove</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">x</span> <span class="o">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">clientX</span><span class="p">;</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">y</span> <span class="o">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">clientY</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>利用側はこんな具合になる。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- Item --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div</span> <span class="err">@</span><span class="na">mousemove=</span><span class="s">"mousemove"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div&gt;</span>Item with mixin<span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;div&gt;</span>x: {{ x }}<span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;div&gt;</span>y: {{ y }}<span class="nt">&lt;/div&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">import</span> <span class="nx">mouseMixin</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./mouseMixin</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">mixins</span><span class="p">:</span> <span class="p">[</span> <span class="nx">mouseMixin</span> <span class="p">],</span>
+<span class="p">};</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<p>呼び出しはあとは下記のような感じになる。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- Parent.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;Item</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">components</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">Item</span><span class="p">,</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<p>先のmixinの問題点として上げたとおり、<code>x</code>,<code>y</code>,<code>mousemove</code>が暗黙的になっており、定義を探すのに<code>mouseMixin</code>をたどることになる。<br>
+mixinが一つぐらいなら問題になることは少ないかもしれないが、これが増えてくると厳しくなってくるだろう。</p>
+
+<h2>
+<span id="slotにする" class="fragment"></span><a href="#slot%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>slotにする</h2>
+
+<p>まずmixinを利用する側。<br>
+<code>x</code>と<code>y</code>をもらうだけで至ってシンプル</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- Item.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;div&gt;</span>Item with scope<span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;div&gt;</span>x: {{ x }}<span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;div&gt;</span>y: {{ y }}<span class="nt">&lt;/div&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">props</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">x</span><span class="p">:</span> <span class="nb">Number</span><span class="p">,</span>
+    <span class="na">y</span><span class="p">:</span> <span class="nb">Number</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<p>次にMouseEventの処理をするMouseEvent.vueを分離したもの。<br>
+mousemoveを取得して<code>slot</code>に対して<code>x</code>と<code>y</code>を渡す。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- MouseEvent.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div</span> <span class="err">@</span><span class="na">mousemove=</span><span class="s">"mousemove"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;slot</span> <span class="na">:x=</span><span class="s">"x"</span> <span class="na">:y=</span><span class="s">"y"</span><span class="nt">&gt;&lt;/slot&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="nx">data</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">x</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="na">y</span><span class="p">:</span> <span class="mi">0</span>
+    <span class="p">};</span>
+  <span class="p">},</span>
+  <span class="na">methods</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">mousemove</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">x</span> <span class="o">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">clientX</span><span class="p">;</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">y</span> <span class="o">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">clientY</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<p>最後に組み合わせるところ。<code>&lt;MouseEvent&gt;</code>の子として<code>slot-scope</code>を定義し<code>Item</code>に渡す</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- Parent.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;MouseEvent&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">slot-scope=</span><span class="s">"{x, y}"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Item</span> <span class="na">:x=</span><span class="s">"x"</span> <span class="na">:y=</span><span class="s">"y"</span> <span class="nt">/&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;/MouseEvent&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">components</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">MouseEvent</span><span class="p">,</span>
+    <span class="nx">Item</span><span class="p">,</span>
+  <span class="p">},</span>
+<span class="p">};</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<h2>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h2>
+
+<ul>
+<li>Vueだとscopeを使ってしまう場合、記述量が増えて冗長になってしまうのは否めない。
+
+<ul>
+<li>願わくばもう少し簡易に書けると嬉しいが・・・・</li>
+<li>そしてscope-slotの使い方は覚えづらいので慣れが必要な感じ</li>
+</ul>
+</li>
+<li>とはいえ、それぞれ暗黙的な呼び出しは無くなったり、複数組み合わせても名前の衝突が起きないことは利点だろう。</li>
+<li>mixinを避けたい場合はそこそこあるので、使えるパターンだろう。</li>
+</ul>

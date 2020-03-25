@@ -1,0 +1,123 @@
+<p>今までなんとなしに色管理とかカラーパレットは</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="nv">$color-red</span> <span class="p">:</span> <span class="mh">#fe0000</span><span class="p">;</span>
+<span class="nv">$color-red-dark</span> <span class="p">:</span> <span class="mh">#ce0000</span><span class="p">;</span>
+<span class="nv">$color-blue</span> <span class="p">:</span> <span class="mh">#000ef</span><span class="p">;</span>
+<span class="nv">$color-blue-dark</span> <span class="p">:</span> <span class="mh">#000ec</span><span class="p">;</span>
+</pre></div></div>
+
+<p>てな具合で十分かなと思っていたけど最近はmapとかあるしその辺使った管理とかどうかなとか思ったらよさ気なのがあったのでまとめ。</p>
+
+<ul>
+<li><a href="http://erskinedesign.com/blog/friendlier-colour-names-sass-maps/" class="autolink" rel="nofollow noopener" target="_blank">http://erskinedesign.com/blog/friendlier-colour-names-sass-maps/</a></li>
+<li><a href="http://maketea.co.uk/2014/07/21/managing-relationships-between-colours-with-sass.html" class="autolink" rel="nofollow noopener" target="_blank">http://maketea.co.uk/2014/07/21/managing-relationships-between-colours-with-sass.html</a></li>
+</ul>
+
+<h1>
+<span id="mapを使ったいい感じのやり方" class="fragment"></span><a href="#map%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E3%81%84%E3%81%84%E6%84%9F%E3%81%98%E3%81%AE%E3%82%84%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>mapを使ったいい感じのやり方</h1>
+
+<p>まず最終的なアウトプットから。</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="c1">// パレットの定義</span>
+<span class="nv">$color-palette</span> <span class="p">:(</span> 
+  <span class="no">red</span> <span class="o">:</span> <span class="p">(</span>
+    <span class="n">base</span> <span class="o">:</span> <span class="mh">#ff0000</span><span class="o">,</span>
+    <span class="n">dark</span> <span class="o">:</span> <span class="mh">#ffcccc</span>
+  <span class="p">)</span><span class="o">,</span>
+  <span class="no">blue</span> <span class="o">:</span> <span class="p">(</span>
+    <span class="n">base</span> <span class="o">:</span> <span class="mh">#0000ff</span><span class="o">,</span>
+    <span class="n">light</span> <span class="o">:</span> <span class="mh">#00bbff</span><span class="o">,</span>
+  <span class="p">)</span>
+<span class="p">)</span> <span class="o">!</span><span class="nb">default</span><span class="p">;</span>
+
+<span class="c1">// color(色系統, トーン)</span>
+<span class="k">@function</span> <span class="nf">color</span><span class="p">(</span><span class="nv">$color</span><span class="o">,</span> <span class="nv">$tone</span><span class="p">){</span>
+  <span class="k">@return</span> <span class="nf">map-get</span><span class="p">(</span><span class="nf">map-get</span><span class="p">(</span><span class="nv">$color-palette</span><span class="o">,</span> <span class="nv">$color</span><span class="p">)</span><span class="o">,</span> <span class="nv">$tone</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>Sample usage</p>
+
+<div class="code-frame" data-lang="sass"><div class="highlight"><pre><span class="nc">.red-button</span><span class="err">{</span>
+    <span class="nl">background</span>  <span class="p">:</span> <span class="nf">color</span><span class="p">(</span><span class="no">red</span><span class="p">)</span><span class="err">;</span>
+<span class="err">}</span>
+
+<span class="nc">.dark-blue-button</span><span class="err">{</span>
+    <span class="nl">background</span>  <span class="p">:</span> <span class="nf">color</span><span class="p">(</span><span class="no">blue</span><span class="o">,</span> <span class="n">light</span><span class="p">)</span><span class="err">;</span>
+<span class="err">}</span>
+</pre></div></div>
+
+<p>関数名はまあなんでも良さげではあるけど<code>color()</code>とか<code>palette</code>とかがあるようだった。</p>
+
+<p>こうすることでこれなにが利点なのか？</p>
+
+<h3>
+<span id="利点1色ごとのセレクタ動的生成" class="fragment"></span><a href="#%E5%88%A9%E7%82%B91%E8%89%B2%E3%81%94%E3%81%A8%E3%81%AE%E3%82%BB%E3%83%AC%E3%82%AF%E3%82%BF%E5%8B%95%E7%9A%84%E7%94%9F%E6%88%90"><i class="fa fa-link"></i></a>利点1：色ごとのセレクタ動的生成</h3>
+
+<p>というとmapなので繰り返しができること。</p>
+
+<p>例えばstyleguide用に各色のサンプル出したいならこんな感じだし</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="c1">// 一覧サンプル出力</span>
+<span class="k">@each</span> <span class="nv">$name</span><span class="o">,</span> <span class="nv">$palette</span> <span class="n">in</span> <span class="nv">$color-palette</span> <span class="p">{</span>
+  <span class="k">@each</span> <span class="nv">$tone</span><span class="o">,</span> <span class="nv">$code</span> <span class="n">in</span> <span class="nv">$palette</span> <span class="p">{</span>
+    <span class="nc">.sample-color-palette-</span><span class="si">#{</span><span class="nv">$name</span><span class="si">}</span><span class="nc">-</span><span class="si">#{</span><span class="nv">$tone</span><span class="si">}</span><span class="p">{</span>
+      <span class="nl">background</span> <span class="p">:</span> <span class="nf">color</span><span class="p">(</span><span class="nv">$name</span><span class="o">,</span> <span class="nv">$tone</span><span class="p">);</span>
+      <span class="nc">.black-text</span><span class="p">{</span> <span class="nl">color</span> <span class="p">:</span> <span class="mh">#000</span> <span class="p">};</span>
+      <span class="nc">.white-text</span><span class="p">{</span> <span class="nl">color</span><span class="p">:</span> <span class="mh">#fff</span> <span class="p">};</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>ボタンを特定の色で作りたかったらこんな感じとか</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="c1">// redとblueのボタンを自動生成</span>
+<span class="k">@each</span> <span class="nv">$color</span> <span class="n">in</span> <span class="no">red</span><span class="o">,</span> <span class="no">blue</span><span class="p">{</span>
+  <span class="nc">.button-</span><span class="si">#{</span><span class="nv">$color</span><span class="si">}</span><span class="p">{</span>
+    <span class="nl">color</span><span class="p">:</span> <span class="no">white</span><span class="p">;</span>
+    <span class="nl">background</span> <span class="p">:</span> <span class="nf">color</span><span class="p">(</span><span class="nv">$color</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// 実際には色名をクラスには付けないのでこんな用途になりそう</span>
+<span class="nv">$level-map</span> <span class="p">:(</span>
+  <span class="n">error</span> <span class="o">:</span> <span class="no">red</span><span class="o">,</span>
+  <span class="n">warn</span> <span class="o">:</span> <span class="no">yellow</span><span class="o">,</span>
+  <span class="n">info</span> <span class="o">:</span> <span class="no">blue</span>
+<span class="p">);</span>
+<span class="k">@each</span> <span class="nv">$level</span><span class="o">,</span> <span class="nv">$color</span> <span class="n">in</span> <span class="nv">$level-map</span><span class="p">{</span>
+  <span class="nc">.log-</span><span class="si">#{</span><span class="nv">$color</span><span class="si">}</span><span class="p">{</span>
+    <span class="nl">color</span><span class="p">:</span> <span class="no">white</span><span class="p">;</span>
+    <span class="nl">background</span> <span class="p">:</span> <span class="nf">color</span><span class="p">(</span><span class="nv">$color</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="利点2色生成の隠蔽" class="fragment"></span><a href="#%E5%88%A9%E7%82%B92%E8%89%B2%E7%94%9F%E6%88%90%E3%81%AE%E9%9A%A0%E8%94%BD"><i class="fa fa-link"></i></a>利点2:色生成の隠蔽</h3>
+
+<p>今回paletteはmapで管理したけども、将来リファクタで整理されて、<code>lighter</code>などの色関数を使えばよくね？みたいなことになった時に影響少なめで変更できそう（と思ったけどあんまりこれが活きるパターンはないな・・・）</p>
+
+<h2>
+<span id="欄外なんでこんなことを思ったのか" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96%E3%81%AA%E3%82%93%E3%81%A7%E3%81%93%E3%82%93%E3%81%AA%E3%81%93%E3%81%A8%E3%82%92%E6%80%9D%E3%81%A3%E3%81%9F%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>欄外：なんでこんなことを思ったのか</h2>
+
+<p>そもそも実は</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="nv">$color-map</span> <span class="p">:</span> <span class="p">(</span>
+    <span class="no">red</span> <span class="o">:</span> <span class="mh">#ff0000</span><span class="o">,</span>
+    <span class="no">blue</span> <span class="o">:</span> <span class="mh">#0000ff</span>
+<span class="p">);</span>
+<span class="k">@each</span> <span class="nv">$color</span><span class="o">,</span> <span class="nv">$code</span> <span class="n">in</span> <span class="nv">$color-map</span><span class="p">{</span>
+    <span class="err">$</span><span class="nt">color-</span><span class="si">#{</span><span class="nv">$color</span><span class="si">}</span> <span class="nd">:</span> <span class="si">#{</span><span class="nv">$code</span><span class="si">}</span>
+    <span class="nc">.sample-</span><span class="si">#{</span><span class="nv">$color</span><span class="si">}</span> <span class="nd">:</span><span class="p">{</span>
+        <span class="nl">background</span> <span class="p">:</span> <span class="nv">$color-</span><span class="si">#{</span><span class="nv">$color</span><span class="si">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>のように動的にvariableを展開するようなのとかできないのかなーと思って調べていたら似たようなことをして詰まっている人を見つけた</p>
+
+<p><a href="https://github.com/sass/sass/issues/1450" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/sass/sass/issues/1450</a></p>
+
+<p>このissueでも上記のようなやり方が紹介されていて、提唱者は問題なかったといっている。めでたしめでたし。</p>

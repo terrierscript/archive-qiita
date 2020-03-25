@@ -1,0 +1,175 @@
+<p>2018/03/20追記<br>
+この資料はbabel-preset-envに<code>useBuiltIns: usage</code>などが入るより前の資料になります。詳しくは最新版のbabel-preset-envをご確認ください<br>
+<a href="https://github.com/babel/babel/tree/master/packages/babel-preset-env#usebuiltins" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/babel/babel/tree/master/packages/babel-preset-env#usebuiltins</a></p>
+
+<hr>
+
+<hr>
+
+<p>2016/11/30追記: <strong>更に詳細に調べた続編を書きました <br>
+=&gt; <a href="http://qiita.com/inuscript/items/1993b6b18a76fcb70dc4" id="reference-bbcf1813f6bb971c8a55">babel-polyfill / babel-runtime の代わりにcore-jsを直接使うのはアリかナシか</a></strong></p>
+
+<hr>
+
+<hr>
+
+<p>babelの変換において、古いブラウザでもある程度動かすようにしてくれるための<a href="https://babeljs.io/docs/usage/polyfill/" rel="nofollow noopener" target="_blank">babel-polyfill</a>。</p>
+
+<p>しかし、調べてみると<a href="http://babeljs.io/docs/plugins/transform-runtime/" rel="nofollow noopener" target="_blank">babel-plugin-transform-runtime</a>というのもあった。<br>
+あまりドキュメントも充実しておらず何が違うのかわからなかったのでざっくり調べた。</p>
+
+<h1>
+<span id="babel-plugin-transform-runtime" class="fragment"></span><a href="#babel-plugin-transform-runtime"><i class="fa fa-link"></i></a>babel-plugin-transform-runtime</h1>
+
+<p>polyfill対象に該当するコードだけが未対応なブラウザでも動くように変換される。</p>
+
+<p>例えば下記のような変換がなされる</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">before.js</span></div>
+<div class="highlight"><pre><span class="nb">Object</span><span class="p">.</span><span class="nx">entries</span><span class="p">({</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span><span class="p">})</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">after.js</span></div>
+<div class="highlight"><pre><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">_entries2</span><span class="p">.</span><span class="k">default</span><span class="p">)({</span>
+    <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+
+<ul>
+<li>利点
+
+<ul>
+<li>必要な変換のみをするので、対象になるコードが少なければ、ファイルサイズは小さくすむ
+
+<ul>
+<li>変換する部分が多すぎると、肥大化する可能性がある（はず）</li>
+</ul>
+</li>
+<li>global展開せず、それぞれの場所で閉じて処理されるので、複数エントリファイルから呼び出していても問題無い</li>
+<li>global汚染をしない</li>
+</ul>
+</li>
+<li>欠点
+
+<ul>
+<li>最新ブラウザでも関係無くpolyfillを噛ませたコードになるので、場合によっては実行速度が遅くなる場合がある（はず）</li>
+<li>
+<a href="http://babeljs.io/docs/plugins/transform-runtime/" rel="nofollow noopener" target="_blank">ドキュメント</a>が不親切</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="babel-polyfill" class="fragment"></span><a href="#babel-polyfill"><i class="fa fa-link"></i></a>babel-polyfill</h1>
+
+<p><del>単なるlibraryとして、下記のように読み込んで利用する</del><br>
+polyfillライブラリとして、通常のコードベースとは別途読み込む（2016/11/30追記：babe-importの読み込みと、コードベースを同時に行う事は推奨されない方法でした。誤解を生む書き方だったので、サンプルコードと説明を訂正しました）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="dl">"</span><span class="s2">babel-polyfill</span><span class="dl">"</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nb">Object</span><span class="p">.</span><span class="nx">entries</span><span class="p">({</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span><span class="p">})</span>
+</pre></div></div>
+
+<p>これで、core.jsをベースとしたpolyfillが使う・使わないにかかわらず全て読み込まれる。</p>
+
+<ul>
+<li>利点
+
+<ul>
+<li>polyfillナシで対応がされている最新ブラウザにおいて、ブラウザネイティブが即時に利用されるので、動作が比較的早くなる（はず）</li>
+<li>polyfillの対象になるコードを大量に含むような場合は、ファイルサイズが<code>transform-runtime</code>よりも縮む（はず）</li>
+<li>
+<a href="http://babeljs.io/docs/usage/polyfill/" rel="nofollow noopener" target="_blank">ドキュメント</a>がそれなりにある</li>
+</ul>
+</li>
+<li>欠点
+
+<ul>
+<li>ファイルサイズが大きくなる
+
+<ul>
+<li>
+<a href="https://github.com/zloirock/core-js/blob/master/client/core.min.js" rel="nofollow noopener" target="_blank">core.min.js</a> を見ると77KB程度？</li>
+</ul>
+</li>
+<li>複数のファイルから読み込むような環境だとエラーになる（後述）
+
+<ul>
+<li>＝ entryファイルが一つだけになる場合でないと扱いづらい</li>
+</ul>
+</li>
+<li>polyfillの宿命だが、global汚染が発生する</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="問題点複数のファイルから読み込むような環境だとエラーになる" class="fragment"></span><a href="#%E5%95%8F%E9%A1%8C%E7%82%B9%E8%A4%87%E6%95%B0%E3%81%AE%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%8B%E3%82%89%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%82%80%E3%82%88%E3%81%86%E3%81%AA%E7%92%B0%E5%A2%83%E3%81%A0%E3%81%A8%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AB%E3%81%AA%E3%82%8B"><i class="fa fa-link"></i></a>問題点：複数のファイルから読み込むような環境だとエラーになる</h3>
+
+<p>たとえば<code>script1.js</code>、<code>script2.js</code>の２つでそれぞれbabel-polyfillを読んでいるとする</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- どっちも import "babel-polyfill" しているとすると・・・ --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"./script1.js"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"./script2.js"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<p>こんなエラーが出る。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Uncaught Error: only one instance of babel-polyfill is allowed
+</pre></div></div>
+
+<h2>
+<span id="どう使い分ければ" class="fragment"></span><a href="#%E3%81%A9%E3%81%86%E4%BD%BF%E3%81%84%E5%88%86%E3%81%91%E3%82%8C%E3%81%B0"><i class="fa fa-link"></i></a>どう使い分ければ？</h2>
+
+<p>ざっくりこんな分けでいいと思われる</p>
+
+<ul>
+<li>複数のエントリポイントが存在するなら
+
+<ul>
+<li>babel-plugin-transform-runtime</li>
+</ul>
+</li>
+<li>SPAみたいな環境が用意できるなら
+
+<ul>
+<li>babel-polyfill</li>
+</ul>
+</li>
+</ul>
+
+<p>もうちょっと別な要因も気にするなら、こんな観点もありうる</p>
+
+<ul>
+<li>polyfill利用がすごく少ない場合なら
+
+<ul>
+<li>babel-plugin-transform-runtime</li>
+</ul>
+</li>
+<li>polyfillを利用している箇所がすごく多いなら
+
+<ul>
+<li>babel-polyfill or core.jsを直接読み込んで利用する</li>
+</ul>
+</li>
+<li>コードの実行対象が、だいたい最新ブラウザなら
+
+<ul>
+<li>babel-polyfill</li>
+</ul>
+</li>
+<li>コードの実行対象が、だいたいレガシーブラウザなら
+
+<ul>
+<li>babel-plugin-transform-runtime</li>
+</ul>
+</li>
+</ul>

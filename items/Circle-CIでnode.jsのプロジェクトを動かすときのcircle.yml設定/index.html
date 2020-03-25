@@ -1,0 +1,20 @@
+<p>忘れがちなのでメモ。</p>
+
+<p>nodeバージョンは適宜最新バージョンにあわせる</p>
+
+<div class="code-frame" data-lang="yaml">
+<div class="code-lang"><span class="bold">circle.yml</span></div>
+<div class="highlight"><pre><span class="na">machine</span><span class="pi">:</span>
+  <span class="na">node</span><span class="pi">:</span>
+    <span class="na">version</span><span class="pi">:</span> <span class="s">6.3.0</span> 
+  <span class="na">post</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">npm install -g npm@3</span>
+  <span class="na">timezone</span><span class="pi">:</span> <span class="s">Asia/Tokyo</span>
+</pre></div>
+</div>
+
+<ul>
+<li>nodeのバージョンのデフォルトが<code>0.10.33</code>とすごい古いのでバージョンを上げておく（ほんとこれなんとかしてほしい）</li>
+<li>npmもあわせて2系になっているので、3系に上げる</li>
+<li>timezoneは好みによるが、時間絡んだテストしてたりすると変な落ち方したりするのでやっといて損はないかも</li>
+</ul>

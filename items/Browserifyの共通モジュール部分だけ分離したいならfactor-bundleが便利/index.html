@@ -1,0 +1,189 @@
+<p>Brwoserifyを使うにあたって、普通にbuildしていると１ファイル１ファイルがモリモリ肥大化してしまう。であれば共通部分の切り出しだ！<br>
+というところで<a href="https://github.com/substack/factor-bundle" rel="nofollow noopener" target="_blank">factor-bundle</a>というのがあるのだけど日本語記事とか無いのでサンプルを記載しつつまとめたい。</p>
+
+<h1>
+<span id="factor-bundleとは" class="fragment"></span><a href="#factor-bundle%E3%81%A8%E3%81%AF"><i class="fa fa-link"></i></a>factor-bundleとは？</h1>
+
+<p>browserifyの対象ファイルを解析して <strong>共通部分になるmoduleだけを自動的に切り出してくれる</strong> pluginである。</p>
+
+<p>立ち位置としてはbrowserifyのpluginである。<br>
+また、browserify作者であるsubstack氏によるプロジェクトであるので、挙動してそんなに不安を感じる必要もないだろう。<br>
+コードも実質index.js一つなのでそう複雑なことをやっているわけでもない。</p>
+
+<h2>
+<span id="使い方" class="fragment"></span><a href="#%E4%BD%BF%E3%81%84%E6%96%B9"><i class="fa fa-link"></i></a>使い方</h2>
+
+<p>公式にはコマンドラインを利用したこんなサンプルが添えられている</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>browserify x.js y.js -p [ factor-bundle -o bundle/x.js -o bundle/y.js ] \
+  -o bundle/common.js
+</pre></div></div>
+
+<p>x、yというファイルをentryにして、それ以外がcommonに流れていく。<br>
+どれが共通になるのかは自動決定される。</p>
+
+<h1>
+<span id="gulpによるサンプル" class="fragment"></span><a href="#gulp%E3%81%AB%E3%82%88%E3%82%8B%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB"><i class="fa fa-link"></i></a>gulpによるサンプル</h1>
+
+<p>私感だが、分割したい要件って中規模ぐらいなはずで、gulpの一つぐらい必要になりそうだなーと思った。<br>
+が、gulp使ったサンプルがなかったので作ってみる。<br>
+コマンドラインでの詳しい使い方は本家READMEなどを参照されたい。</p>
+
+<h2>
+<span id="npm-install" class="fragment"></span><a href="#npm-install"><i class="fa fa-link"></i></a>npm install</h2>
+
+<p>必要なパッケージをどしどしと入れる。<br>
+二行目のものたちは、今回に必須というわけでもないけどあると便利系なのであとはお好みで。</p>
+
+<div class="code-frame" data-lang="sh"><div class="highlight"><pre><span class="nv">$ </span>npm i <span class="nt">-D</span> gulp browserify babelify factor-bundle vinyl-source-stream
+<span class="nv">$ </span>npm i <span class="nt">-D</span> mkdirp glob del
+</pre></div></div>
+
+<h2>
+<span id="ディレクトリ構成" class="fragment"></span><a href="#%E3%83%87%E3%82%A3%E3%83%AC%E3%82%AF%E3%83%88%E3%83%AA%E6%A7%8B%E6%88%90"><i class="fa fa-link"></i></a>ディレクトリ構成</h2>
+
+<p>だいたいこんな感じ。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>.
+├── output
+│   ├── client
+│   └── entry
+├── src
+│   ├── entry
+│   └── lib
+└── vendor
+</pre></div></div>
+
+<h2>
+<span id="gulpfile" class="fragment"></span><a href="#gulpfile"><i class="fa fa-link"></i></a>gulpfile</h2>
+
+<p>要点を小うるさく注釈していく。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">gulpfile.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">gulp</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">gulp</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">path</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">browserify</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">browserify</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">babelify</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">babelify</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">source</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">vinyl-source-stream</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">glob</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">glob</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">del</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">del</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">mkdirp</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">mkdirp</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">factor</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">factor-bundle</span><span class="dl">'</span><span class="p">)</span>
+
+<span class="kd">var</span> <span class="nx">dest</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">./output/</span><span class="dl">'</span>
+
+<span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">clean</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">del</span><span class="p">(</span><span class="nx">dest</span><span class="p">)</span>
+<span class="p">})</span>
+
+<span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">browserify</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// entry対象が結構あるような状態を想定</span>
+  <span class="kd">var</span> <span class="nx">entries</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">./src/entry/**/*</span><span class="dl">"</span>
+
+  <span class="c1">// 出力先をこのあたりに・・・</span>
+  <span class="kd">var</span> <span class="nx">outputDir</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">./output/entry</span><span class="dl">"</span>
+
+  <span class="c1">// factor-bundleの出力先を決める。</span>
+  <span class="c1">// ちゃんとディレクトリ出力先を変更しておかないと元ファイル書き換えられちゃうので注意！</span>
+  <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">glob</span><span class="p">.</span><span class="nx">sync</span><span class="p">(</span><span class="nx">entries</span><span class="p">,</span> <span class="p">{</span><span class="na">nodir</span><span class="p">:</span> <span class="kc">true</span><span class="p">})</span>
+  <span class="kd">var</span> <span class="nx">outputs</span> <span class="o">=</span> <span class="nx">files</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">file</span><span class="p">){</span>
+    <span class="k">return</span> <span class="nx">file</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="dl">"</span><span class="s2">./src/entry</span><span class="dl">"</span><span class="p">,</span> <span class="nx">outputDir</span><span class="p">)</span>
+  <span class="p">})</span>
+
+  <span class="c1">// factor-bundleの出力先のディレクトリが無かったりすると面倒見てくれないので作っとく。</span>
+  <span class="nx">mkdirp</span><span class="p">.</span><span class="nx">sync</span><span class="p">(</span><span class="nx">outputDir</span><span class="p">)</span>
+
+  <span class="c1">// browserify部分開始</span>
+  <span class="nx">browserify</span><span class="p">({</span>
+    <span class="na">entries</span><span class="p">:</span> <span class="nx">files</span><span class="p">,</span>
+    <span class="na">extensions</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">js</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">jsx</span><span class="dl">'</span><span class="p">],</span>
+  <span class="p">})</span>
+  <span class="c1">// transformしたいならこんな具合。最近鉄板なのでbabelっとく。</span>
+  <span class="c1">// babelのtransformに際して、何らかの理由でnpm入りしないなーみたいなのがあれば対象外にしておく。</span>
+  <span class="c1">// ignoreオプションではなくonlyオプションを使うのもよい</span>
+  <span class="p">.</span><span class="nx">transform</span><span class="p">(</span><span class="nx">babelify</span><span class="p">.</span><span class="nx">configure</span><span class="p">({</span>
+    <span class="na">ignore</span><span class="p">:</span> <span class="sr">/vendor/</span>
+  <span class="p">}))</span>
+  <span class="c1">// factor-bundleの登場。先ほど用意したoutputを追加</span>
+  <span class="p">.</span><span class="nx">plugin</span><span class="p">(</span><span class="nx">factor</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">output</span><span class="p">:</span> <span class="nx">outputs</span>
+  <span class="p">})</span>
+  <span class="c1">// 共通部分を出力してやる。</span>
+  <span class="p">.</span><span class="nx">bundle</span><span class="p">()</span>
+  <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">source</span><span class="p">(</span><span class="dl">"</span><span class="s2">common.js</span><span class="dl">"</span><span class="p">))</span> 
+  <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">gulp</span><span class="p">.</span><span class="nx">dest</span><span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">dest</span><span class="p">,</span> <span class="dl">"</span><span class="s2">client</span><span class="dl">"</span><span class="p">)))</span>
+<span class="p">})</span>
+
+<span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">watch</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">gulp</span><span class="p">.</span><span class="nx">watch</span><span class="p">(</span><span class="dl">'</span><span class="s1">src/**/*</span><span class="dl">'</span><span class="p">,</span> <span class="p">[</span><span class="dl">'</span><span class="s1">browserify</span><span class="dl">'</span><span class="p">])</span>
+<span class="p">})</span>
+
+<span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">default</span><span class="dl">'</span><span class="p">,</span> <span class="p">[</span><span class="dl">'</span><span class="s1">browserify</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">watch</span><span class="dl">'</span><span class="p">])</span>
+
+</pre></div>
+</div>
+
+<p>これで<code>output</code>には<code>src/entry</code>にあったファイルが変換されたものと、<code>common.js</code>が出力される。</p>
+
+<p>あとはこんな感じで呼び出せば完成</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"./output/client/common.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"./output/entry/foo.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+</pre></div></div>
+
+<h1>
+<span id="感想とか" class="fragment"></span><a href="#%E6%84%9F%E6%83%B3%E3%81%A8%E3%81%8B"><i class="fa fa-link"></i></a>感想とか</h1>
+
+<ul>
+<li>共通部分を作りたい要件あるならこのpluginはおすすめ。
+
+<ul>
+<li>requireとかexternal駆使してやるの、最初やってみたけど割りと辛かった。</li>
+<li>「このプロジェクトはjqueryぐらいしか共通部分無い」とかだったらrequireとexternalぐらいでも十分だろうとは思う</li>
+<li>が、たとえば「コアライブラリ」「お手製lib部分」「お手製entry部分」ぐらいな粒度で分割しだすとちょっともう辛い。factor-bundle使う方が圧倒的に良い。</li>
+<li>逆に大規模開発になってきて更新の度に本番環境への負荷がヤバイ、とかなったら再検討してもよいだろうと思う。
+
+<ul>
+<li>common部分が作りによってゴリゴリ変わっちゃうので、キャッシュの仕組みによってはcommon部分がキャッシュ効かない〜というのはありそう。</li>
+<li>あんまり考えたくない。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>ちなみにpartition-bundleというのも紹介されていたけどよくわかんなかった。</li>
+</ul>
+
+<h2>
+<span id="参考文献" class="fragment"></span><a href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><i class="fa fa-link"></i></a>参考文献</h2>
+
+<ul>
+<li>
+<a href="https://github.com/substack/factor-bundle" rel="nofollow noopener" target="_blank">factor-bundle</a>
+
+<ul>
+<li>プラグインのページ</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/substack/browserify-handbook" rel="nofollow noopener" target="_blank">Browserify Handbook</a>
+
+<ul>
+<li>partitioningという章がある。（が、あまり詳しく書いている感じではない）</li>
+</ul>
+</li>
+<li>
+<a href="https://gist.github.com/substack/68f8d502be42d5cd4942" rel="nofollow noopener" target="_blank">browserify for wbpack users</a>
+
+<ul>
+<li>browserify作者によるwebpack -&gt; browserifyの移行ガイド</li>
+</ul>
+</li>
+<li>
+<a href="http://stackoverflow.com/questions/23748841/create-separate-javascript-bundles-with-a-shared-common-library-using-browserify" rel="nofollow noopener" target="_blank">Create separate JavaScript bundles with a shared common library using Browserify and Gulp</a>
+
+<ul>
+<li>概ねここのサンプルを元にした。</li>
+</ul>
+</li>
+</ul>

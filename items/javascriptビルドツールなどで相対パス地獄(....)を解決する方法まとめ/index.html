@@ -1,0 +1,217 @@
+<p><code>require</code>、<code>import</code>などのモジュール解決において、相対パスを解決しようとすると../../../と大量に出てしまう問題。<br>
+relative paths hellと呼ばれたりもするらしい。</p>
+
+<ul>
+<li><a href="https://gist.github.com/branneman/8048520" rel="nofollow noopener" target="_blank">Better local require() paths for Node.js
+</a></li>
+<li><a href="https://github.com/substack/browserify-handbook#avoiding-" rel="nofollow noopener" target="_blank">browserify-handbook avoiding ../../../../../../..</a></li>
+</ul>
+
+<p>基本<code>require</code>の挙動としてはNode.jsのmodulesと同じ挙動を原則としたかったりわりと小めんどくさかったので結構今までガマンしておとなしく../../と書いたりしていた（モジュール小分けにしてあんまりこの問題に当たらないようにしていたというのもある）</p>
+
+<p>しかし「<code>import</code>構文だと実はそもそもの原則違うのでは？<sup id="fnref1"><a href="#fn1" rel="footnote" title="importの実際の解決方法に関しては正直知識が薄いので不安感強め">1</a></sup>」とか「frontend向けに組んでいる時にそこ厳密にすることでもないのでは？」とか「趣味レベル越えたコードだとモジュール小分けとかも出来ないのでは？」とか思い各buildツールで相対パス地獄をどうすると出来るのかみたいなのを調べた。</p>
+
+<h1>
+<span id="前提など" class="fragment"></span><a href="#%E5%89%8D%E6%8F%90%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>前提など</h1>
+
+<p>こんな感じのプロジェクトを想定</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>.
+└── src
+    ├── foo
+    │   └── baz.js
+    └── index.js
+</pre></div></div>
+
+<p>そして<code>index.js</code>にて</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">baz</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">foo/baz</span><span class="dl">"</span>
+</pre></div></div>
+
+<p>で解決できるような世界を考える。<br>
+import / exportを利用する前提として、必要があればbabelを使う</p>
+
+<h2>
+<span id="基本" class="fragment"></span><a href="#%E5%9F%BA%E6%9C%AC"><i class="fa fa-link"></i></a>基本</h2>
+
+<h3>
+<span id="nodejsのmodulesではどうか" class="fragment"></span><a href="#nodejs%E3%81%AEmodules%E3%81%A7%E3%81%AF%E3%81%A9%E3%81%86%E3%81%8B"><i class="fa fa-link"></i></a>node.jsのModulesではどうか？</h3>
+
+<p><code>require</code>での話。結構複雑だが、概ねこんな感じ</p>
+
+<ul>
+<li>
+<code>./node_modules</code>を解決する
+
+<ul>
+<li>ローカルもグローバルも見る</li>
+</ul>
+</li>
+<li>
+<code>$NODE_PATH</code>の環境変数に指定されたパスも解決する</li>
+</ul>
+
+<p>詳細はドキュメントを<br>
+<a href="https://nodejs.org/api/modules.html" class="autolink" rel="nofollow noopener" target="_blank">https://nodejs.org/api/modules.html</a></p>
+
+<h3>
+<span id="参考-browserify-handbookで紹介されている解決法" class="fragment"></span><a href="#%E5%8F%82%E8%80%83-browserify-handbook%E3%81%A7%E7%B4%B9%E4%BB%8B%E3%81%95%E3%82%8C%E3%81%A6%E3%81%84%E3%82%8B%E8%A7%A3%E6%B1%BA%E6%B3%95"><i class="fa fa-link"></i></a>(参考) <a href="https://github.com/substack/browserify-handbook#avoiding-" rel="nofollow noopener" target="_blank">browserify handbook</a>で紹介されている解決法</h3>
+
+<p>node.jsの世界に近めの解決法が紹介されている。とはいえあんまり頻繁に更新されてるものでもないので情報古めかも。</p>
+
+<ul>
+<li>symlinkを<code>node_modules</code>下に貼る</li>
+<li>そもそも<code>node_modules</code>の下に自前のモジュールを作る</li>
+<li>
+<code>$NODE_PATH</code>を使ってカスタムパスを使う（後述）</li>
+</ul>
+
+<h2>
+<span id="build-system編" class="fragment"></span><a href="#build-system%E7%B7%A8"><i class="fa fa-link"></i></a>Build System編</h2>
+
+<h3>
+<span id="webpack" class="fragment"></span><a href="#webpack"><i class="fa fa-link"></i></a>webpack</h3>
+
+<p>webapckはなんでも出来てしまうので、普通に出来る。<br>
+loaderの<code>include</code>設定を利用する</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="dl">"</span><span class="s2">./src/index.js</span><span class="dl">"</span><span class="p">,</span>
+  <span class="c1">// resolve.rootで指定</span>
+  <span class="na">resolve</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">root</span><span class="p">:</span> <span class="p">[</span>
+      <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="dl">"</span><span class="s2">./src</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="na">module</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">loaders</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="na">test</span><span class="p">:</span> <span class="sr">/^src</span><span class="se">\/</span><span class="sr">.*</span><span class="se">\.</span><span class="sr">js$/</span><span class="p">,</span>
+        <span class="na">include</span><span class="p">:</span> <span class="p">[</span>
+          <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="dl">"</span><span class="s2">src</span><span class="dl">"</span><span class="p">),</span>
+        <span class="p">],</span>
+        <span class="na">loader</span><span class="p">:</span> <span class="dl">"</span><span class="s2">babel-loader</span><span class="dl">"</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="browserify" class="fragment"></span><a href="#browserify"><i class="fa fa-link"></i></a>browserify</h3>
+
+<h4>
+<span id="コマンドラインの場合" class="fragment"></span><a href="#%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%83%A9%E3%82%A4%E3%83%B3%E3%81%AE%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>コマンドラインの場合</h4>
+
+<p>node.jsの基本と一緒。<br>
+<code>$NODE_PATH</code>の環境変数を仕込む</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>NODE_PATH=./some/lib browserify -e src/index.js -o build/index.js
+</pre></div></div>
+
+<h4>
+<span id="api利用の場合" class="fragment"></span><a href="#api%E5%88%A9%E7%94%A8%E3%81%AE%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>API利用の場合</h4>
+
+<p><code>opt.paths</code>の設定があるのでこれを利用できる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">browserify</span><span class="p">(</span><span class="dl">"</span><span class="s2">src/index.js</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">paths</span><span class="p">:[</span>
+    <span class="dl">"</span><span class="s2">./node_module</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">./src</span><span class="dl">"</span>
+  <span class="p">]</span>
+<span class="p">}).</span><span class="nx">bundle</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">out</span><span class="p">){</span>
+  <span class="c1">// out.toStirng() とかでコード取れる</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>ちなみにpackage.jsonに<code>paths</code>とか仕込んだりして読み取ってはくれないし、同等のCLIオプションも用意されてない。</p>
+
+<h3>
+<span id="rollup" class="fragment"></span><a href="#rollup"><i class="fa fa-link"></i></a>rollup</h3>
+
+<p><code>import</code>構文はrollupではデフォルトなので、相対パスの解決だけ考えれば良い</p>
+
+<p><a href="https://github.com/dot-build/rollup-plugin-includepaths" rel="nofollow noopener" target="_blank">include-path</a>プラグインを利用する。</p>
+
+<p>手元でちゃんと試せてないが、概ねこんな具合。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">includePaths</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">rollup-plugin-includepaths</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">let</span> <span class="nx">includePathOptions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">include</span><span class="p">:</span> <span class="p">{},</span>
+    <span class="na">paths</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">src</span><span class="dl">'</span><span class="p">],</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+    <span class="na">entry</span><span class="p">:</span> <span class="dl">'</span><span class="s1">./src/index.js</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">dest</span><span class="p">:</span> <span class="dl">'</span><span class="s1">build/index.js</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span> <span class="nx">includePaths</span><span class="p">(</span><span class="nx">includePathOptions</span><span class="p">)</span> <span class="p">],</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<h2>
+<span id="test-framework編" class="fragment"></span><a href="#test-framework%E7%B7%A8"><i class="fa fa-link"></i></a>test framework編</h2>
+
+<h3>
+<span id="mocha" class="fragment"></span><a href="#mocha"><i class="fa fa-link"></i></a>mocha</h3>
+
+<p><code>$NODE_PATH</code>を設定する。</p>
+
+<p>webpackと組み合わせている場合は二重に設定を書くことになる。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>NODE_PATH=src/ mocha ./test
+</pre></div></div>
+
+<h3>
+<span id="ava" class="fragment"></span><a href="#ava"><i class="fa fa-link"></i></a>ava</h3>
+
+<p>同じく<code>$NODE_PATH</code>を設定する。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>NODE_PATH=src/ ava ./test
+</pre></div></div>
+
+<h1>
+<span id="言語編" class="fragment"></span><a href="#%E8%A8%80%E8%AA%9E%E7%B7%A8"><i class="fa fa-link"></i></a>言語編</h1>
+
+<h3>
+<span id="typescript" class="fragment"></span><a href="#typescript"><i class="fa fa-link"></i></a>TypeScript</h3>
+
+<p>tsconfig.jsonにこう</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+    </span><span class="nl">"baseUrl"</span><span class="p">:</span><span class="w"> </span><span class="s2">"./src"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<h3>
+<span id="flowtype" class="fragment"></span><a href="#flowtype"><i class="fa fa-link"></i></a>flowtype</h3>
+
+<p>0.32時点。</p>
+
+<p><code>module.system.node.resolve_dirname</code>を設定する必要ありそう。<code>NODE_PATH</code>だけだと解決してくれないっぽい</p>
+
+<div class="code-frame" data-lang="flowconfig"><div class="highlight"><pre>[options]
+
+module.system.node.resolve_dirname=./node_modules
+module.system.node.resolve_dirname=./src
+</pre></div></div>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>どうやっても邪道になる印象があったけど、結構なんだかんだ各ツール手法は出揃ってる</li>
+<li>NODE_PATHを抑えておけばとりあえずはなんとかなる。</li>
+<li>テストツールのことを考えるとむしろNODE_PATHを使うのをベースにするほうが良いのかも。</li>
+<li>当たり前だけどnpmにpublishするような予定のプロジェクトなら多分やめとくほうがいい</li>
+</ul>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>importの実際の解決方法に関しては正直知識が薄いので不安感強め <a href="#fnref1">↩</a></p>
+</li>
+
+</ol>
+</div>

@@ -1,0 +1,210 @@
+<p><a href="https://qiita.com/terrierscript/items/9a9dda5a5ca5b3293d48" id="reference-d143876c6baf4e84a704">Vue.jsでライブラリ使わずにgoogle mapを利用する</a> のをReact Hooksでやってみたらすぐ書けてびっくりしたのでまとめる</p>
+
+<p>今回は基礎編なので、<code>useState</code>, <code>useEffect</code>を中心に使う。本当は<a href="https://reactjs.org/docs/hooks-reference.html#basic-hooks" rel="nofollow noopener" target="_blank">Basic Effect</a>のみでやろうと思ったが、<code>useRef</code>はどうしても必要だったので今回利用している</p>
+
+<p>ライブラリを使わず、と言いつつgoogle-maps-api-loaderを利用しているのはご了承いただきたい</p>
+
+<h1>
+<span id="1-まずmapの表示だけする" class="fragment"></span><a href="#1-%E3%81%BE%E3%81%9Amap%E3%81%AE%E8%A1%A8%E7%A4%BA%E3%81%A0%E3%81%91%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>1. まずMapの表示だけする</h1>
+
+<p>全体のコードがこんな感じ。<br>
+これで表示までできる。<br>
+<code>useGoogleMap</code>と<code>useMapEffect</code>という２つのhooksをここまでで作っている</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="c1">// hooks.ts</span>
+
+<span class="k">import</span> <span class="p">{</span> <span class="nx">useEffect</span><span class="p">,</span> <span class="nx">useState</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">GoogleMapsApiLoader</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">google-maps-api-loader</span><span class="dl">"</span>
+<span class="kd">const</span> <span class="nx">API_KEY</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">XXXXXXXXXXXX</span><span class="dl">"</span>
+
+<span class="c1">// Google Mapのオブジェクトを呼び出すだけのhooks</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useGoogleMap</span> <span class="o">=</span> <span class="p">(</span><span class="nx">apiKey</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">setGoogleMap</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">GoogleMapsApiLoader</span><span class="p">({</span> <span class="nx">apiKey</span> <span class="p">}).</span><span class="nx">then</span><span class="p">((</span><span class="nx">google</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">setGoogleMap</span><span class="p">(</span><span class="nx">google</span><span class="p">)</span>
+    <span class="p">})</span>
+  <span class="p">},</span> <span class="p">[])</span> <span class="c1">// useEffectの第二引数を[]にすることで、初回1回目だけ実行される</span>
+  <span class="k">return</span> <span class="nx">googleMap</span>
+<span class="p">}</span>
+
+<span class="c1">// 実際にMapをDOMにマウントする処理。</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMap</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">mapContainerRef</span><span class="p">,</span> <span class="nx">initialConfig</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">map</span><span class="p">,</span> <span class="nx">setMap</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// googleMapかmapContainerRefが初期化されてなければ何もしない</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">googleMap</span> <span class="o">||</span> <span class="o">!</span><span class="nx">mapContainerRef</span><span class="p">.</span><span class="nx">current</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="nx">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nb">Map</span><span class="p">(</span><span class="nx">mapContainerRef</span><span class="p">.</span><span class="nx">current</span><span class="p">,</span> <span class="nx">initialConfig</span><span class="p">)</span>
+    <span class="nx">setMap</span><span class="p">(</span><span class="nx">map</span><span class="p">)</span>
+  <span class="p">},</span> 
+  <span class="c1">// googleMapかmapContainerRefが変化したらeffectが発火する。</span>
+  <span class="c1">// initialConfigは変わったとしても再マウントするとおかしなことになるので更新対象にしない</span>
+  <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">mapContainerRef</span><span class="p">])</span>
+
+  <span class="c1">// あとで使えるようにmapを返すようにする</span>
+  <span class="k">return</span> <span class="nx">map</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">useGoogleMap</span><span class="p">,</span> <span class="nx">useMap</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./hooks</span><span class="dl">"</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">useRef</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">API_KEY</span> <span class="o">=</span> <span class="kc">undefined</span>
+
+<span class="kd">const</span> <span class="nx">initialConfig</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">zoom</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+  <span class="na">center</span><span class="p">:</span> <span class="p">{</span> <span class="na">lat</span><span class="p">:</span> <span class="mf">35.6432027</span><span class="p">,</span> <span class="na">lng</span><span class="p">:</span> <span class="mf">139.6729435</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// hookを利用して表示するコンポーネント</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">MapApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">googleMap</span> <span class="o">=</span> <span class="nx">useGoogleMap</span><span class="p">(</span><span class="nx">API_KEY</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">mapContainerRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="nx">useMap</span><span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">mapContainerRef</span><span class="p">,</span> <span class="nx">initialConfig</span> <span class="p">})</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span>
+      <span class="na">style=</span><span class="si">{</span><span class="p">{</span>
+        <span class="c1">// ホントはstyled-componentsとかで良いのだけど簡略化</span>
+        <span class="na">height</span><span class="p">:</span> <span class="dl">"</span><span class="s2">100vh</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">width</span><span class="p">:</span> <span class="dl">"</span><span class="s2">100%</span><span class="dl">"</span>
+      <span class="p">}</span><span class="si">}</span>
+      <span class="na">ref=</span><span class="si">{</span><span class="nx">mapContainerRef</span><span class="si">}</span>
+    <span class="p">/&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">ReactDOM</span><span class="p">.</span><span class="nx">render</span><span class="p">(&lt;</span><span class="nc">MapApp</span> <span class="p">/&gt;,</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#root</span><span class="dl">"</span><span class="p">))</span>
+
+</pre></div></div>
+
+<h3>
+<span id="demo" class="fragment"></span><a href="#demo"><i class="fa fa-link"></i></a>DEMO</h3>
+
+<p>デモがこちら(APIキーを設定してないのでdevモード）<br>
+<a href="https://codesandbox.io/s/zx060qr7q4" class="autolink" rel="nofollow noopener" target="_blank">https://codesandbox.io/s/zx060qr7q4</a></p>
+
+<h3>
+<span id="注釈ngなhooksの書き方" class="fragment"></span><a href="#%E6%B3%A8%E9%87%88ng%E3%81%AAhooks%E3%81%AE%E6%9B%B8%E3%81%8D%E6%96%B9"><i class="fa fa-link"></i></a>注釈：NGなhooksの書き方</h3>
+
+<p>ここで注意するとすれば例えば下記のような書き方はしてはいけない。</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">useMapEffect</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">mapContainerRef</span><span class="p">,</span> <span class="nx">mapConfig</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// ❌ こう書くとhooksは動かない</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">googleMap</span> <span class="o">||</span> <span class="o">!</span><span class="nx">mapContainerRef</span><span class="p">.</span><span class="nx">current</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span>
+  <span class="p">}</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nb">Map</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="k">new</span> <span class="nb">Map</span><span class="p">(</span><span class="nx">mapContainerRef</span><span class="p">.</span><span class="nx">current</span><span class="p">,</span> <span class="nx">mapConfig</span><span class="p">)</span>
+    <span class="c1">// 第二引数のいずれかが変更されたら再度処理される</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">mapContainerRef</span><span class="p">,</span> <span class="nx">mapConfig</span><span class="p">])</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">useMapEffect</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">mapContainerRef</span><span class="p">,</span> <span class="nx">mapConfig</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// ❌ これもNGなパターン</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">googleMap</span> <span class="o">&amp;&amp;</span> <span class="nx">mapContainerRef</span><span class="p">.</span><span class="nx">current</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="p">{</span> <span class="nb">Map</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span>
+      <span class="k">new</span> <span class="nb">Map</span><span class="p">(</span><span class="nx">mapContainerRef</span><span class="p">.</span><span class="nx">current</span><span class="p">,</span> <span class="nx">mapConfig</span><span class="p">)</span>
+      <span class="c1">// 第二引数のいずれかが変更されたら再度処理される</span>
+    <span class="p">},</span> <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">mapContainerRef</span><span class="p">,</span> <span class="nx">mapConfig</span><span class="p">])</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>Hooksはトップレベルでしか呼び出せず、ifやループの内部で呼ぶこともNGとなる。詳しくは下記にルールがある。<br>
+<a href="https://reactjs.org/docs/hooks-rules.html" class="autolink" rel="nofollow noopener" target="_blank">https://reactjs.org/docs/hooks-rules.html</a></p>
+
+<p><a href="https://www.npmjs.com/package/eslint-plugin-react-hooks" rel="nofollow noopener" target="_blank">eslint-plugin-react-hooks</a>を使えばこれらエラーを検出してくれる。</p>
+
+<p>ついでにいうと<a href="https://reactjs.org/docs/hooks-custom.html#extracting-a-custom-hook" rel="nofollow noopener" target="_blank">hooksは<code>use</code>をprefixにしましょうという決まりごとがある</a>。<br>
+たとえば下記のようにhooksを利用しているにもかかわらず<code>use</code>から始まらないというのも避けるべきだ。これらが無いとlinterもうまく動いてくれない<br>
+（逆にhooksが関係ない<code>use</code>から始まる関数がlinterに誤検知される可能性もありそうな気がする？）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// ❌ hooksなのに`use`から始まってないのもNG。ESLintで正しく検出できなくなる</span>
+<span class="kd">const</span> <span class="nx">myAwesomeHook</span> <span class="o">=</span> <span class="p">(...)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">useEffect</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1">// 下記のようにhooksを生成する関数はLinter的にはOK。でもこのへん使い出すと可読性がヤバくなりそう（主観）</span>
+<span class="kd">function</span> <span class="nx">createHook</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kd">function</span> <span class="nx">useHookWithHook</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">useHook</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>どんなものがOKでどんなものがNGかは<a href="https://github.com/facebook/react/blob/master/packages/eslint-plugin-react-hooks/__tests__/ESLintRulesOfHooks-test.js" rel="nofollow noopener" target="_blank">テストケース</a>のファイルを見ると色々書いてある</p>
+
+<h1>
+<span id="2-マーカーを表示する" class="fragment"></span><a href="#2-%E3%83%9E%E3%83%BC%E3%82%AB%E3%83%BC%E3%82%92%E8%A1%A8%E7%A4%BA%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>2. マーカーを表示する</h1>
+
+<p>ここに<code>googleMap.maps.Marker</code>を利用してマーカーを表示する</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// markerを追加するhooksを追加</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMapMarker</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// 初期化がまだなら何もしない</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">googleMap</span> <span class="o">||</span> <span class="o">!</span><span class="nx">map</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">Marker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="kd">const</span> <span class="nx">mapMarkerObj</span> <span class="o">=</span> <span class="nx">markers</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span>
+      <span class="p">(</span><span class="nx">position</span><span class="p">)</span> <span class="o">=&gt;</span>
+        <span class="k">new</span> <span class="nx">Marker</span><span class="p">({</span>
+          <span class="nx">position</span><span class="p">,</span>
+          <span class="nx">map</span><span class="p">,</span>
+          <span class="na">title</span><span class="p">:</span> <span class="dl">"</span><span class="s2">marker!</span><span class="dl">"</span>
+        <span class="p">})</span>
+    <span class="p">)</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">])</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>ちなみに上記hooksはmarkersが変更は検知しないようにしている。markerが重なって多重に描画されることを避けるためだ。この対処については後述する</p>
+
+<p>呼び出し側はこんな感じに呼び出す</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">markers</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">{</span> <span class="na">lat</span><span class="p">:</span> <span class="mf">35.6432027</span><span class="p">,</span> <span class="na">lng</span><span class="p">:</span> <span class="mf">139.6729435</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="na">lat</span><span class="p">:</span> <span class="mf">35.5279833</span><span class="p">,</span> <span class="na">lng</span><span class="p">:</span> <span class="mf">139.6989209</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="na">lat</span><span class="p">:</span> <span class="mf">35.6563623</span><span class="p">,</span> <span class="na">lng</span><span class="p">:</span> <span class="mf">139.7215211</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="na">lat</span><span class="p">:</span> <span class="mf">35.6167531</span><span class="p">,</span> <span class="na">lng</span><span class="p">:</span> <span class="mf">139.5469376</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="na">lat</span><span class="p">:</span> <span class="mf">35.6950961</span><span class="p">,</span> <span class="na">lng</span><span class="p">:</span> <span class="mf">139.5037899</span> <span class="p">}</span>
+<span class="p">]</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">MapApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">googleMap</span> <span class="o">=</span> <span class="nx">useGoogleMap</span><span class="p">(</span><span class="nx">API_KEY</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">mapContainerRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">map</span> <span class="o">=</span> <span class="nx">useMap</span><span class="p">({</span>
+    <span class="nx">googleMap</span><span class="p">,</span>
+    <span class="nx">mapContainerRef</span><span class="p">,</span>
+    <span class="nx">initialConfig</span>
+  <span class="p">})</span>
+  <span class="c1">// markerを渡す</span>
+  <span class="nx">useMapMarker</span><span class="p">({</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span>
+      <span class="na">style=</span><span class="si">{</span><span class="p">{</span>
+        <span class="na">height</span><span class="p">:</span> <span class="dl">"</span><span class="s2">100vh</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">width</span><span class="p">:</span> <span class="dl">"</span><span class="s2">100%</span><span class="dl">"</span>
+      <span class="p">}</span><span class="si">}</span>
+      <span class="na">ref=</span><span class="si">{</span><span class="nx">mapContainerRef</span><span class="si">}</span>
+    <span class="p">/&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="demo-1" class="fragment"></span><a href="#demo-1"><i class="fa fa-link"></i></a>DEMO</h3>
+
+<p><a href="https://codesandbox.io/s/wknx1j1vxk" class="autolink" rel="nofollow noopener" target="_blank">https://codesandbox.io/s/wknx1j1vxk</a></p>
+
+<h1>
+<span id="応用編" class="fragment"></span><a href="#%E5%BF%9C%E7%94%A8%E7%B7%A8"><i class="fa fa-link"></i></a>応用編</h1>
+
+<p>下記に続きます<br>
+<a href="https://qiita.com/terrierscript/items/cebc4a5185c65547715c" class="autolink" id="reference-47c97b746029dfc87884">https://qiita.com/terrierscript/items/cebc4a5185c65547715c</a></p>

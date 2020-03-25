@@ -1,0 +1,300 @@
+<p>アヒルさんがぐるぐる回っててかわいかったので飛びついてみたけど色々サンプルが動かなくて可愛くなかったので動くまでもがいた。</p>
+
+<p><a href="http://redux-observable.js.org/" class="autolink" rel="nofollow noopener" target="_blank">http://redux-observable.js.org/</a></p>
+
+<h1>
+<span id="成果物" class="fragment"></span><a href="#%E6%88%90%E6%9E%9C%E7%89%A9"><i class="fa fa-link"></i></a>成果物</h1>
+
+<ul>
+<li><a href="https://github.com/inuscript/example-redux-observable-pingpong" rel="nofollow noopener" target="_blank">githubに置いた</a></li>
+<li>pingボタンを押したらtrueになって1秒後にfalseになるサンプル。</li>
+<li>
+<a href="https://jsbin.com/vayoho/6/edit" class="autolink" rel="nofollow noopener" target="_blank">https://jsbin.com/vayoho/6/edit</a>
+
+<ul>
+<li>↑これとほぼおなじ</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="コード" class="fragment"></span><a href="#%E3%82%B3%E3%83%BC%E3%83%89"><i class="fa fa-link"></i></a>コード</h2>
+
+<p>簡素化のために1ファイルに収めている</p>
+
+<p><a href="https://github.com/inuscript/example-redux-observable-pingpong/blob/master/index.js" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/inuscript/example-redux-observable-pingpong/blob/master/index.js</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span>
+<span class="k">import</span> <span class="nx">ReactDom</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-dom</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">createStore</span><span class="p">,</span> <span class="nx">applyMiddleware</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux</span><span class="dl">'</span> 
+<span class="k">import</span> <span class="p">{</span> <span class="nx">createEpicMiddleware</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux-observable</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">connect</span><span class="p">,</span> <span class="nx">Provider</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-redux</span><span class="dl">'</span>
+
+<span class="c1">// rxjsハマり部分。後述</span>
+<span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs/add/operator/mapTo</span><span class="dl">'</span>
+<span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs/add/operator/filter</span><span class="dl">'</span>
+<span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs/add/operator/delay</span><span class="dl">'</span>
+
+<span class="c1">// sampleにあるreducer</span>
+<span class="kd">const</span> <span class="nx">pingReducer</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{</span> <span class="na">isPinging</span><span class="p">:</span> <span class="kc">false</span> <span class="p">},</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">:</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="na">isPinging</span><span class="p">:</span> <span class="kc">true</span> <span class="p">};</span>
+    <span class="k">case</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span><span class="p">:</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="na">isPinging</span><span class="p">:</span> <span class="kc">false</span> <span class="p">};</span>
+    <span class="nl">default</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">state</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// sampleにあるepic</span>
+<span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">action$</span> <span class="o">=&gt;</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">action</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">delay</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> 
+  <span class="p">.</span><span class="nx">mapTo</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span> <span class="p">})</span>
+
+<span class="c1">// epicをmiddleware化 + Store化</span>
+<span class="kd">const</span> <span class="nx">epicMiddleware</span> <span class="o">=</span> <span class="nx">createEpicMiddleware</span><span class="p">(</span><span class="nx">pingEpic</span><span class="p">);</span>
+<span class="kd">const</span> <span class="nx">store</span> <span class="o">=</span> <span class="nx">createStore</span><span class="p">(</span><span class="nx">pingReducer</span><span class="p">,</span> <span class="nx">applyMiddleware</span><span class="p">(</span><span class="nx">epicMiddleware</span><span class="p">))</span>
+
+<span class="c1">// ボタン押したら文字が変わるcomponent</span>
+<span class="kd">const</span> <span class="nx">PingComponent</span> <span class="o">=</span> <span class="p">({</span><span class="nx">dispatch</span><span class="p">,</span> <span class="nx">isPinging</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="na">isPinging</span><span class="p">:</span> <span class="p">{</span><span class="nx">isPinging</span><span class="p">.</span><span class="nx">toString</span><span class="p">()}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">button</span> <span class="nx">onClick</span><span class="o">=</span><span class="p">{</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span><span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">})</span> <span class="p">}</span><span class="o">&gt;</span><span class="nx">Dispatch</span> <span class="nx">Ping</span><span class="o">&lt;</span><span class="sr">/button</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// Build App</span>
+<span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// stateそのまま流す</span>
+  <span class="kd">let</span> <span class="nx">PingContainer</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span> <span class="nx">state</span> <span class="o">=&gt;</span> <span class="nx">state</span> <span class="p">)(</span><span class="nx">PingComponent</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">Provider</span> <span class="nx">store</span><span class="o">=</span><span class="p">{</span><span class="nx">store</span><span class="p">}</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">PingContainer</span> <span class="o">/&gt;</span>
+    <span class="o">&lt;</span><span class="sr">/Provider</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// Render App</span>
+<span class="nx">ReactDom</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">App</span> <span class="o">/&gt;</span><span class="p">,</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">div</span><span class="dl">'</span><span class="p">))</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<h1>
+<span id="留意点知見ハマりどころ" class="fragment"></span><a href="#%E7%95%99%E6%84%8F%E7%82%B9%E7%9F%A5%E8%A6%8B%E3%83%8F%E3%83%9E%E3%82%8A%E3%81%A9%E3%81%93%E3%82%8D"><i class="fa fa-link"></i></a>留意点・知見・ハマりどころ</h1>
+
+<h2>
+<span id="epicという用語" class="fragment"></span><a href="#epic%E3%81%A8%E3%81%84%E3%81%86%E7%94%A8%E8%AA%9E"><i class="fa fa-link"></i></a>Epicという用語</h2>
+
+<p><a href="http://redux-observable.js.org/docs/basics/Epics.html" class="autolink" rel="nofollow noopener" target="_blank">http://redux-observable.js.org/docs/basics/Epics.html</a><br>
+StreamなActionを受け取ってActionを返す。<br>
+これを定義してmiddlewareとして処理されるもの。<br>
+とりあえずこいつが<code>redux-observable</code>のキモだと思って良さそう</p>
+
+<h2>
+<span id="rxjs-5の独特さ" class="fragment"></span><a href="#rxjs-5%E3%81%AE%E7%8B%AC%E7%89%B9%E3%81%95"><i class="fa fa-link"></i></a>RxJS 5の独特さ</h2>
+
+<p>JSBinサンプルの見てもちゃんと動いていてしばらくハマった部分。</p>
+
+<p>たとえばこんなEpic</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">action$</span> <span class="o">=&gt;</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">action</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">delay</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> 
+  <span class="p">.</span><span class="nx">mapTo</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span> <span class="p">})</span>
+</pre></div></div>
+
+<p>このまま走らせると<br>
+<code>Uncaught TypeError: action$.filter is not a function</code> と言われる。</p>
+
+<p>これでしばらく悩んでいたが、RxJS 5系では、各Operatorを明示的にimportしてやる必要があった。<sup id="fnref1"><a href="#fn1" rel="footnote" title="RxJSろくに理解してなかったせいでドはまりしたポイントではあるが、Javascriptとしてだいぶ独特な感じで「これは初見殺しじゃないですか」と思った。">1</a></sup></p>
+
+<p><a href="https://github.com/ReactiveX/rxjs#es6-via-npm" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ReactiveX/rxjs#es6-via-npm</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs/add/operator/mapTo</span><span class="dl">'</span>
+<span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs/add/operator/filter</span><span class="dl">'</span>
+<span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs/add/operator/delay</span><span class="dl">'</span>
+</pre></div></div>
+
+<p>このようにそれぞれimportすると動く。<br>
+<a href="https://github.com/ReactiveX/rxjs/blob/master/src/add/operator/filter.ts" rel="nofollow noopener" target="_blank">rxjs/add/operator/filter</a>あたりの中身を覗いてみるとわかるが、</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">Observable</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">filter</span> <span class="o">=</span> <span class="nx">filter</span><span class="p">;</span>
+</pre></div></div>
+
+<p>というような感じでObservableをprototype拡張している。</p>
+
+<p>Epicで渡される<code>action$</code>はredux-observableで管理されている<a href="https://github.com/redux-observable/redux-observable/blob/master/src/ActionsObservable.js" rel="nofollow noopener" target="_blank">ActionObservable</a>というもので<code>Observable</code>を継承している。</p>
+
+<p>「大量にimportするの面倒」というような場合は</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">Rx</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">rxjs/Rx</span><span class="dl">'</span>
+</pre></div></div>
+
+<p>で呼び出して全<a href="https://github.com/ReactiveX/rxjs/blob/master/src/Rx.ts#L11" rel="nofollow noopener" target="_blank">Operatorのaddをする</a>ことも出来る模様。（副作用的な感じもするので、良いやり方なのかどうかは不明。。。）</p>
+
+<h3>
+<span id="備考function-bindによるrxの読み込み" class="fragment"></span><a href="#%E5%82%99%E8%80%83function-bind%E3%81%AB%E3%82%88%E3%82%8Brx%E3%81%AE%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%81%BF"><i class="fa fa-link"></i></a>備考：function bindによるRxの読み込み</h3>
+
+<p>RxJSのReadmeに記載されているが、「prototype拡張してんのやだなー」という場合は、<code>function bind</code>を使う手法も一応ある。function-bindは今のところstage-0でかなり尖っているので注意。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm i -D babel-plugin-transform-function-bind
+</pre></div></div>
+
+<p>.babelrcはこんな具合</p>
+
+<div class="code-frame" data-lang="babelrc"><div class="highlight"><pre>{
+  "presets": ["es2015", "react"] ,
+  "plugins": [
+    "transform-function-bind"
+  ]
+}
+</pre></div></div>
+
+<p>そうするとこんな具合で書ける。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">mapTo</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">rxjs/operator/mapTo</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">filter</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">rxjs/operator/filter</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">delay</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">rxjs/operator/delay</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">action$</span> <span class="o">=&gt;</span> <span class="nx">action$</span>
+  <span class="p">::</span><span class="nx">filter</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">action</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">::</span><span class="nx">delay</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> 
+  <span class="p">::</span><span class="nx">mapTo</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span> <span class="p">})</span>
+</pre></div></div>
+
+<p>stage-0なんて怖い！素で使いたい！<br>
+となると多分こんな具合。これはこれできつそう</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">action$</span> <span class="o">=&gt;</span> <span class="nx">mapTo</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span>
+  <span class="nx">delay</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span>
+    <span class="nx">filter</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">action$</span><span class="p">,</span> <span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">action</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">),</span>
+    <span class="mi">1000</span>
+  <span class="p">),</span>
+  <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span> <span class="p">}</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<h2>
+<span id="type絞るならfilter使わずにoftypeで良い" class="fragment"></span><a href="#type%E7%B5%9E%E3%82%8B%E3%81%AA%E3%82%89filter%E4%BD%BF%E3%82%8F%E3%81%9A%E3%81%ABoftype%E3%81%A7%E8%89%AF%E3%81%84"><i class="fa fa-link"></i></a>type絞るなら<code>filter</code>使わずに<code>ofType</code>で良い</h2>
+
+<p>今回サンプルでは<code>filter</code>を使ったが、<code>ActionObeservable</code>には<code>ofType</code>というのが用意されているので、これを使ったほうがキレイ目に書ける。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">action$</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">delay</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> <span class="c1">// Asynchronously wait 1000ms then continue</span>
+    <span class="p">.</span><span class="nx">mapTo</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span> <span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="新しく別なactionを流せるだけ元のactionに手を加える事は出来ない" class="fragment"></span><a href="#%E6%96%B0%E3%81%97%E3%81%8F%E5%88%A5%E3%81%AAaction%E3%82%92%E6%B5%81%E3%81%9B%E3%82%8B%E3%81%A0%E3%81%91%E5%85%83%E3%81%AEaction%E3%81%AB%E6%89%8B%E3%82%92%E5%8A%A0%E3%81%88%E3%82%8B%E4%BA%8B%E3%81%AF%E5%87%BA%E6%9D%A5%E3%81%AA%E3%81%84"><i class="fa fa-link"></i></a>新しく別なactionを流せるだけ。元のactionに手を加える事は出来ない。</h2>
+
+<p>redux-thunkやmiddlewareだと出来ていたことで出来ないのが「actionの変更・加工・握りつぶし」的な作用。</p>
+
+<p>例えばこんな感じの事は出来ない（多分）。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// PING actionだったら握りつぶしてPONGにするmiddleware</span>
+<span class="kd">const</span> <span class="nx">fixupPingMiddleware</span> <span class="o">=</span> <span class="nx">store</span> <span class="o">=&gt;</span> <span class="nx">next</span> <span class="o">=&gt;</span> <span class="nx">action</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span> <span class="o">!==</span> <span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">){</span>
+    <span class="k">return</span> <span class="nx">next</span><span class="p">(</span><span class="nx">action</span><span class="p">)</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">next</span><span class="p">({</span>
+    <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><a href="https://github.com/redux-observable/redux-observable/blob/master/src/createEpicMiddleware.js#L25" rel="nofollow noopener" target="_blank">createEpicMiddleware</a>の中身を見ると、上記のコードで言えば、こんなことをやっている感じ。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// PING actionだったらPONGも飛ばす</span>
+<span class="kd">const</span> <span class="nx">fixupPingMiddleware</span> <span class="o">=</span> <span class="nx">store</span> <span class="o">=&gt;</span> <span class="nx">next</span> <span class="o">=&gt;</span> <span class="nx">action</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">result</span> <span class="o">=</span> <span class="nx">next</span><span class="p">(</span><span class="nx">action</span><span class="p">)</span>
+  <span class="nx">store</span><span class="p">.</span><span class="nx">dispatch</span><span class="p">({</span><span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span><span class="p">})</span>
+  <span class="k">return</span> <span class="nx">result</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>そのため、もし上記の利用しないactionをreducerなどで影響が出ないようにしておく必要がある。actionがimmutableになっていると意識すると良いようだ。</p>
+
+<p>そもそも「加工したり握りつぶしたり」というのはそんなにスマートなやり方では無いが、意識してやらないように心がけていないとやりたくなる事は多いので注意したい。</p>
+
+<h2>
+<span id="epic作るのにrxjsに慣れてない時はplayground的なテストコード書いたら便利" class="fragment"></span><a href="#epic%E4%BD%9C%E3%82%8B%E3%81%AE%E3%81%ABrxjs%E3%81%AB%E6%85%A3%E3%82%8C%E3%81%A6%E3%81%AA%E3%81%84%E6%99%82%E3%81%AFplayground%E7%9A%84%E3%81%AA%E3%83%86%E3%82%B9%E3%83%88%E3%82%B3%E3%83%BC%E3%83%89%E6%9B%B8%E3%81%84%E3%81%9F%E3%82%89%E4%BE%BF%E5%88%A9"><i class="fa fa-link"></i></a>Epic作るのにRxJSに慣れてない時は、playground的なテストコード書いたら便利</h2>
+
+<p>RxJSに慣れていなかったので、<a href="http://redux-observable.js.org/docs/recipes/WritingTests.html" rel="nofollow noopener" target="_blank">Writning Tests</a>を参考に、下記のようなplaygroundを作ると、色々試せて良い。<br>
+<a href="https://github.com/arnaudbenard/redux-mock-store" rel="nofollow noopener" target="_blank"><code>redux-mock-store</code></a>でactionが何が来たのか補足出来るので、最後に<code>store.getActions</code>してみると良い。<br>
+testにはava使ってみているけど、そこは別になんでも良い。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">test</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">ava</span><span class="dl">'</span>
+<span class="k">import</span> <span class="nx">configureMockStore</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux-mock-store</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">createEpicMiddleware</span><span class="p">,</span> <span class="nx">combineEpics</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux-observable</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="c1">// operatorの追加忘れず</span>
+<span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs/add/operator/map</span><span class="dl">'</span>
+
+<span class="nx">test</span><span class="p">(</span><span class="dl">'</span><span class="s1">Epic Playground</span><span class="dl">'</span><span class="p">,</span> <span class="nx">t</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// operatorとか色々試してみる</span>
+  <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">action$</span> <span class="o">=&gt;</span> <span class="nx">action$</span>
+    <span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">action</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PONG</span><span class="dl">'</span><span class="p">,</span>
+        <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span>
+      <span class="p">}</span>
+    <span class="p">})</span>
+
+  <span class="kd">const</span> <span class="nx">epicMiddleware</span> <span class="o">=</span> <span class="nx">createEpicMiddleware</span><span class="p">(</span><span class="nx">pingEpic</span><span class="p">);</span>
+  <span class="kd">const</span> <span class="nx">mockStore</span> <span class="o">=</span> <span class="nx">configureMockStore</span><span class="p">([</span><span class="nx">epicMiddleware</span><span class="p">]);</span>
+
+  <span class="kd">let</span> <span class="nx">store</span> <span class="o">=</span> <span class="nx">mockStore</span><span class="p">()</span>
+  <span class="nx">store</span><span class="p">.</span><span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">PING</span><span class="dl">'</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="mi">1</span> <span class="p">})</span>
+
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">store</span><span class="p">.</span><span class="nx">getActions</span><span class="p">())</span>
+  <span class="c1">// output:</span>
+  <span class="c1">// [ { type: 'PING', payload: 1 }, { type: 'PONG', payload: 1 } ]</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="参考資料など" class="fragment"></span><a href="#%E5%8F%82%E8%80%83%E8%B3%87%E6%96%99%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>参考資料など</h2>
+
+<ul>
+<li>
+<a href="https://www.learnrxjs.io/" rel="nofollow noopener" target="_blank">Learn RxJS</a>
+
+<ul>
+<li>とっつきやすいRxJSのドキュメント</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/ReactiveX/rxjs/blob/master/MIGRATION.md" rel="nofollow noopener" target="_blank">MIGRATION.md</a>
+
+<ul>
+<li>RxJS4 -&gt; RxJS5のmigration情報。結構混在しているので、詰まったら見直すと良い</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="ロゴ" class="fragment"></span><a href="#%E3%83%AD%E3%82%B4"><i class="fa fa-link"></i></a>ロゴ</h2>
+
+<p>どっかでこのロゴ見たことあるなと思ってたけどreduxのロゴ案として上がっていたやつだった。<br>
+<a href="https://github.com/reactjs/redux/issues/151#issuecomment-137833403" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/reactjs/redux/issues/151#issuecomment-137833403</a></p>
+
+<hr>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>RxJSろくに理解してなかったせいでドはまりしたポイントではあるが、Javascriptとしてだいぶ独特な感じで「これは初見殺しじゃないですか」と思った。 <a href="#fnref1">↩</a></p>
+</li>
+
+</ol>
+</div>

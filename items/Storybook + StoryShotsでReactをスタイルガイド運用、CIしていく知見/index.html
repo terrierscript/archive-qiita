@@ -1,0 +1,279 @@
+<p>2016/10/07追記：StorybookとStoryShotsについて説明してくれている記事が出てきたため、こちらの記事はもう少し深入りした部分にフォーカスするように（install関連のとこなどを主にばっさり削除）しました</p>
+
+<ul>
+<li><a href="http://qiita.com/kitaly/items/85254fd346e2e575582b" id="reference-5d89209975f28c5240a4">React Storybook で変わるUI開発フロー (Redux Flavor)
+</a></li>
+</ul>
+
+<h1>
+<span id="storybookとは" class="fragment"></span><a href="#storybook%E3%81%A8%E3%81%AF"><i class="fa fa-link"></i></a><a href="https://getstorybook.io/" rel="nofollow noopener" target="_blank">Storybook</a>とは</h1>
+
+<p>Reactのためのスタイルガイドジェネレータ。</p>
+
+<p>基本的な所は結構先人が記事を残してくれている。<br>
+特に今回この記事では<code>stories</code>そのものの記載については言及しないので、そこらへんは下記の記事などを参考にするのが良いだろう</p>
+
+<ul>
+<li><a href="http://developer.hatenastaff.com/entry/2016/04/14/150000" rel="nofollow noopener" target="_blank">react-storybookを用いたReactコンポーネント開発</a></li>
+<li><a href="http://qiita.com/beijaflor/items/4fc01f8d557c1926c38d" id="reference-efb7ef6b2ba54f9359f2">React Storybook入門：コンポーネントカタログがさくさく作れちゃうかもしれないオシャレサンドボックス環境</a></li>
+</ul>
+
+<p>だいぶ手に馴染んできてたので、自分がよく使う部分中心に、基本的によく使う設定 ＋ CIで運用する事あたりまでについて記載してきたい。</p>
+
+<h1>
+<span id="storybook" class="fragment"></span><a href="#storybook"><i class="fa fa-link"></i></a>Storybook</h1>
+
+<h2>
+<span id="よく使う-or-基本的な設定カスタマイズ" class="fragment"></span><a href="#%E3%82%88%E3%81%8F%E4%BD%BF%E3%81%86-or-%E5%9F%BA%E6%9C%AC%E7%9A%84%E3%81%AA%E8%A8%AD%E5%AE%9A%E3%82%AB%E3%82%B9%E3%82%BF%E3%83%9E%E3%82%A4%E3%82%BA"><i class="fa fa-link"></i></a>よく使う or 基本的な設定、カスタマイズ</h2>
+
+<h3>
+<span id="configjs" class="fragment"></span><a href="#configjs"><i class="fa fa-link"></i></a>config.js</h3>
+
+<p><code>.storybook/config.js</code>に配置される。Storybookの基本設定ファイル。</p>
+
+<h4>
+<span id="特定のパターンで動的読み込み" class="fragment"></span><a href="#%E7%89%B9%E5%AE%9A%E3%81%AE%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3%E3%81%A7%E5%8B%95%E7%9A%84%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%81%BF"><i class="fa fa-link"></i></a>特定のパターンで動的読み込み</h4>
+
+<p>だいたい<code>stories</code>ファイルはまとめて一箇所に置くより、各コンポーネントの近い所に配置したい。</p>
+
+<p>そうなると<a href="https://getstorybook.io/docs/basics/writing-stories#loading-stories-dynamically" rel="nofollow noopener" target="_blank">動的読み込み</a>が活躍する。</p>
+
+<p>だいたいこんな具合</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">storybook/config.js</span></div>
+<div class="highlight"><pre><span class="c1">// `../src/`がターゲットディレクトリ。</span>
+<span class="c1">// `hoge.stories.js`みたいなファイルを対象とする。</span>
+<span class="kd">const</span> <span class="nx">req</span> <span class="o">=</span> <span class="nx">require</span><span class="p">.</span><span class="nx">context</span><span class="p">(</span><span class="dl">'</span><span class="s1">../src/</span><span class="dl">'</span><span class="p">,</span> <span class="kc">true</span><span class="p">,</span> <span class="sr">/.stories.js$/</span><span class="p">)</span>
+
+<span class="kd">function</span> <span class="nx">loadStories</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">req</span><span class="p">.</span><span class="nx">keys</span><span class="p">().</span><span class="nx">forEach</span><span class="p">((</span><span class="nx">filename</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">req</span><span class="p">(</span><span class="nx">filename</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="nx">configure</span><span class="p">(</span><span class="nx">loadStories</span><span class="p">,</span> <span class="nx">module</span><span class="p">)</span>
+</pre></div>
+</div>
+
+<h4>
+<span id="decorator" class="fragment"></span><a href="#decorator"><i class="fa fa-link"></i></a>Decorator</h4>
+
+<p>Storybook上の表示の共通化のために、<a href="https://getstorybook.io/docs/basics/writing-stories#using-decorators" rel="nofollow noopener" target="_blank">Decorator</a>という仕組みが用意されている。</p>
+
+<p>「全部のコンポーネント外枠つけたいな。」みたいな場合がよくあるので、こんな感じで使う。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">storybook/config.js</span></div>
+<div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">LayoutDecorator</span> <span class="o">=</span> <span class="p">(</span><span class="nx">story</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">MyLayout</span><span class="o">&gt;</span>
+    <span class="p">{</span><span class="nx">story</span><span class="p">()}</span>
+  <span class="o">&lt;</span><span class="sr">/MyLayout</span><span class="err">&gt;
+</span><span class="p">)</span>
+
+<span class="kd">function</span> <span class="nx">loadStories</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">addDecorator</span><span class="p">(</span><span class="nx">LayoutDecorator</span><span class="p">)</span>
+  <span class="nx">req</span><span class="p">.</span><span class="nx">keys</span><span class="p">().</span><span class="nx">forEach</span><span class="p">((</span><span class="nx">filename</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">req</span><span class="p">(</span><span class="nx">filename</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="nx">configure</span><span class="p">(</span><span class="nx">loadStories</span><span class="p">,</span> <span class="nx">module</span><span class="p">);</span>
+</pre></div>
+</div>
+
+<p>特定のstorydだけで使うことも可能。</p>
+
+<h3>
+<span id="babelの設定" class="fragment"></span><a href="#babel%E3%81%AE%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a><a href="https://getstorybook.io/docs/configurations/custom-babel-config" rel="nofollow noopener" target="_blank">babelの設定</a>
+</h3>
+
+<p><code>.babelrc</code>があれば読み込んでくれる。<br>
+特にいじったことは今のところ無いが、個別に設定したい場合は<code>.storybook/.babelrc</code>に配置する。</p>
+
+<h3>
+<span id="webpack設定" class="fragment"></span><a href="#webpack%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a><a href="https://getstorybook.io/docs/configurations/custom-webpack-config" rel="nofollow noopener" target="_blank">Webpack設定</a>
+</h3>
+
+<p>Storybookはwebpackを裏で動かしている。<br>
+設定ファイルは<code>.storybook/webpack.config.js</code>として配置する。<br>
+webpackをプロジェクトのビルドをしてるなら特に考える事も無いかもしれない。</p>
+
+<p>自分の環境では良くビルドには<code>browserify</code>や<code>rollup</code>を利用する事もあるが、<code>storybook</code>の部分はproductionビルドには関わって来ないので特に問題にならない。<br>
+（正確には、browserify側とStorybook側の設定値で同じような設定を二箇所でやらなければならないでちょっと冗長になるが、ギリ耐えられるという感じ。）</p>
+
+<p>自分の場合、パス解決だけよく必要になったりするので、こんな感じで設定したりしたりする。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">path</span><span class="dl">'</span><span class="p">)</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span><span class="p">{</span>
+  <span class="na">resolve</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="na">root</span><span class="p">:</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="dl">'</span><span class="s1">../src</span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="ヘッダファイルはheadhtmlで加工" class="fragment"></span><a href="#%E3%83%98%E3%83%83%E3%83%80%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AFheadhtml%E3%81%A7%E5%8A%A0%E5%B7%A5"><i class="fa fa-link"></i></a><a href="https://getstorybook.io/docs/configurations/add-custom-head-tags" rel="nofollow noopener" target="_blank">ヘッダファイルはhead.htmlで加工</a>
+</h3>
+
+<p>CSSを外部管理していたり、normalize.cssやsanitize.cssなどのreset系CSSを外から読みたかったり、フォントを読み込みたかったり する場合など、<code>&lt;head&gt;</code>タグに記載したい諸々は<code>.storybook/head.html</code>で管理する<br>
+参考：<a href="https://getstorybook.io/docs/configurations/add-custom-head-tags" rel="nofollow noopener" target="_blank">Add Custom Head Tags</a></p>
+
+<p>sanitize.cssをCDNから読むからこんな具合</p>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">head.html</span></div>
+<div class="highlight"><pre><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">href=</span><span class="s">"https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/4.1.0/sanitize.css"</span><span class="nt">&gt;</span>
+</pre></div>
+</div>
+
+<h1>
+<span id="storyshotsでstorybookにciをもたらす" class="fragment"></span><a href="#storyshots%E3%81%A7storybook%E3%81%ABci%E3%82%92%E3%82%82%E3%81%9F%E3%82%89%E3%81%99"><i class="fa fa-link"></i></a>StoryShotsでStorybookにCIをもたらす</h1>
+
+<p>スタイルガイドはよく腐る。<br>
+しかし単なる「スタイルガイド」という視点ではなく「描画確認可能なのUnit Testだ」と考えたらどうだろう？少しは希望を感じる。</p>
+
+<p>そんな希望に応えそうなのが<code>StoryShots</code>。</p>
+
+<p>Storybookで記載したコンポーネントをsnapshotとして保存するテストを行うことが出来る。これはJestなどでも行われている手法。<br>
+（参考：<a href="https://voice.kadira.io/snapshot-testing-in-react-storybook-43b3b71cec4f" rel="nofollow noopener" target="_blank">Snapshot Testing in React Storybook</a>）</p>
+
+<p>Jestでスナップショットテストをするのは良いと思うが、表示確認が出来るという部分で個人的には<code>StoryShots</code>に分があると思っている。</p>
+
+<p>また、やってみた感想にはなるが、「Unit Testを書いているんだ」という気持ちで<code>stories</code>ファイルを書いてみると、コンポーネントを疎結合に書くことを意識できる良い効能もあった。</p>
+
+<h2>
+<span id="ハマり回避テクニック" class="fragment"></span><a href="#%E3%83%8F%E3%83%9E%E3%82%8A%E5%9B%9E%E9%81%BF%E3%83%86%E3%82%AF%E3%83%8B%E3%83%83%E3%82%AF"><i class="fa fa-link"></i></a>ハマり回避テクニック</h2>
+
+<h3>
+<span id="loader-polyfillでハマり回避" class="fragment"></span><a href="#loader-polyfill%E3%81%A7%E3%83%8F%E3%83%9E%E3%82%8A%E5%9B%9E%E9%81%BF"><i class="fa fa-link"></i></a>loader, polyfillでハマり回避</h3>
+
+<p>ブラウザで動かすように作られたコードをCIするのはやっぱりまだまだ辛い。<br>
+StoryShotsではこの問題に対し、<code>loader</code>と<code>polyfills</code>というオプションが用意されている。</p>
+
+<p><code>loader</code>は<code>css</code>や<code>jpg</code>などwebpackのloaderを利用しているようなところをなんとかするものっぽい。自分はまだ世話になったことがない。</p>
+
+<p><code>polyfills</code>はjs側のコード的なところを調整するもの。<br>
+<a href="https://github.com/kadirahq/storyshots/blob/master/src/default_config/polyfills.js" rel="nofollow noopener" target="_blank">src/default_config/polyfills.js</a>からコピーして使う。</p>
+
+<p><a href="https://github.com/zenorocha/clipboard.js" rel="nofollow noopener" target="_blank">clipboard.js</a>を利用したコンポーネントで自分がハマったときは下記二行を足した。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nb">global</span><span class="p">.</span><span class="nx">Element</span> <span class="o">=</span> <span class="nb">global</span><span class="p">.</span><span class="nb">window</span><span class="p">.</span><span class="nx">Element</span><span class="p">;</span>
+<span class="nb">global</span><span class="p">.</span><span class="nx">HTMLElement</span> <span class="o">=</span> <span class="nb">global</span><span class="p">.</span><span class="nb">window</span><span class="p">.</span><span class="nx">HTMLElement</span><span class="p">;</span>
+</pre></div></div>
+
+<p>テストスクリプトもこんな感じで書き換える。　</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+    </span><span class="err">:</span><span class="w">
+    </span><span class="nl">"test-storybook"</span><span class="p">:</span><span class="w"> </span><span class="nl">"storyshots --polyfills=.storybook/polyfills.js"</span><span class="w">
+    </span><span class="p">:</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<h3>
+<span id="テスト時だけmock化したい部分はnode_envtestで回避" class="fragment"></span><a href="#%E3%83%86%E3%82%B9%E3%83%88%E6%99%82%E3%81%A0%E3%81%91mock%E5%8C%96%E3%81%97%E3%81%9F%E3%81%84%E9%83%A8%E5%88%86%E3%81%AFnode_envtest%E3%81%A7%E5%9B%9E%E9%81%BF"><i class="fa fa-link"></i></a>テスト時だけmock化したい部分は<code>NODE_ENV=test</code>で回避</h3>
+
+<p>当たり前だが、乱数などを使ってる箇所はsnapshotテストではコケる。<br>
+こういう箇所に対しては、<code>NODE_ENV=test</code>で部分的なmockにすると良いだろう。<br>
+hack的ではあるが、まれによく見る慣例だ。</p>
+
+<p>例えばuuidを使うような箇所はこんな感じにする。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">uuid</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">uuid</span><span class="dl">'</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">NODE_ENV</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">test</span><span class="dl">'</span><span class="p">){</span>
+    <span class="k">return</span> <span class="dl">'</span><span class="s1">unique-id</span><span class="dl">'</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">uuid</span><span class="p">()</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>テストの呼び出しにも<code>NODE_ENV</code>を設定する</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+    </span><span class="err">:</span><span class="w">
+    </span><span class="nl">"test-storybook"</span><span class="p">:</span><span class="w"> </span><span class="nl">"NODE_ENV=test storyshots"</span><span class="w">
+    </span><span class="p">:</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<p>ちょっと冗長にはなるが、保守性は高くなるし費用対効果としては悪くないと思っている。</p>
+
+<h3>
+<span id="テスト出来ないコンポーネントは諦める" class="fragment"></span><a href="#%E3%83%86%E3%82%B9%E3%83%88%E5%87%BA%E6%9D%A5%E3%81%AA%E3%81%84%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%81%AF%E8%AB%A6%E3%82%81%E3%82%8B"><i class="fa fa-link"></i></a>テスト出来ないコンポーネントは諦める</h3>
+
+<p>身も蓋もない！という部分もあるが、とはいえCIにあんまり頑張りすぎて疲弊してもしょうがない。<br>
+無理を感じたら、一部のstoriesについてはいっそ諦めるのも一つの手だろう。</p>
+
+<p><code>-g</code>でgrepして一部絞込、<code>-x</code>で一部除外などがある。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>npm run test-storybook -- -g "grep_target"
+npm run test-storybook -- -x "exclue"
+</pre></div></div>
+
+<h4>
+<span id="decoratorを利用してskipする" class="fragment"></span><a href="#decorator%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%A6skip%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>Decoratorを利用してskipする</h4>
+
+<p><code>Decorator</code>と<code>NODE_ENV=test</code>を利用して、テスト時にスキップするデコレータを明示的に記載することも考えられる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">TestSkipDecorator</span> <span class="o">=</span> <span class="p">(</span><span class="nx">story</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">NODE_ENV</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">test</span><span class="dl">'</span><span class="p">){</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Test</span> <span class="nx">Skip</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">story</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="nx">storiesOf</span><span class="p">(</span><span class="dl">'</span><span class="s1">story</span><span class="dl">'</span><span class="p">,</span> <span class="nx">module</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">addDecorator</span><span class="p">(</span><span class="nx">TestSkipDecorator</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="dl">'</span><span class="s1">Module</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">SomeModule</span> <span class="o">/&gt;</span>
+     <span class="p">:</span>
+</pre></div></div>
+
+<h3>
+<span id="ciを回す" class="fragment"></span><a href="#ci%E3%82%92%E5%9B%9E%E3%81%99"><i class="fa fa-link"></i></a>CIを回す</h3>
+
+<p>通常のテストとは分離して定義して、<a href="https://github.com/mysticatea/npm-run-all" rel="nofollow noopener" target="_blank">npm-run-all</a>などを使ってCI上での実行をする</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="err">:</span><span class="w">
+  </span><span class="nl">"test"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mocha"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"test-storybook"</span><span class="p">:</span><span class="w"> </span><span class="s2">"storyshots"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"test:all"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npm-run-all test test-storybook"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<div class="code-frame" data-lang="yaml">
+<div class="code-lang"><span class="bold">circle.yml</span></div>
+<div class="highlight"><pre><span class="na">test</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s">npm run test:all</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="番外もっと色々テストしたいなら" class="fragment"></span><a href="#%E7%95%AA%E5%A4%96%E3%82%82%E3%81%A3%E3%81%A8%E8%89%B2%E3%80%85%E3%83%86%E3%82%B9%E3%83%88%E3%81%97%E3%81%9F%E3%81%84%E3%81%AA%E3%82%89"><i class="fa fa-link"></i></a>番外：もっと色々テストしたいなら？</h2>
+
+<p>個人的には保守性のトレードオフを考えると、あまり複雑にテストするより、snapshotを保存するだけのStructural Testで十分に思えるが、下記の手法も紹介されている。</p>
+
+<ul>
+<li>
+<a href="https://getstorybook.io/docs/testing/interaction-testing" rel="nofollow noopener" target="_blank">Interaction Testing</a>
+
+<ul>
+<li>jestやmochaのテストもまとめれる。</li>
+<li>
+<a href="https://github.com/mthuret/storybook-addon-specifications" rel="nofollow noopener" target="_blank">storybook-addon-specifications</a>を利用する</li>
+</ul>
+</li>
+<li>
+<a href="https://getstorybook.io/docs/testing/css-style-testing" rel="nofollow noopener" target="_blank">CSS/Style Testing</a>
+
+<ul>
+<li>iframeで直接表示させる時の話</li>
+<li>CIの話というより表示確認のため。</li>
+<li>フルサイズ表示するような場合に使う。</li>
+</ul>
+</li>
+</ul>

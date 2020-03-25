@@ -1,0 +1,133 @@
+
+<h1>
+<span id="前置き" class="fragment"></span><a href="#%E5%89%8D%E7%BD%AE%E3%81%8D"><i class="fa fa-link"></i></a>前置き</h1>
+
+<p>CircleCIのworkflowで上手いことdocker-composeの重い処理をなんとかするのをやってみた。</p>
+
+<p>今回はdocker-composeのbuild処理が重くてtest並列化するとそこがボトルネックになるような場合を想定している。<br>
+build自体が重くない場合や並列化が不要な場合は、むしろcache生成・呼び出しで遅くなるパターンもある。</p>
+
+<p><a href="https://circleci.com/docs/2.0/docker-layer-caching/" rel="nofollow noopener" target="_blank">Enabling Docker Layer Caching</a>など公式のdockerキャッシュもあるが、machineモードでないとdocker-composeがフルに利用できない（<a href="https://circleci.com/docs/2.0/docker-compose/" rel="nofollow noopener" target="_blank">volumesが利用できない</a>）のでsave_cache / restore_cacheを使うやり方を色々ひねった。</p>
+
+<h1>
+<span id="手始めにdockerをcacheしてみる" class="fragment"></span><a href="#%E6%89%8B%E5%A7%8B%E3%82%81%E3%81%ABdocker%E3%82%92cache%E3%81%97%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>手始めにdockerをcacheしてみる</h1>
+
+<p>docker-composeに飛びつく前に、docker単体のpullとtestをworkflowで分離してみる。</p>
+
+<p>dockerのcache利用自体は下記で語られているのをほぼ利用する。</p>
+
+<ul>
+<li><a href="http://lambdar.hatenablog.com/entry/2017/04/18/084900" rel="nofollow noopener" target="_blank">CircleCI 2.0 Beta における Docker イメージのビルド</a></li>
+<li><a href="http://qiita.com/na-o-ys/items/7e7a7e4cde378fc54b32" id="reference-c7c3baa6e1299ef21626">CircleCI 2.0 では Docker ビルドキャッシュが効く</a></li>
+</ul>
+
+<p>docker imagesをまるっとsaveするやり方は下記を参考にした</p>
+
+<ul>
+<li><a href="https://stackoverflow.com/questions/35575674/how-to-save-all-docker-images-and-copy-to-another-machine" rel="nofollow noopener" target="_blank">How to save all docker images and copy to another machine?</a></li>
+</ul>
+
+<p>今回はなんでもよかったが、nodeのimageを利用した。</p>
+
+<div class="code-frame" data-lang="yaml">
+<div class="code-lang"><span class="bold">circle.yml</span></div>
+<div class="highlight"><pre><span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">generate_cache</span><span class="pi">:</span>
+    <span class="na">machine</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">docker pull node:8.2.1-onbuild</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="c1"># cacheのために吐き出し</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">mkdir -p ~/caches</span>
+            <span class="s">docker save $(docker images -q) -o ~/caches/images.tar</span>
+      <span class="pi">-</span> <span class="na">save_cache</span><span class="pi">:</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">docker-{{ .Revision }}</span>
+          <span class="na">paths</span><span class="pi">:</span> <span class="s">~/caches/images.tar</span>
+  <span class="na">test</span><span class="pi">:</span>
+    <span class="na">machine</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">restore_cache</span><span class="pi">:</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">docker-{{ .Revision }}</span>
+          <span class="na">paths</span><span class="pi">:</span> <span class="s">~/caches/images.tar</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">set +o pipefail</span>
+            <span class="s">docker load -i ~/caches/images.tar | true</span>
+      <span class="c1"># - run: docker images # imageが持ってこれてることを確認したければこんなコマンドを差し込む</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">pull</span> <span class="c1"># キャッシュ利用しているため、早い（0秒）</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="s">docker pull node:8.2.1-onbuild</span>
+<span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">generate_cache</span>
+      <span class="pi">-</span> <span class="na">test</span><span class="pi">:</span>
+          <span class="na">requires</span><span class="pi">:</span>
+            <span class="pi">-</span> <span class="s">generate_cache</span>
+</pre></div>
+</div>
+
+<p>cacheのキーはリビジョンを利用した。<code>test</code>側でのbuildが0秒になる。</p>
+
+<h1>
+<span id="docker-composeをcacheする" class="fragment"></span><a href="#docker-compose%E3%82%92cache%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>docker-composeをcacheする。</h1>
+
+<p>やり方はほぼ一緒。<code>docker-compose pull</code>と<code>docker-compose build</code>をしてsaveする。</p>
+
+<div class="code-frame" data-lang="yaml">
+<div class="code-lang"><span class="bold">circle.yml</span></div>
+<div class="highlight"><pre><span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">generate_cache</span><span class="pi">:</span>
+    <span class="na">machine</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">restore_cache</span><span class="pi">:</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">docker-{{ .Branch }}-{{ checksum "docker-compose.yml" }}-{{ checksum "Dockerfile" }}</span>
+          <span class="na">paths</span><span class="pi">:</span> <span class="s">~/caches/images.tar</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">set +o pipefail</span>
+            <span class="s">docker load -i ~/caches/images.tar | true</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">pip install docker-compose</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">docker-compose pull</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">docker-compose build</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">mkdir -p ~/caches</span>
+            <span class="s">docker save $(docker images -q) -o ~/caches/images.tar</span>
+      <span class="pi">-</span> <span class="na">save_cache</span><span class="pi">:</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">docker-{{ .Branch }}-{{ checksum "docker-compose.yml" }}-{{ checksum "Dockerfile" }}</span>
+          <span class="na">paths</span><span class="pi">:</span> <span class="s">~/caches/images.tar</span>
+  <span class="na">test</span><span class="pi">:</span>
+    <span class="na">machine</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="c1"># parallelism: 3 # 並列化したいときはparallelismを利用する</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">pip install docker-compose</span>
+      <span class="pi">-</span> <span class="na">restore_cache</span><span class="pi">:</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">docker-{{ .Branch }}-{{ checksum "docker-compose.yml" }}-{{ checksum "Dockerfile" }}</span>
+          <span class="na">paths</span><span class="pi">:</span> <span class="s">~/caches/images.tar</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">set +o pipefail</span>
+            <span class="s">docker load -i ~/caches/images.tar | true</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">docker-compose pull</span> <span class="c1"># 早い</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">docker-compose build</span> <span class="c1"># 早い</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">お好きなテストコマンド</span>
+<span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">generate_cache</span>
+      <span class="pi">-</span> <span class="na">test</span><span class="pi">:</span>
+          <span class="na">requires</span><span class="pi">:</span>
+            <span class="pi">-</span> <span class="s">generate_cache</span>
+</pre></div>
+</div>
+
+<p>こんな具合でgenerate_cacheでdocker-compose周りの遅い処理を片付けてしまって、testを並列化することが出来る。</p>

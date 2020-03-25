@@ -1,0 +1,56 @@
+<p>RxJS6でpipeオペレータが使えるようになったことで、カスタムオペレータを作るのも簡易になった。</p>
+
+<p><a href="https://github.com/ReactiveX/rxjs/blob/master/doc/pipeable-operators.md#build-your-own-operators-easily" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ReactiveX/rxjs/blob/master/doc/pipeable-operators.md#build-your-own-operators-easily</a></p>
+
+<p>上記にある通り、例えば既存のオペレータをまとめる程度であればこのぐらい簡単にできると例示されている。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="cm">/**
+ * You can also use an existing operator like so
+ */</span>
+<span class="kd">const</span> <span class="nx">takeEveryNthSimple</span> <span class="o">=</span> <span class="p">(</span><span class="nx">n</span><span class="p">:</span> <span class="nx">number</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">source</span><span class="p">:</span> <span class="nx">Observable</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">source</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">filter</span><span class="p">((</span><span class="nx">value</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">index</span> <span class="o">%</span> <span class="nx">n</span> <span class="o">===</span> <span class="mi">0</span> <span class="p">))</span>
+</pre></div></div>
+
+<h2>
+<span id="redux-observableで使ってみる" class="fragment"></span><a href="#redux-observable%E3%81%A7%E4%BD%BF%E3%81%A3%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>redux-observableで使ってみる</h2>
+
+<p>例えばよく使う<code>tap</code>でconsole.logに表示して<code>ignoreElements</code>で消すというのはよくやるデバッグの手段だろう</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">tap</span><span class="p">(</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">),</span>
+    <span class="nx">ignoreElements</span><span class="p">()</span>
+  <span class="p">)</span>
+</pre></div></div>
+
+<p>今回はこれをカスタムオペレータとして置き換えてみるとこうなる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">debug</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">source</span><span class="p">:</span> <span class="nx">Observable</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">source</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">tap</span><span class="p">(</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">),</span>
+    <span class="nx">ignoreElements</span><span class="p">()</span>
+  <span class="p">)</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">debug</span><span class="p">()</span>
+  <span class="p">)</span>
+
+</pre></div></div>
+
+<p>オペレータは<code>Observable</code>を受け取って<code>Observable</code>を返せば良い。例示に併せて、ここでは関数化している。debugが関数を返す関数になっているので、例えばtapに渡す値を変更できるようにしたいならこういう具合だろう</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">debug</span> <span class="o">=</span> <span class="p">(</span><span class="nx">tapFn</span> <span class="o">=</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">source</span><span class="p">:</span> <span class="nx">Observable</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">source</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">tap</span><span class="p">(</span><span class="nx">tapFn</span><span class="p">),</span>
+    <span class="nx">ignoreElements</span><span class="p">()</span>
+  <span class="p">)</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">debug</span><span class="p">(</span><span class="nx">item</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">This is DEBUG =&gt; </span><span class="dl">"</span><span class="p">,</span> <span class="nx">item</span><span class="p">))</span>
+  <span class="p">)</span>
+</pre></div></div>

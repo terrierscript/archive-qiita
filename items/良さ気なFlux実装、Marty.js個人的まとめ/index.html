@@ -1,0 +1,279 @@
+<p><strong>2015/12/03 追記:</strong> <a href="https://github.com/martyjs/marty#marty-is-no-longer-actively-maintained-use-alt-or-redux-instead-more-info" rel="nofollow noopener" target="_blank">MartyのReadmeより</a><br>
+Martyはもうメンテをしないので、reduxかaltを使う事が推奨されるようです。ありがとうMarty。</p>
+
+<p>以下過去の記事内容</p>
+
+<hr>
+
+<p><a href="https://github.com/voronianski/flux-comparison" rel="nofollow noopener" target="_blank">Flux Comparison</a>で色々眺めていたり、twitterを追っかけていたり自分で触ってみたりして、<br>
+<a href="http://martyjs.org/" rel="nofollow noopener" target="_blank">Marty.js</a>が個人的に本当に良い気がしている。</p>
+
+<h1>
+<span id="martyの特徴" class="fragment"></span><a href="#marty%E3%81%AE%E7%89%B9%E5%BE%B4"><i class="fa fa-link"></i></a>Martyの特徴</h1>
+
+<h4>
+<span id="作者と質問者の会話より" class="fragment"></span><a href="#%E4%BD%9C%E8%80%85%E3%81%A8%E8%B3%AA%E5%95%8F%E8%80%85%E3%81%AE%E4%BC%9A%E8%A9%B1%E3%82%88%E3%82%8A"><i class="fa fa-link"></i></a>作者と質問者の会話より</h4>
+
+<p>ユーザーとのこんなやりとりがあり、Martyの特徴が要約されているのかなと思ったのでテキトーな意訳として載せておく。</p>
+
+<blockquote>
+<p><a href="https://news.ycombinator.com/item?id=8923245" class="autolink" rel="nofollow noopener" target="_blank">https://news.ycombinator.com/item?id=8923245</a></p>
+
+<p>質問：fluxxorと何が違うのか？<br>
+回答：<br>
+他のFlux実装は、Fluxっぽいデータフェッチ(APIなどのことだと思う)なヘルパーが無い。コンポーネントとのストアのバインディングのボイラープレートの方向に向かっている。あとデバッグ機能。他のはあんまりデバッグ機能拡充してない<br>
+Martyは下記のことを助ける</p>
+
+<ul>
+<li>コールバック無しの非同期データフェッチ</li>
+<li>viewのためのState Mixin</li>
+<li>Chrome Extensionのデバッガー</li>
+</ul>
+</blockquote>
+
+<p>ということでこの辺りが特徴らしい</p>
+
+<ul>
+<li>コールバック無しの非同期データフェッチ</li>
+<li>viewのためのState Mixin</li>
+<li>Chrome Extensionのデバッガー</li>
+</ul>
+
+<h2>
+<span id="facebook-fluxとの対比" class="fragment"></span><a href="#facebook-flux%E3%81%A8%E3%81%AE%E5%AF%BE%E6%AF%94"><i class="fa fa-link"></i></a>Facebook Fluxとの対比</h2>
+
+<p>公式の図とMartyにおけるAPIの対応がどうなっているかをまとめる</p>
+
+<p>だいぶ雑な図だけど僕の中でこんなイメージ。<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F86f92133-cc69-76c7-4031-ad50c11ecce4.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=f46e194c866b15c18d6d90472ab2e7e6" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F86f92133-cc69-76c7-4031-ad50c11ecce4.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=f46e194c866b15c18d6d90472ab2e7e6" alt="marty.png" title="marty.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/86f92133-cc69-76c7-4031-ad50c11ecce4.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F86f92133-cc69-76c7-4031-ad50c11ecce4.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=81f29034492a75d07c2902859ee0bb57 1x" loading="lazy"></a></p>
+
+<h3>
+<span id="対応表" class="fragment"></span><a href="#%E5%AF%BE%E5%BF%9C%E8%A1%A8"><i class="fa fa-link"></i></a>対応表</h3>
+
+<table>
+<thead>
+<tr>
+<th>Flux</th>
+<th>Marty</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web API Utils</td>
+<td>State Source</td>
+</tr>
+<tr>
+<td>Action Creators</td>
+<td>Action Creators</td>
+</tr>
+<tr>
+<td>Store</td>
+<td>Store</td>
+</tr>
+<tr>
+<td>Change Events <br>Store Queries</td>
+<td>State Mixin</td>
+</tr>
+<tr>
+<td>Dispatcher</td>
+<td>Constants(*)</td>
+</tr>
+<tr>
+<td>Callbacks</td>
+<td>Constants(*)</td>
+</tr>
+</tbody>
+</table>
+
+<p>(*) DispatcherとConstantsなどは、隠蔽している関係などで、直接1:1ではなくなっている、このへんは自分なりの理解。</p>
+
+<h2>
+<span id="有益なサンプル" class="fragment"></span><a href="#%E6%9C%89%E7%9B%8A%E3%81%AA%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB"><i class="fa fa-link"></i></a>有益なサンプル</h2>
+
+<p>そもそもまだそんなに見つけられなかったのだけど、見るならこのへん</p>
+
+<ul>
+<li><a href="https://github.com/jhollingworth/marty-todo-mvc" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/jhollingworth/marty-todo-mvc</a></li>
+<li><a href="https://github.com/voronianski/flux-comparison/tree/master/marty" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/voronianski/flux-comparison/tree/master/marty</a></li>
+</ul>
+
+<h1>
+<span id="各機能のざっくり説明など" class="fragment"></span><a href="#%E5%90%84%E6%A9%9F%E8%83%BD%E3%81%AE%E3%81%96%E3%81%A3%E3%81%8F%E3%82%8A%E8%AA%AC%E6%98%8E%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>各機能のざっくり説明など</h1>
+
+<p>だいたいコードとかは公式サンプル持ってきたりしています</p>
+
+<h2>
+<span id="state-source" class="fragment"></span><a href="#state-source"><i class="fa fa-link"></i></a><a href="http://martyjs.org/api/state-sources/index.html" rel="nofollow noopener" target="_blank">State Source</a>
+</h2>
+
+<p>WebAPIUtilに相当する、データ取得の実装を巻き取る層。<br>
+Martyの目玉機能の一つだし僕が「これいいなあ」となった部分の一つ。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">UserAPI.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">UserAPI</span> <span class="o">=</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">createStateSource</span><span class="p">({</span>
+  <span class="na">type</span><span class="p">:</span> <span class="dl">'</span><span class="s1">http</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">baseUrl</span><span class="p">:</span> <span class="dl">'</span><span class="s1">http://foo.com</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">getUsers</span><span class="p">:</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// github/fetch 形式での取得（後述）</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/users</span><span class="dl">'</span><span class="p">).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// 完了したら、ActionCreatorを呼ぶ</span>
+      <span class="nx">SourceActionCreators</span><span class="p">.</span><span class="nx">receiveUsers</span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">body</span><span class="p">);</span>
+    <span class="p">});</span>
+  <span class="p">},</span>
+  <span class="na">createUser</span><span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="dl">'</span><span class="s1">/users</span><span class="dl">'</span><span class="p">,</span> <span class="p">{</span> <span class="na">body</span><span class="p">:</span> <span class="nx">user</span> <span class="p">});</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+
+<p>こんな感じで<code>this.get</code>などで通信処理ができる。<br>
+HTTPの通信処理は<a href="https://github.com/matthew-andrews/isomorphic-fetch" rel="nofollow noopener" target="_blank">isomophic-fetch</a>が使われているようなので何も考えずにpromiseな感じで書いていける。</p>
+
+<p>またHTTPだけでなくLocal StorageやSession Storageへのアクセスヘルパーも用意してくれている模様（未調査）</p>
+
+<h2>
+<span id="constants" class="fragment"></span><a href="#constants"><i class="fa fa-link"></i></a><a href="http://martyjs.org/api/constants/index.html" rel="nofollow noopener" target="_blank">Constants</a>
+</h2>
+
+<p>このあたりからは他のflux実装とわりと似てくる。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">Constants.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">Constants</span> <span class="o">=</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">createConstants</span><span class="p">([</span>
+  <span class="dl">'</span><span class="s1">RECEIVE_USERS</span><span class="dl">'</span><span class="p">,</span>
+  <span class="dl">'</span><span class="s1">DELETE_USER</span><span class="dl">'</span>
+<span class="p">]);</span>
+</pre></div>
+</div>
+
+<ul>
+<li>ほかのflux実装にもよくあるconstantとほぼ一緒。</li>
+<li>Actionとして発火される定数を定義</li>
+<li>オブジェクトとしてconstantを階層化することもできる</li>
+<li>各Constantsが、<code>Action</code>を発火することのできる<code>Action Creator</code>の関数となっている（という認識）</li>
+<li>
+<code>{Action Type}_STARTING</code>、<code>{Action Type}_DONE</code>、<code>{Action Type}_FAILED</code>など、特定の接尾辞のついた定義をすることによってPromiseがらみの処理ができるらしい（未調査）
+
+<ul>
+<li><a href="http://martyjs.org/guides/action-creators/index.html" rel="nofollow noopener" target="_blank">公式ドキュメント</a></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="action-creators" class="fragment"></span><a href="#action-creators"><i class="fa fa-link"></i></a><a href="http://martyjs.org/api/action-creators/index.html" rel="nofollow noopener" target="_blank">Action Creators</a>
+</h2>
+
+<p>これもわりと他にもよくある実装。</p>
+
+<ul>
+<li>ちょっとこれは理解するの時間がかかった。</li>
+<li>言ってしまえばConstantsから生まれる<code>Action Creator</code>の集合体。</li>
+<li>
+<code>action.rollback()</code>などで失敗時にロールバックもできるらしい。（未調査）</li>
+<li>体感としてこのあたりどうしても若干冗長に感じる</li>
+</ul>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">ActionCreatro.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">UserConstants</span> <span class="o">=</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">createConstants</span><span class="p">([</span><span class="dl">"</span><span class="s2">UPDATE_EMAIL</span><span class="dl">"</span><span class="p">]);</span>
+
+<span class="kd">var</span> <span class="nx">UserActionCreators</span> <span class="o">=</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">createActionCreators</span><span class="p">({</span>
+  <span class="na">updateEmail</span><span class="p">:</span> <span class="nx">UserConstants</span><span class="p">.</span><span class="nx">UPDATE_EMAIL</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">userId</span><span class="p">,</span> <span class="nx">email</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">dispatch</span><span class="p">(</span><span class="nx">userId</span><span class="p">,</span> <span class="nx">email</span><span class="p">)</span> <span class="c1">//例</span>
+  <span class="p">})</span>
+<span class="p">});</span>
+
+<span class="nx">UserActionCreators</span><span class="p">.</span><span class="nx">updateEmail</span><span class="p">(</span><span class="mi">123</span><span class="p">,</span> <span class="dl">"</span><span class="s2">foo@bar.com</span><span class="dl">"</span><span class="p">);</span>
+</pre></div>
+</div>
+
+<ul>
+<li>また注意点として、この部分の処理は<code>()=&gt;</code>なarrow functionを利用するとthisのスコープが変更されてしまうので、避けるようにとのアナウンスがある。
+
+<ul>
+<li>個人的には余り気にならないが、がっかりする人いそうだ</li>
+<li><a href="https://github.com/jhollingworth/marty/pull/84" rel="nofollow noopener" target="_blank">関連pull req</a></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="stores" class="fragment"></span><a href="#stores"><i class="fa fa-link"></i></a><a href="http://martyjs.org/api/stores/index.html" rel="nofollow noopener" target="_blank">Stores</a>
+</h2>
+
+<ul>
+<li>だいたい他のfluxと同等のStore</li>
+<li>
+<code>handlers</code>の定義でConstantの<code>Action Creator</code>を指定している。</li>
+<li>
+<code>handlers</code>の定義は、複数のConstantsを受けたりとか色々複雑な指定ができる模様（未調査）
+
+<ul>
+<li><a href="http://martyjs.org/api/stores/#handlers" rel="nofollow noopener" target="_blank">公式ドキュメント</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">Store.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">UsersStore</span> <span class="o">=</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">createStore</span><span class="p">({</span>
+  <span class="na">displayName</span><span class="p">:</span> <span class="dl">'</span><span class="s1">Users</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">handlers</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">addUser</span><span class="p">:</span> <span class="nx">Constants</span><span class="p">.</span><span class="nx">RECEIVE_USER</span>
+  <span class="p">},</span>
+  <span class="na">getInitialState</span><span class="p">:</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{};</span>
+  <span class="p">},</span>
+  <span class="na">addUser</span><span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">[</span><span class="nx">user</span><span class="p">.</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="nx">user</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">hasChanged</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="state-mixin" class="fragment"></span><a href="#state-mixin"><i class="fa fa-link"></i></a><a href="http://martyjs.org/api/state-mixin/" rel="nofollow noopener" target="_blank">State Mixin</a>
+</h2>
+
+<ul>
+<li>State &lt;=&gt; Component(ReactComponent)をつなぐ部分</li>
+<li>結構公式だと長いサンプルがあるが、単純にStoreとComponentをつなぐなら簡易に書ける</li>
+</ul>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">UserComponent.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">UserState</span> <span class="o">=</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">createStateMixin</span><span class="p">(</span><span class="nx">UserStore</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">UserComponent</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createClass</span><span class="p">({</span>
+  <span class="na">mixins</span> <span class="p">:</span> <span class="p">[</span><span class="nx">UserState</span><span class="p">],</span>
+    <span class="p">:</span>
+    <span class="p">:</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+
+<ul>
+<li>上記は結構sugger syntaxっぽい気もするが、複数のStoreをListenしたりとか細かめに設定することも可能（未調査）</li>
+</ul>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">UserState.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">UserState</span> <span class="o">=</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">createStateMixin</span><span class="p">({</span>
+  <span class="na">listenTo</span><span class="p">:</span> <span class="p">[</span><span class="nx">UserStore</span><span class="p">,</span> <span class="nx">FooStore</span><span class="p">]</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="debug機能" class="fragment"></span><a href="#debug%E6%A9%9F%E8%83%BD"><i class="fa fa-link"></i></a>Debug機能</h2>
+
+<p>なんかまだうまく使えてないので未調査。</p>
+
+<h1>
+<span id="結論" class="fragment"></span><a href="#%E7%B5%90%E8%AB%96"><i class="fa fa-link"></i></a>結論</h1>
+
+<p>Martyええぞ。</p>

@@ -1,0 +1,214 @@
+<p>なんだかノウハウ溜まってきた感あるのでまとめる。</p>
+
+<h1>
+<span id="1-prefixの付与はautoprefixerに任せる方が良かった" class="fragment"></span><a href="#1-prefix%E3%81%AE%E4%BB%98%E4%B8%8E%E3%81%AFautoprefixer%E3%81%AB%E4%BB%BB%E3%81%9B%E3%82%8B%E6%96%B9%E3%81%8C%E8%89%AF%E3%81%8B%E3%81%A3%E3%81%9F"><i class="fa fa-link"></i></a>1. prefixの付与はautoprefixerに任せる方が良かった</h1>
+
+<p>基本的な部分だが、SCSSになんでもかんでもやらせようとするのはよくない。</p>
+
+<p>例えば下記のようなprefix</p>
+
+<div class="code-frame" data-lang="css"><div class="highlight"><pre><span class="nt">div</span> <span class="p">{</span>
+    <span class="nl">-webkit-box-shadow</span><span class="p">:</span> <span class="m">0px</span> <span class="m">0px</span> <span class="m">10px</span> <span class="n">rgba</span><span class="p">(</span><span class="m">255</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">.5</span><span class="p">);</span>
+    <span class="nl">-moz-box-shadow</span><span class="p">:</span> <span class="m">0px</span> <span class="m">0px</span> <span class="m">10px</span> <span class="n">rgba</span><span class="p">(</span><span class="m">255</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">.5</span><span class="p">);</span>
+    <span class="nl">box-shadow</span><span class="p">:</span> <span class="m">0px</span> <span class="m">0px</span> <span class="m">10px</span> <span class="n">rgba</span><span class="p">(</span><span class="m">255</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">.5</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>sass/scssであれば<a href="http://compass-style.org/" rel="nofollow noopener" target="_blank">Compass</a>、<a href="http://bourbon.io/" rel="nofollow noopener" target="_blank">Bourbon</a>、lessであれば<a href="http://lessprefixer.com/" rel="nofollow noopener" target="_blank">LESSPrefixer</a>など、mixinとしてprefix付与を提供してくれるライブラリがあったりするが、これよりもautoprefixerによる解決をおすすめしたい。</p>
+
+<p>gulpなどを導入していない場合、autoprefixer導入には初期コストがちょっとかかるものの、運用コストのことまで考えると<a href="https://github.com/postcss/autoprefixer" rel="nofollow noopener" target="_blank">autoprefixer</a>を入れる方が圧倒的に楽だった。<br>
+（railsであれば<a href="https://github.com/ai/autoprefixer-rails" rel="nofollow noopener" target="_blank">autoprefixer-rails</a>というのもあるらしい。）</p>
+
+<h3>
+<span id="備考autoprefixerとpostcss" class="fragment"></span><a href="#%E5%82%99%E8%80%83autoprefixer%E3%81%A8postcss"><i class="fa fa-link"></i></a>(備考)autoprefixerとpostcss</h3>
+
+<p><a href="https://github.com/postcss/postcss" rel="nofollow noopener" target="_blank">postcss</a>というscssのコンパイルした『後』に更にcssを変換するという考えのツールであり、autoprefixerにはその土台が利用されている。</p>
+
+<p>流れとしては</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>sass -&gt; css -&gt; css (postcss後)
+</pre></div></div>
+
+<p>という変換の流れだ。</p>
+
+<p>例えば下記のように、指定したブラウザで必要なprefixを自動的に付与してくれる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">autoprefixer</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">gulp</span><span class="p">.</span><span class="nx">src</span><span class="p">(</span><span class="dl">'</span><span class="s1">./src/*.css</span><span class="dl">'</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">postcss</span><span class="p">([</span> <span class="nx">autoprefixer</span><span class="p">({</span> <span class="na">browsers</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">last 2 version</span><span class="dl">'</span><span class="p">]</span> <span class="p">})</span> <span class="p">]))</span>
+        <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">gulp</span><span class="p">.</span><span class="nx">dest</span><span class="p">(</span><span class="dl">'</span><span class="s1">./dest</span><span class="dl">'</span><span class="p">));</span>
+<span class="p">});</span>
+</pre></div></div>
+
+<p>これを仕掛けておけばcssはprefixを付けない状態で何も気にせず書いておけば良い。</p>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">こんな感じ.scss</span></div>
+<div class="highlight"><pre><span class="nt">div</span> <span class="p">{</span>
+    <span class="nl">box-shadow</span><span class="p">:</span> <span class="m">0px</span> <span class="m">0px</span> <span class="m">10px</span> <span class="nf">rgba</span><span class="p">(</span><span class="m">255</span><span class="o">,</span><span class="m">0</span><span class="o">,</span><span class="m">0</span><span class="o">,.</span><span class="m">5</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>変換後にはprefixが自動で付与された状態になる。</p>
+
+<p><a href="http://cssnext.io/" rel="nofollow noopener" target="_blank">cssnext</a>もpostcssの一部として利用できるので、合わせて検討してもよいかもしれない</p>
+
+<h1>
+<span id="2-gulpを利用中ならgulp-ruby-sassよりnode-sassの方がオススメ" class="fragment"></span><a href="#2-gulp%E3%82%92%E5%88%A9%E7%94%A8%E4%B8%AD%E3%81%AA%E3%82%89gulp-ruby-sass%E3%82%88%E3%82%8Anode-sass%E3%81%AE%E6%96%B9%E3%81%8C%E3%82%AA%E3%82%B9%E3%82%B9%E3%83%A1"><i class="fa fa-link"></i></a>2. gulpを利用中ならgulp-ruby-sassよりnode-sassの方がオススメ</h1>
+
+<p>とにかくコンパイルが早い。機能も十分追従してきたのでオススメ。</p>
+
+<p>詳細は過去にまとめた事があったので下記を参照のこと。<br>
+<a href="http://qiita.com/inuscript/items/8e91c825c525ad17539b" id="reference-c07269ce7950e7edf729">gulpでruby-sassからnode-sassへ移行するときのハマりどころ</a></p>
+
+<h1>
+<span id="3-便利なサイト結構ある" class="fragment"></span><a href="#3-%E4%BE%BF%E5%88%A9%E3%81%AA%E3%82%B5%E3%82%A4%E3%83%88%E7%B5%90%E6%A7%8B%E3%81%82%E3%82%8B"><i class="fa fa-link"></i></a>3. 便利なサイト結構ある</h1>
+
+<p>便利なサイトまとめてみるか、と思ったら結構あった。<br>
+（かといって単発記事になる量じゃなかったので放出）</p>
+
+<ul>
+<li>
+<p><strong><a href="http://sassmeister.com/" rel="nofollow noopener" target="_blank">Sassmeister</a></strong></p>
+
+<ul>
+<li>sassのいわゆるplayground </li>
+<li>「あれ？この挙動どうなるんだっけ？」って迷ったら使って見るとわかる。</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="http://css2sass.herokuapp.com/" rel="nofollow noopener" target="_blank">css2sass</a></strong></p>
+
+<ul>
+<li>cssをsassにしてくれるコンバータ。</li>
+<li>古くて大きいcssを手でscssにするのは大変なのでざっくりこれで変換する。便利。</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="http://www.sache.in/" rel="nofollow noopener" target="_blank">Sache</a></strong></p>
+
+<ul>
+<li>sassのライブラリが検索できる。</li>
+<li>直接使っても良いし、コード見るだけでも結構参考になる。</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="http://sass-guidelin.es/" rel="nofollow noopener" target="_blank">Sass Guideline</a></strong></p>
+
+<ul>
+<li>いわゆるガイドライン。</li>
+<li>色々参考になる情報がある。</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="http://caniuse.com/" rel="nofollow noopener" target="_blank">Can I Use?</a></strong></p>
+
+<ul>
+<li>どのブラウザがどんなプロパティやJavaScriptの機能などをサポートしているかを教えてくれる。
+-「このプロパティってどのぐらいのブラウザサポートしてたっけ」
+みたいな事が知りたい時に重宝する。</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="http://sass-compatibility.github.io/" rel="nofollow noopener" target="_blank">Sass Compability</a></strong></p>
+
+<ul>
+<li>上級者向け。ruby版のsassとlibsassの機能比較をしている。</li>
+<li>最近は<a href="https://github.com/sass/libsass/wiki/The-LibSass-Compatibility-Plan" rel="nofollow noopener" target="_blank">互換性維持</a>の計画をしているものの、まだ少々動かないものがあるので「おや？」となったら確認しに行くと良い。</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="4-ページ単位でscssを読み込み分けるのに良いやり方" class="fragment"></span><a href="#4-%E3%83%9A%E3%83%BC%E3%82%B8%E5%8D%98%E4%BD%8D%E3%81%A7scss%E3%82%92%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%81%BF%E5%88%86%E3%81%91%E3%82%8B%E3%81%AE%E3%81%AB%E8%89%AF%E3%81%84%E3%82%84%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>4. ページ単位でscssを読み込み分けるのに良いやり方</h1>
+
+<p>昨今cssは最終的に1ファイルにconcatされるのが割りと今風だが、個別ページで読み込みたいようなクラスもある。<br>
+そういう時はこんな感じでやってみるとそれぞれ独立出来て良い。</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="nt">body</span><span class="nc">.foo-controller.baz-action</span><span class="p">{</span>
+    <span class="k">@import</span> <span class="s2">"path/to/component"</span>
+<span class="p">}</span>
+
+<span class="nt">body</span><span class="nc">.boo-controller.brr-action</span><span class="p">{</span>
+    <span class="k">@import</span> <span class="s2">"path/to/component2"</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>bodyにcontrollerやaction名を付与するやり方は下記などが参考になった。<br>
+<a href="http://qiita.com/naoty_k/items/d490b456e0f385942be8" class="autolink" id="reference-0321389f00792b813320">http://qiita.com/naoty_k/items/d490b456e0f385942be8</a></p>
+
+<h1>
+<span id="5-グリッドシステムにsusyを利用すると良い" class="fragment"></span><a href="#5-%E3%82%B0%E3%83%AA%E3%83%83%E3%83%89%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%ABsusy%E3%82%92%E5%88%A9%E7%94%A8%E3%81%99%E3%82%8B%E3%81%A8%E8%89%AF%E3%81%84"><i class="fa fa-link"></i></a>5. グリッドシステムにSusyを利用すると良い</h1>
+
+<p>やっぱりグリッドシステムはほしいし、自作もしたくない。</p>
+
+<p>sassにおいてグリッドしたいと、<a href="http://neat.bourbon.io/" rel="nofollow noopener" target="_blank">Neat</a>か<a href="http://susy.oddbird.net/" rel="nofollow noopener" target="_blank">susy</a>のだいたい２つが筆頭候補になってくる。<br>
+どちらも試したが、susyの方が今風でよく出来ている印象があった。</p>
+
+<p>こちらも過去に比較をまとめていたので詳細は下記。<br>
+<a href="http://qiita.com/suisho/items/8f54b7baeb61a3341c6d" class="autolink" id="reference-764f82f41800b42b54a8">http://qiita.com/suisho/items/8f54b7baeb61a3341c6d</a></p>
+
+<p>node環境でビルドしているので、<code>npm susy</code>でインストールし、gulpのコンパイル時には<code>node_modules/susy</code>をインクルードパスとして含めている。</p>
+
+<h1>
+<span id="6-git上でのconflictが激しい場合はgitattributesの設定を検討する" class="fragment"></span><a href="#6-git%E4%B8%8A%E3%81%A7%E3%81%AEconflict%E3%81%8C%E6%BF%80%E3%81%97%E3%81%84%E5%A0%B4%E5%90%88%E3%81%AFgitattributes%E3%81%AE%E8%A8%AD%E5%AE%9A%E3%82%92%E6%A4%9C%E8%A8%8E%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>6. git上でのconflictが激しい場合は.gitattributesの設定を検討する</h1>
+
+<p>最終成果物のcssをgitに含めるかどうかも議論点ではあるが、gitに含めない運用をするにはサーバーでのprecompileが必要だったりとなかなか簡単にもいかない。<br>
+「だけどコミットしてるとsassがコンフリクトしまくって困るよ！」という場合は.gitattributesを利用して、コンパイル後のcssをbinary扱いしてしまう手がある</p>
+
+<div class="code-frame" data-lang="gitattirbute"><div class="highlight"><pre>*.css binary
+</pre></div></div>
+
+<p>ただし、当然意図せぬ衝突がなされてしまうことも予想されるので、取り扱いには十分注意。<br>
+CIなどでコンパイルチェックの機構を入れるなども併せて検討したほうが良いだろう。</p>
+
+<h1>
+<span id="7-compassの導入は極力避ける" class="fragment"></span><a href="#7-compass%E3%81%AE%E5%B0%8E%E5%85%A5%E3%81%AF%E6%A5%B5%E5%8A%9B%E9%81%BF%E3%81%91%E3%82%8B"><i class="fa fa-link"></i></a>7. Compassの導入は極力避ける</h1>
+
+<p>これは結構悩ましいが、個人的にはCompassを使わなかったことは正解かなと思っている。<br>
+理由は下記。</p>
+
+<ul>
+<li>ruby依存が強め
+
+<ul>
+<li>node-sassを使いたいときに若干移植しづらかった（一応node-sassはcompassもサポートはしている。僕は使ったことはないけど）</li>
+</ul>
+</li>
+<li>画像spriteなど独自なものを使ってしまうとCompassへの依存強くなりすぎて離れられない。
+
+<ul>
+<li>これが一番致命的。引っぺがすの結構辛い</li>
+</ul>
+</li>
+<li>巨大な割に実際そんなに使う関数多くない
+
+<ul>
+<li>autoprefixerでだいたいまかなえたり。自作で十分だったり
+
+<ul>
+<li>一部だけマクロにほしかったらsacheで探せばいい感じもしている。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>ドキュメントが読みづらい
+
+<ul>
+<li>これは主観だけど、Bourbonとかに比べて結構読みづらさを感じる。</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="8-ie9以下セレクタ4096個以上無視される問題を回避するにはblesscssが良さそう" class="fragment"></span><a href="#8-ie9%E4%BB%A5%E4%B8%8B%E3%82%BB%E3%83%AC%E3%82%AF%E3%82%BF4096%E5%80%8B%E4%BB%A5%E4%B8%8A%E7%84%A1%E8%A6%96%E3%81%95%E3%82%8C%E3%82%8B%E5%95%8F%E9%A1%8C%E3%82%92%E5%9B%9E%E9%81%BF%E3%81%99%E3%82%8B%E3%81%AB%E3%81%AFblesscss%E3%81%8C%E8%89%AF%E3%81%95%E3%81%9D%E3%81%86"><i class="fa fa-link"></i></a>8. IE9以下セレクタ4096個以上無視される問題を回避するにはblesscssが良さそう</h1>
+
+<p>IE9以下では4096個以上のセレクタが無視される問題がある<br>
+<a href="https://www.softel.co.jp/blogs/tech/archives/3045" class="autolink" rel="nofollow noopener" target="_blank">https://www.softel.co.jp/blogs/tech/archives/3045</a></p>
+
+<p>実際まだそこまでの規模に直面したことは無いので、「これが良さそう」ぐらいな温度感だが、<a href="http://blesscss.com/" rel="nofollow noopener" target="_blank">blesscss</a>を組み合わせるのが良さそう。<br>
+<a href="https://github.com/adam-lynch/gulp-bless" rel="nofollow noopener" target="_blank">gulpプラグイン</a>もあるようだ。</p>
+
+<p>環境によっては「増えた場合に手動で読み込むcssを増やす」ということをしなければならないが、まあそう頻繁に起こることではないので今の所気にしていない。</p>

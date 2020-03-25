@@ -1,0 +1,68 @@
+<p>そんなに使わないのでいつも流し見していたのだけど、どうしてもReact Dev ToolをElectronに入れたくなって本気出したら詰んだ。</p>
+
+<p>ドキュメントはこのあたり。両方読まないとはまりがち。</p>
+
+<ul>
+<li><a href="https://github.com/electron/electron/blob/master/docs/tutorial/devtools-extension.md" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/electron/electron/blob/master/docs/tutorial/devtools-extension.md</a></li>
+<li><a href="https://github.com/electron/electron/blob/master/docs/api/browser-window.md#browserwindowadddevtoolsextensionpath" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/electron/electron/blob/master/docs/api/browser-window.md#browserwindowadddevtoolsextensionpath</a></li>
+</ul>
+
+<p>最終形のjsはこんな具合</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="p">{</span><span class="nx">BrowserWindow</span><span class="p">}</span> <span class="o">=</span> <span class="nx">electron</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">os</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">os</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">path</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">fs</span><span class="dl">'</span><span class="p">)</span>
+
+<span class="kd">function</span> <span class="nx">createWindow</span><span class="p">()</span> <span class="p">{</span>
+  <span class="err">　</span><span class="p">:</span>
+  <span class="err">　</span><span class="p">:</span>
+  <span class="c1">// react dev toolのID</span>
+  <span class="kd">const</span> <span class="nx">id</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">fmkadmapgofadopljbjfkapdkoienihi</span><span class="dl">"</span>
+
+  <span class="c1">// extensionの場所、"~/Library"だとダメだった</span>
+  <span class="kd">const</span> <span class="nx">extensionDir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">homedir</span><span class="p">(),</span> <span class="dl">"</span><span class="s2">Library/Application Support/Google/Chrome/Default/Extensions/</span><span class="dl">"</span><span class="p">)</span>
+
+  <span class="c1">// version指定</span>
+  <span class="kd">const</span> <span class="nx">versions</span> <span class="o">=</span> <span class="nx">fs</span><span class="p">.</span><span class="nx">readdirSync</span><span class="p">(</span><span class="s2">`</span><span class="p">${</span><span class="nx">extensionDir</span><span class="p">}</span><span class="s2">/</span><span class="p">${</span><span class="nx">id</span><span class="p">}</span><span class="s2">`</span><span class="p">).</span><span class="nx">sort</span><span class="p">()</span>
+  <span class="kd">const</span> <span class="nx">version</span> <span class="o">=</span> <span class="nx">versions</span><span class="p">.</span><span class="nx">pop</span><span class="p">()</span>
+
+  <span class="c1">// 利用</span>
+  <span class="nx">BrowserWindow</span><span class="p">.</span><span class="nx">addDevToolsExtension</span><span class="p">(</span><span class="s2">`</span><span class="p">${</span><span class="nx">extensionDir</span><span class="p">}</span><span class="s2">/</span><span class="p">${</span><span class="nx">id</span><span class="p">}</span><span class="s2">/</span><span class="p">${</span><span class="nx">version</span><span class="p">}</span><span class="s2">`</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="dl">'</span><span class="s1">ready</span><span class="dl">'</span><span class="p">,</span> <span class="nx">createWindow</span><span class="p">);</span>
+
+</pre></div></div>
+
+<h1>
+<span id="ポイントなど" class="fragment"></span><a href="#%E3%83%9D%E3%82%A4%E3%83%B3%E3%83%88%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>ポイントなど</h1>
+
+<ul>
+<li>ドキュメントには書いてることとか
+
+<ul>
+<li>Chromeからインストールしておく必要がある。</li>
+<li>extensionのIDを調べておかないといけない</li>
+</ul>
+</li>
+<li>ハマりどころとか工夫とか
+
+<ul>
+<li>
+<code>BrowserWindow.addDevToolsExtension</code>は<code>ready</code>後じゃないと使えない</li>
+<li>
+<code>"~/Library"</code>のような相対指定だとうまくいかないっぽかった。</li>
+<li>なので<code>os.homedir()</code>と<code>path.resolve</code>を使って解決。（直接絶対パスにしてもいい）</li>
+<li>versionも指定しないといけない。</li>
+<li>調べてもいいけど、多分だるいだろうなーと思ったので、<code>fs.readdirSync</code>を使うって楽をする。
+
+<ul>
+<li>
+<code>sort</code>して<code>pop</code>すれば多分最新versionがとれる。はず。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>

@@ -1,0 +1,143 @@
+<p><code>create-react-app</code> には <code>registerServiceWorker.js</code> というservice workerを登録する仕組みが乗っかっている。</p>
+
+<p>これはoffline cacheを実現するものなのだが、cache-first strategyという手法を取っており、コードを更新してデプロイした際の取り回しがなかなか手こずるので、割といつもdisableにしがち。</p>
+
+<p>だが、いつまでもこのままというのもちょっと気持ち悪いので、一度service-workerの更新に合わせて「更新してください」みたいなモーダルを出すexampleをやってみた。</p>
+
+<hr>
+
+<p><a href="../../img/11_f.gif" target="_blank" rel="nofollow noopener"><img src="../../img/11_f.gif" alt="demo" data-canonical-src="../../img/11_f.gif" loading="lazy"></a></p>
+
+<p><a href="https://github.com/inuscript/example-service-worker.git" rel="nofollow noopener" target="_blank">ソース</a></p>
+
+<hr>
+
+<h2>
+<span id="仕組みおさらい" class="fragment"></span><a href="#%E4%BB%95%E7%B5%84%E3%81%BF%E3%81%8A%E3%81%95%E3%82%89%E3%81%84"><i class="fa fa-link"></i></a>仕組みおさらい</h2>
+
+<p>create-react-appは <a href="https://github.com/goldhand/sw-precache-webpack-plugin/" rel="nofollow noopener" target="_blank">sw-precache-webpack-plugin</a>というpluginを組み込んでserviceWorkerを組み込んでいる。</p>
+
+<p>このpluginはwebpack上でマニフェスト的な値を生成し、それと<a href="https://github.com/GoogleChromeLabs/sw-precache" rel="nofollow noopener" target="_blank">sw-precache</a>を組わせて裏側でfetchする仕組みをもたせている。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// service-worker.js</span>
+ <span class="p">:</span>
+<span class="c1">// ここらへんの値をwebpackから吐いている。</span>
+<span class="kd">var</span> <span class="nx">precacheConfig</span> <span class="o">=</span> <span class="p">[[</span><span class="dl">"</span><span class="s2">/index.html</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">08af9741a3d97d13dec114a974062844</span><span class="dl">"</span><span class="p">],[</span><span class="dl">"</span><span class="s2">/static/css/main.c17080f1.css</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">302476b8b379a677f648aa1e48918ebd</span><span class="dl">"</span><span class="p">],[</span><span class="dl">"</span><span class="s2">/static/js/main.0ccb3c41.js</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">426e3841d0fed136b6bb86108f30e5e2</span><span class="dl">"</span><span class="p">],[</span><span class="dl">"</span><span class="s2">/static/media/logo.5d5d9eef.svg</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">5d5d9eefa31e5e13a6610d9fa7a283bb</span><span class="dl">"</span><span class="p">]];</span>
+
+<span class="c1">// :</span>
+<span class="c1">// あとはsw-preacacheの生成コード</span>
+
+</pre></div></div>
+
+<p>そして、これを <code>registerServiceWorker.js</code>が登録することでキャッシュが動いている。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// registerServiceWorker.js</span>
+  <span class="p">:</span>
+  <span class="p">:</span>
+      <span class="kd">const</span> <span class="nx">swUrl</span> <span class="o">=</span> <span class="s2">`</span><span class="p">${</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">PUBLIC_URL</span><span class="p">}</span><span class="s2">/service-worker.js`</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">isLocalhost</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// This is running on localhost. Lets check if a service worker still exists or not.</span>
+        <span class="nx">checkValidServiceWorker</span><span class="p">(</span><span class="nx">swUrl</span><span class="p">);</span>
+</pre></div></div>
+
+<h2>
+<span id="1-準備" class="fragment"></span><a href="#1-%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>1. 準備</h2>
+
+<p><code>create-react-app</code>の標準状態だと、hot reloadがあったりしてlocalでのservice workerの検証がしづらい。</p>
+
+<p>なので<code>eject</code>して、加えて<a href="https://github.com/zeit/serve" rel="nofollow noopener" target="_blank"><code>serve</code></a>でローカルサーバーで実行する。 (serveはcache-controlを0にする必要もある)</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="p">{</span>
+  <span class="dl">"</span><span class="s2">scripts</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">start</span><span class="dl">"</span><span class="p">:</span>
+      <span class="dl">"</span><span class="s2">NODE_ENV=production webpack --config config/webpack.config.prod.js --watch</span><span class="dl">"</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">static</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">serve -c 0 -s build -o --local</span><span class="dl">"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>これでこんな感じでstart。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn start &amp; yarn static
+</pre></div></div>
+
+<h2>
+<span id="2-onupdatefoundからイベントを発火" class="fragment"></span><a href="#2-onupdatefound%E3%81%8B%E3%82%89%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E3%82%92%E7%99%BA%E7%81%AB"><i class="fa fa-link"></i></a>2. <code>onupdatefound</code>からイベントを発火</h2>
+
+<p>ServiceWorkerが更新を検知した際、registerServiceWorkerの<a href="https://github.com/facebook/create-react-app/blob/0b1d6365768ae3bd267b042b74bab249673f1a9f/packages/react-scripts/template/src/registerServiceWorker.js#L63-L69" rel="nofollow noopener" target="_blank"><code>onupdatefound</code></a> が発火するので、ここにevent発火を仕掛ける。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">registration</span><span class="p">.</span><span class="nx">onupdatefound</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">installingWorker</span> <span class="o">=</span> <span class="nx">registration</span><span class="p">.</span><span class="nx">installing</span><span class="p">;</span>
+    <span class="nx">installingWorker</span><span class="p">.</span><span class="nx">onstatechange</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">navigator</span><span class="p">.</span><span class="nx">serviceWorker</span><span class="p">.</span><span class="nx">controller</span><span class="p">)</span> <span class="p">{</span>
+          <span class="c1">// At this point, the old content will have been purged and</span>
+          <span class="c1">// the fresh content will have been added to the cache.</span>
+          <span class="c1">// It's the perfect time to display a "New content is</span>
+          <span class="c1">// available; please refresh." message in your web app.</span>
+          <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">New content is available; please refresh.</span><span class="dl">"</span><span class="p">);</span>
+
+          <span class="c1">// イベント発火</span>
+          <span class="kd">const</span> <span class="nx">event</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Event</span><span class="p">(</span><span class="dl">"</span><span class="s2">newContentAvailable</span><span class="dl">"</span><span class="p">);</span>
+          <span class="nb">window</span><span class="p">.</span><span class="nx">dispatchEvent</span><span class="p">(</span><span class="nx">event</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+           <span class="p">:</span>
+</pre></div></div>
+
+<p>ちなみに、<a href="https://github.com/facebook/create-react-app/blob/cb3f835586d2f1e3b9ddcf3a29442c9d76eaef84/packages/react-scripts/template/src/serviceWorker.js#L71-L73" rel="nofollow noopener" target="_blank">nextバージョン</a> では、<code>config.onUpdate</code> というコールバックが追加されており、<code>registerServiceWorker.js</code>に直接手を加えなくても大丈夫になりそう</p>
+
+<h2>
+<span id="2-reloadmodalを作る" class="fragment"></span><a href="#2-reloadmodal%E3%82%92%E4%BD%9C%E3%82%8B"><i class="fa fa-link"></i></a>2. <code>&lt;ReloadModal&gt;</code>を作る</h2>
+
+<p>次に <code>&lt;ReloadModal&gt;</code>を作る。これは発火されたグローバルな <code>newContentAvailable</code> イベントを拾ってくるためのもの。<br>
+この例では、わかりやすさ重視でstate使ったり、ライフサイクルをそのまま使っているので、必要に応じてreduxにしたりなにかしたりすると良さそう。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="c1">// Main App</span>
+<span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"App"</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">ReloadModal</span> <span class="p">/&gt;</span>
+            :
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nx">ReloadModal</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">state</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">show</span><span class="p">:</span> <span class="kc">false</span>
+  <span class="p">};</span>
+  <span class="nx">componentDidMount</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// グローバルイベントを引っ掛ける。</span>
+    <span class="nb">window</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="dl">"</span><span class="s2">newContentAvailable</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+        <span class="na">show</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">});</span>
+    <span class="p">});</span>
+  <span class="p">}</span>
+  <span class="nx">onClick</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// リロードする</span>
+    <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">reload</span><span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="p">);</span>
+  <span class="p">};</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">show</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// &lt;Modal&gt; は単なる固定モーダルのコンポーネントなので省略。</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nc">Modal</span> <span class="na">onClick=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">onClick</span><span class="si">}</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">span</span><span class="p">&gt;</span> New Content Available!please reload <span class="p">&lt;/</span><span class="nt">span</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nc">Modal</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h2>
+
+<p>とりあえずこれで最初に出したデモみたいなものは出来た。<br>
+今回のは若干怪しいと自分でも思っているので、もっと正しいやり方があったら知りたい。</p>
+
+<p>また、なんとなく次期バージョンだともうちょっと扱いやすくなってそうなので、それまで待ってもいいのかもしれない。</p>

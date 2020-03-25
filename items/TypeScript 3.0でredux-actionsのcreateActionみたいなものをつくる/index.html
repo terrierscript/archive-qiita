@@ -1,0 +1,89 @@
+
+<h1>
+<span id="前回までのあらすじ" class="fragment"></span><a href="#%E5%89%8D%E5%9B%9E%E3%81%BE%E3%81%A7%E3%81%AE%E3%81%82%E3%82%89%E3%81%99%E3%81%98"><i class="fa fa-link"></i></a>前回までのあらすじ</h1>
+
+<p><a href="https://qiita.com/terrierscript/items/b3f9dd95a4c7afe0b102" class="autolink" id="reference-46f6c673b85fcb5c9111">https://qiita.com/terrierscript/items/b3f9dd95a4c7afe0b102</a></p>
+
+<p>上記の記事に書いてたけどちょっと別物になってきたので記事わけた。</p>
+
+<h1>
+<span id="もうちょっとなんとかしたかったこと" class="fragment"></span><a href="#%E3%82%82%E3%81%86%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E3%81%AA%E3%82%93%E3%81%A8%E3%81%8B%E3%81%97%E3%81%9F%E3%81%8B%E3%81%A3%E3%81%9F%E3%81%93%E3%81%A8"><i class="fa fa-link"></i></a>もうちょっとなんとかしたかったこと</h1>
+
+<p>前回までのactionはボイラープレート多かったので、<a href="https://github.com/redux-utilities/redux-actions" rel="nofollow noopener" target="_blank">redux-actions</a>のcreateActionみたいなのがほしくなった。<br>
+本家のをそのまま使いたいところだが、payloadが<code>payload?</code>で定義されており若干今回のactionの付帯情報まで決定させたいということが出来なかった。</p>
+
+<p>あと、TypeScript 3.0で出ていたTuple in Rest parameterの使い所じゃん！って思ってテンションがあがったので使いたかった。<br>
+ということで下記は3.0以上向けになるので注意</p>
+
+<h1>
+<span id="コード" class="fragment"></span><a href="#%E3%82%B3%E3%83%BC%E3%83%89"><i class="fa fa-link"></i></a>コード</h1>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre>
+<span class="c1">// Extraの部分を作成する関数。Tuple in Rest parameter大活躍！</span>
+<span class="nx">type</span> <span class="nx">ExtraFunction</span><span class="o">&lt;</span><span class="nx">Arg</span> <span class="kd">extends</span> <span class="nx">any</span><span class="p">[],</span> <span class="nx">R</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">(...</span><span class="nx">args</span><span class="p">:</span> <span class="nx">Arg</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">R</span>
+<span class="nx">type</span> <span class="nx">ActionCreator</span><span class="o">&lt;</span><span class="nx">Arg</span> <span class="kd">extends</span> <span class="nx">any</span><span class="p">[],</span> <span class="nx">Action</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">(...</span><span class="nx">args</span><span class="p">:</span> <span class="nx">Arg</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">Action</span>
+
+<span class="c1">// 関数のoverload</span>
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">createAppAction</span><span class="o">&lt;</span><span class="nx">A</span> <span class="kd">extends</span> <span class="nx">string</span><span class="o">&gt;</span><span class="p">(</span>
+  <span class="nx">type</span><span class="p">:</span> <span class="nx">A</span>
+<span class="p">):</span> <span class="nx">ActionCreator</span><span class="o">&lt;</span><span class="nx">any</span><span class="p">[],</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="nx">A</span><span class="o">&gt;&gt;</span>
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">createAppAction</span><span class="o">&lt;</span><span class="nx">A</span> <span class="kd">extends</span> <span class="nx">string</span><span class="p">,</span> <span class="nx">Arg</span> <span class="kd">extends</span> <span class="nx">any</span><span class="p">[],</span> <span class="nx">R</span><span class="o">&gt;</span><span class="p">(</span>
+  <span class="nx">type</span><span class="p">:</span> <span class="nx">A</span><span class="p">,</span>
+  <span class="nx">fn</span><span class="p">:</span> <span class="nx">ExtraFunction</span><span class="o">&lt;</span><span class="nx">Arg</span><span class="p">,</span> <span class="nx">R</span><span class="o">&gt;</span>
+<span class="p">):</span> <span class="nx">ActionCreator</span><span class="o">&lt;</span><span class="nx">Arg</span><span class="p">,</span> <span class="nx">AppAction</span><span class="o">&lt;</span><span class="nx">A</span><span class="p">,</span> <span class="nx">R</span><span class="o">&gt;&gt;</span>
+
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">createAppAction</span><span class="p">(</span><span class="nx">type</span><span class="p">,</span> <span class="nx">extraFunction</span><span class="p">?)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(...</span><span class="nx">args</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">extraFunction</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">extra</span> <span class="o">=</span> <span class="nx">extraFunction</span><span class="p">(...</span><span class="nx">args</span><span class="p">)</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="nx">type</span><span class="p">,</span> <span class="p">...</span><span class="nx">extra</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="nx">type</span> <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>利用側はこんな感じになる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">increment</span> <span class="o">=</span> <span class="nx">createAppAction</span><span class="p">(</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">increment</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">decrement</span> <span class="o">=</span> <span class="nx">createAppAction</span><span class="p">(</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">decrement</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">force</span> <span class="o">=</span> <span class="nx">createAppAction</span><span class="p">(</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">force</span><span class="p">,</span> <span class="p">(</span><span class="nx">num</span><span class="p">:</span> <span class="nx">number</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="na">count</span><span class="p">:</span> <span class="nx">num</span>
+  <span class="p">}</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>また、このcreateAppActionの定義と<a href="https://qiita.com/terrierscript/items/b3f9dd95a4c7afe0b102#comment-77f7521fdcec8ad716ad" id="reference-7d678479bc63f737d0d9">コメントいただいた</a> <code>ReturnType</code>を駆使すると、更に楽ができる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// もとの定義</span>
+<span class="c1">// type CounterAction =</span>
+<span class="c1">//   | AppAction&lt;ActionType.increment&gt;</span>
+<span class="c1">//   | AppAction&lt;ActionType.decrement&gt;</span>
+<span class="c1">//   | AppAction&lt;ActionType.force, { count: number }&gt;</span>
+
+<span class="nx">type</span> <span class="nx">CounterAction</span> <span class="o">=</span> <span class="nx">ReturnType</span><span class="o">&lt;</span>
+  <span class="k">typeof</span> <span class="nx">increment</span> <span class="o">|</span> <span class="k">typeof</span> <span class="nx">decrement</span> <span class="o">|</span> <span class="k">typeof</span> <span class="nx">force</span>
+<span class="o">&gt;</span>
+</pre></div></div>
+
+<p>気分が乗ってきたのでさらにactionをobjectでまとめてみるとこうなる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="nx">type</span> <span class="nx">AppActionCreators</span><span class="o">&lt;</span>
+  <span class="nx">T</span> <span class="kd">extends</span> <span class="p">{</span> <span class="p">[</span><span class="na">key</span><span class="p">:</span> <span class="nx">string</span><span class="p">]:</span> <span class="p">(...</span><span class="nx">args</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">any</span> <span class="p">}</span>
+<span class="o">&gt;</span> <span class="o">=</span> <span class="nx">ReturnType</span><span class="o">&lt;</span><span class="nx">T</span><span class="p">[</span><span class="nx">keyof</span> <span class="nx">T</span><span class="p">]</span><span class="o">&gt;</span>
+
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">counterActions</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">increment</span><span class="p">:</span> <span class="nx">createAppAction</span><span class="p">(</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">increment</span><span class="p">),</span>
+  <span class="na">decrement</span><span class="p">:</span> <span class="nx">createAppAction</span><span class="p">(</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">decrement</span><span class="p">),</span>
+  <span class="na">force</span><span class="p">:</span> <span class="nx">createAppAction</span><span class="p">(</span><span class="nx">ActionType</span><span class="p">.</span><span class="nx">force</span><span class="p">,</span> <span class="p">(</span><span class="na">num</span><span class="p">:</span> <span class="nx">number</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">count</span><span class="p">:</span> <span class="nx">num</span>
+    <span class="p">}</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+
+<span class="nx">type</span> <span class="nx">CounterAction</span> <span class="o">=</span> <span class="nx">AppActionCreators</span><span class="o">&lt;</span><span class="k">typeof</span> <span class="nx">counterActions</span><span class="o">&gt;</span>
+</pre></div></div>

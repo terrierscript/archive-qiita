@@ -1,0 +1,25 @@
+<p>coffeescriptもうあんま覚えてないしhubotのスクリプトもそろそろbabelで書きたかったのでどうにかした。</p>
+
+<p>結論としては単に<code>require("babel/register")</code>すればよかった。<br>
+<a href="http://qiita.com/suisho/items/a3822167604e5ad6c19b" id="reference-713396da5c1d63bb3c9d">electronで似たようなこと</a>をした時とだいたい着想は一緒。<br>
+あとはhubot-scriptはfunctionなので<code>robot</code>をパスしてやれば良いだけ（のはず）</p>
+
+<div class="code-frame" data-lang="coffeescript">
+<div class="code-lang"><span class="bold">script/some-script.coffee</span></div>
+<div class="highlight"><pre><span class="nx">require</span><span class="p">(</span><span class="s">"babel/register"</span><span class="p">)</span>
+<span class="nx">module</span><span class="p">.</span><span class="na">exports</span> <span class="o">=</span> <span class="p">(</span><span class="nx">robot</span><span class="p">)</span> <span class="o">-&gt;</span>
+  <span class="nx">require</span><span class="p">(</span><span class="s">"../lib/babel-script"</span><span class="p">)(</span><span class="nx">robot</span><span class="p">)</span>
+</pre></div>
+</div>
+
+<p>呼び出され側はこんな感じ</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">lib/babel-script.js</span></div>
+<div class="highlight"><pre><span class="k">export</span> <span class="k">default</span> <span class="kd">function</span><span class="p">(</span><span class="nx">robot</span><span class="p">){</span>
+  <span class="nx">robot</span><span class="p">.</span><span class="nx">hear</span><span class="p">(</span><span class="sr">/badger/i</span><span class="p">,</span> <span class="p">(</span><span class="nx">res</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">Badgers? BADGERS? WE DON'T NEED NO STINKIN BADGERS</span><span class="dl">"</span><span class="p">)</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+</pre></div>
+</div>

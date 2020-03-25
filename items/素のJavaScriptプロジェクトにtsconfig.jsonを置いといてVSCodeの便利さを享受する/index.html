@@ -1,0 +1,101 @@
+<p>VSCodeの便利さを使いたいがTypeScript化するほど手間かけれない、みたいなときに<code>tsconfig.json</code>だけ作っておくとちょっと便利になりそうだったのでメモる。</p>
+
+<p><strong>追記</strong>： TypeScriptへ移植する予定が無い場合であれば、<a href="https://code.visualstudio.com/docs/languages/jsconfig" rel="nofollow noopener" target="_blank"><code>jsconfig.json</code></a>を配置するでも十分そうです（違いはallowJSがdefaultでtrueなこととぐらい。あとは<code>tsconfig.json</code>は後述のコマンドでボイラープレートを生成できるという点ぐらいと思われます）</p>
+
+<p>具体的にはこのへんとか使える</p>
+
+<ul>
+<li>未使用のimport検出</li>
+<li>ライブラリの型情報を利用した検出</li>
+<li>JSDocがあればそれを利用した型検証</li>
+</ul>
+
+<h1>
+<span id="やり方" class="fragment"></span><a href="#%E3%82%84%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>やり方</h1>
+
+<p>まず<code>tsconfig.json</code>を生成する。npx使う</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npx typescript --init
+</pre></div></div>
+
+<p>次に、<code>allowJs</code>と<code>checkJs</code>を<code>true</code>にする</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="nl">"allowJs"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="err">,</span><span class="w">
+</span><span class="nl">"checkJs"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="err">,</span><span class="w">
+</span></pre></div></div>
+
+<p>あとtscを叩いて上書きなどされないようにnoEmitも追加しておく</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="nl">"noEmit"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></pre></div></div>
+
+<p>ついでに<code>strict</code>も必要があれば<code>false</code>にしておく。</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="nl">"strict"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="err">,</span><span class="w">
+</span></pre></div></div>
+
+<p>Reactの場合はjsx周りのエラーを回避するために下記も追加</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="nl">"jsx"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react"</span><span class="w">
+</span></pre></div></div>
+
+<p>また、<code>@types/react</code>も必要</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add -D @types/react
+</pre></div></div>
+
+<h1>
+<span id="エラーが出たら" class="fragment"></span><a href="#%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%8C%E5%87%BA%E3%81%9F%E3%82%89"><i class="fa fa-link"></i></a>エラーが出たら？</h1>
+
+<h2>
+<span id="無視するシグネチャをつける方法で回避" class="fragment"></span><a href="#%E7%84%A1%E8%A6%96%E3%81%99%E3%82%8B%E3%82%B7%E3%82%B0%E3%83%8D%E3%83%81%E3%83%A3%E3%82%92%E3%81%A4%E3%81%91%E3%82%8B%E6%96%B9%E6%B3%95%E3%81%A7%E5%9B%9E%E9%81%BF"><i class="fa fa-link"></i></a>無視するシグネチャをつける方法で回避</h2>
+
+<p>コメントによって一部チェックを無視することが可能。</p>
+
+<p>行単位で無視したいなら下記</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// @ts-ignore</span>
+</pre></div></div>
+
+<p>ファイルごと無視したいなら下記</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// @ts-nocheck</span>
+</pre></div></div>
+
+<p>詳しくは下記</p>
+
+<p><a href="https://github.com/Microsoft/TypeScript/wiki/Type-Checking-JavaScript-Files" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/Microsoft/TypeScript/wiki/Type-Checking-JavaScript-Files</a></p>
+
+<h2>
+<span id="型をつける方法で回避" class="fragment"></span><a href="#%E5%9E%8B%E3%82%92%E3%81%A4%E3%81%91%E3%82%8B%E6%96%B9%E6%B3%95%E3%81%A7%E5%9B%9E%E9%81%BF"><i class="fa fa-link"></i></a>型をつける方法で回避</h2>
+
+<p>JSDocを指定して型指定すると回避できる。<br>
+<code>@type {*}</code>で値をany扱いにするのが雑ではあるものの一番ライト。<br>
+当然型の恩恵は受けれなくなるものだが、今はVSCodeの恩恵を受けることを目的とするので目をつぶる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="cm">/** @type {*} */</span>
+<span class="kd">const</span> <span class="nx">Mark</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  background: </span><span class="p">${</span>
+    <span class="cm">/** @type {*} */</span>
+    <span class="nx">props</span> <span class="o">=&gt;</span> <span class="nx">props</span><span class="p">.</span><span class="nx">primary</span> <span class="p">?</span> <span class="dl">'</span><span class="s1">palevioletred</span><span class="dl">'</span> <span class="p">:</span> <span class="dl">'</span><span class="s1">white</span><span class="dl">'</span>
+  <span class="p">}</span><span class="s2">;
+`</span>
+</pre></div></div>
+
+<p>ちゃんと型を指定することもできるものの、ここまでやるならもうTypeScriptにしたほういいのでは？という感じはある。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">styled</span><span class="p">,</span> <span class="p">{</span> <span class="nx">ThemedStyledProps</span><span class="p">,</span> <span class="nx">StyledComponentClass</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">styled-components</span><span class="dl">"</span>
+
+<span class="cm">/**
+ * @type {StyledComponentClass&lt;any, any&gt;}
+ */</span>
+<span class="kd">const</span> <span class="nx">Mark</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  background: </span><span class="p">${</span>
+    <span class="cm">/** @type {ThemedStyledProps&lt;{ primary: Boolean}, {}&gt; } */</span>
+    <span class="nx">props</span> <span class="o">=&gt;</span> <span class="nx">props</span><span class="p">.</span><span class="nx">primary</span> <span class="p">?</span> <span class="dl">'</span><span class="s1">palevioletred</span><span class="dl">'</span> <span class="p">:</span> <span class="dl">'</span><span class="s1">white</span><span class="dl">'</span>
+  <span class="p">}</span><span class="s2">;
+`</span>
+</pre></div></div>
+
+<p>さらにJSDoc周りについての詳細は公式の下記を見ると良い。<br>
+<a href="https://github.com/Microsoft/TypeScript/wiki/JSDoc-support-in-JavaScript" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/Microsoft/TypeScript/wiki/JSDoc-support-in-JavaScript</a></p>

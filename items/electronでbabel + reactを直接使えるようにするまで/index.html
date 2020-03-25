@@ -1,0 +1,185 @@
+<p>さくっとelectronでbabel呼び出すところまでが良さそうな情報無くて錯綜した。<br>
+一旦出来たのでメモ<br>
+（ビルド＆配布あたりまでは行ってないが、まず動く感じのところまでなのでご了承）</p>
+
+<p><del>出来上がりが見たい場合はこれ</del> (もう記事より古くなってるので多分参考になりません）<br>
+<del><a href="https://github.com/suisho/example-electron-babel/" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/suisho/example-electron-babel/</a></del></p>
+
+<h1>
+<span id="構成" class="fragment"></span><a href="#%E6%A7%8B%E6%88%90"><i class="fa fa-link"></i></a>構成</h1>
+
+<p>好みだがこんな感じにしている</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ tree -I node_modules                                                      
+.
+├── app
+│   ├── client
+│   │   ├── Foo.jsx
+│   │   └── main.jsx
+│   ├── index.html
+│   └── index.js
+└── package.json
+</pre></div></div>
+
+<p>コード本体は<code>./app</code>以下に固めている。トップ階層に入れておくと後でgulpfileとか膨れてきた時に汚い感じになるため。<br>
+サーバー側とクライアント側のコードも区別付けれるように<code>./app/client</code>も切っておく</p>
+
+<h1>
+<span id="手順" class="fragment"></span><a href="#%E6%89%8B%E9%A0%86"><i class="fa fa-link"></i></a>手順</h1>
+
+<h2>
+<span id="1-インストール" class="fragment"></span><a href="#1-%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB"><i class="fa fa-link"></i></a>1. インストール</h2>
+
+<p>一旦今回は起動するまでぐらいを考える。</p>
+
+<h3>
+<span id="electron-prebuilt" class="fragment"></span><a href="#electron-prebuilt"><i class="fa fa-link"></i></a>electron-prebuilt</h3>
+
+<p>パッケージングの事などを考えるとこれでは足りないが、今回はelectron-prebuiltを使うとこまでに留める</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm init -y
+$ npm i -D electron-prebuilt
+</pre></div></div>
+
+<h3>
+<span id="react" class="fragment"></span><a href="#react"><i class="fa fa-link"></i></a>react</h3>
+
+<p>次にreactのインストール</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm i -S react 
+</pre></div></div>
+
+<h3>
+<span id="babel" class="fragment"></span><a href="#babel"><i class="fa fa-link"></i></a>babel</h3>
+
+<p>次にbabel<br>
+babel6からは、最低限で下記のパッケージのインストールがほしいところ。<code>preset-es2015</code>は必須ではないが、どうせやるなら入れておきたい</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm i -D babel babel-register babel-preset-react babel-preset-es2015
+</pre></div></div>
+
+<p>package.jsonにはstartコマンドと、babelの設定を記載しておく。</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"example-electron-babel"</span><span class="p">,</span><span class="w">
+     </span><span class="err">:</span><span class="w">
+     </span><span class="err">:</span><span class="w">
+  </span><span class="err">//</span><span class="w"> </span><span class="err">↓これ</span><span class="w">
+  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"start"</span><span class="p">:</span><span class="w"> </span><span class="s2">"electron ./app"</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+      </span><span class="err">:</span><span class="w">
+      </span><span class="err">:</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<p>babel v6からは、<code>babelrc</code>の設定が必要なので、package.jsonに下記のように追加してあげる(.babelrcでもいいし引数にオプションとして渡してもいいしそのへんはお好みで）。<br>
+<code>sourceMaps</code>の設定は<code>inline</code>にすればsourcemapを読み込んでくれる</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="err">　　</span><span class="w">  </span><span class="err">:</span><span class="w">
+  </span><span class="nl">"babel"</span><span class="p">:{</span><span class="w">
+    </span><span class="nl">"sourceMaps"</span><span class="p">:</span><span class="w"> </span><span class="s2">"inline"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"presets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="s2">"react"</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+     </span><span class="err">:</span><span class="w">
+</span></pre></div>
+</div>
+
+<h2>
+<span id="2-ボイラープレート的にコードを準備" class="fragment"></span><a href="#2-%E3%83%9C%E3%82%A4%E3%83%A9%E3%83%BC%E3%83%97%E3%83%AC%E3%83%BC%E3%83%88%E7%9A%84%E3%81%AB%E3%82%B3%E3%83%BC%E3%83%89%E3%82%92%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>2. ボイラープレート的にコードを準備</h2>
+
+<p><a href="https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md</a><br>
+ここのquick-start通りに記述。だるいけどまだこのへんはちゃんと理解できてないので従っとく。</p>
+
+<h2>
+<span id="3-動かしたいコードを書く" class="fragment"></span><a href="#3-%E5%8B%95%E3%81%8B%E3%81%97%E3%81%9F%E3%81%84%E3%82%B3%E3%83%BC%E3%83%89%E3%82%92%E6%9B%B8%E3%81%8F"><i class="fa fa-link"></i></a>3. 動かしたいコードを書く</h2>
+
+<p>こんな具合。</p>
+
+<div class="code-frame" data-lang="jsx">
+<div class="code-lang"><span class="bold">client/main.jsx</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span>
+
+<span class="kd">class</span> <span class="nx">Foo</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>This is React component<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">container</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#container</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">React</span><span class="p">.</span><span class="nx">render</span><span class="p">(&lt;</span><span class="nc">Foo</span> <span class="p">/&gt;,</span> <span class="nx">container</span><span class="p">)</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="4-babelの登録" class="fragment"></span><a href="#4-babel%E3%81%AE%E7%99%BB%E9%8C%B2"><i class="fa fa-link"></i></a>4. babelの登録</h2>
+
+<p>index.htmlをこんな感じで書き換える。<code>babel-register</code>は多分もうちょっとオプション入れたほうが良さそう(詳しくは<a href="https://babeljs.io/docs/usage/require/" rel="nofollow noopener" target="_blank">babeljs.io</a>を参照のこと)。<br>
+今はシンプルにしとく。</p>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">index.html</span></div>
+<div class="highlight"><pre><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;head&gt;</span>
+    <span class="nt">&lt;title&gt;</span>Hello World!<span class="nt">&lt;/title&gt;</span>
+  <span class="nt">&lt;/head&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;h1&gt;</span>Hello World!<span class="nt">&lt;/h1&gt;</span>
+    We are using io.js
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"container"</span><span class="nt">&gt;&lt;/div&gt;</span>
+    <span class="nt">&lt;script&gt;</span>
+      <span class="nb">window</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">babel-register</span><span class="dl">'</span><span class="p">)()</span> <span class="c1">//ここ重要</span>
+        <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">./client/main.jsx</span><span class="dl">"</span><span class="p">)</span>
+      <span class="p">}</span>
+    <span class="nt">&lt;/script&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="5-できた" class="fragment"></span><a href="#5-%E3%81%A7%E3%81%8D%E3%81%9F"><i class="fa fa-link"></i></a>5. できた！</h2>
+
+<p>startコマンドを登録済みなので、下記で起動可能。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm start
+</pre></div></div>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F9338cb91-0b32-52d3-4d22-7c99c5d37ccf.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=2a3dff59052ccbea1bce1e8abcb998ba" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F9338cb91-0b32-52d3-4d22-7c99c5d37ccf.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=2a3dff59052ccbea1bce1e8abcb998ba" alt="Hello_World_.png" title="Hello_World_.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/9338cb91-0b32-52d3-4d22-7c99c5d37ccf.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F9338cb91-0b32-52d3-4d22-7c99c5d37ccf.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=394e4388854a497f61773130fbd201fd 1x" loading="lazy"></a></p>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>結果として<code>require("babel-register")</code>を呼び出すだけだったのに結構試行錯誤してしまった。</li>
+<li>まだまだ「electron」だと情報が少なく「atom-shell」じゃないとぐぐっても出てこない情報多そう。
+
+<ul>
+<li>「electron babel」あたりでぐぐって出てくる<a href="https://github.com/atom/electron-starter/" rel="nofollow noopener" target="_blank">electron-starter</a>は情報が古いのかどうも参考にならず動かなかった。</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="参考" class="fragment"></span><a href="#%E5%8F%82%E8%80%83"><i class="fa fa-link"></i></a>参考</h2>
+
+<ul>
+<li>
+<a href="https://github.com/BinaryMuse/react-atomshell-spotify" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/BinaryMuse/react-atomshell-spotify</a>
+
+<ul>
+<li>
+<a href="https://github.com/BinaryMuse/react-atomshell-spotify/blob/master/src/bootstrap.js" rel="nofollow noopener" target="_blank">このコード</a>すごく助かった。-</li>
+</ul>
+</li>
+</ul>

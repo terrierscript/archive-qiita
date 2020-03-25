@@ -1,0 +1,139 @@
+<p>create-react-appでtypescript使って素振りしたくなったとき、parcelに即切り替えるのアリなのでは、と思ったのでまとめる。</p>
+
+<p>今回は例示としてはじめから作ってるが、create-react-appで始めたものの、途中でTypeScriptにしたくなったときにも手順はそれほど変わらないはず。</p>
+
+<h1>
+<span id="手順" class="fragment"></span><a href="#%E6%89%8B%E9%A0%86"><i class="fa fa-link"></i></a>手順</h1>
+
+<h2>
+<span id="とりあえず作る" class="fragment"></span><a href="#%E3%81%A8%E3%82%8A%E3%81%82%E3%81%88%E3%81%9A%E4%BD%9C%E3%82%8B"><i class="fa fa-link"></i></a>とりあえず作る</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npx create-react-app example-app
+</pre></div></div>
+
+<h2>
+<span id="parcelを入れるあとtypescriptも" class="fragment"></span><a href="#parcel%E3%82%92%E5%85%A5%E3%82%8C%E3%82%8B%E3%81%82%E3%81%A8typescript%E3%82%82"><i class="fa fa-link"></i></a>parcelを入れる。あとTypeScriptも</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add parcel-bundler parcel-plugin-typescript typescript
+</pre></div></div>
+
+<p>parcel標準でcssやらhtmlやらだいたいよしなにしてくれるが、typescriptだけpluginいるので入れる。<br>
+pluginはpackage.jsonに入っているものは強制で全部読み込まれるので、installするだけで良い<br>
+<code>parcel-plugin-typescript</code>はお行儀よくtypescriptを<code>peerDependency</code>にしてるので、それに従う</p>
+
+<p>あとはreactあたりは型定義を入れとくと良いだろう</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add @types/react
+</pre></div></div>
+
+<p>もし、TypeScriptが不要という場合は下記の記事が参考になるだろう<br>
+<a href="https://qiita.com/MegaBlackLabel/items/5d5592d624bc5f8a341d" class="autolink" id="reference-875d275380d3f6070791">https://qiita.com/MegaBlackLabel/items/5d5592d624bc5f8a341d</a></p>
+
+<h2>
+<span id="tsconfigを設定" class="fragment"></span><a href="#tsconfig%E3%82%92%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>tsconfigを設定</h2>
+
+<p>tsconfigの雛形を作成</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn tsc --init
+</pre></div></div>
+
+<p>jsxだけ最低限設定。あとはお好みで</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="nl">"jsx"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react"</span><span class="w">
+</span></pre></div></div>
+
+<h2>
+<span id="packagejsonを書き換える" class="fragment"></span><a href="#packagejson%E3%82%92%E6%9B%B8%E3%81%8D%E6%8F%9B%E3%81%88%E3%82%8B"><i class="fa fa-link"></i></a>package.jsonを書き換える</h2>
+
+<p>もともとこうなってるのを</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="w">  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"start"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react-scripts start"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react-scripts build"</span><span class="p">,</span><span class="w">
+</span></pre></div></div>
+
+<p>こうじゃ！</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="w">  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"start"</span><span class="p">:</span><span class="w"> </span><span class="s2">"parcel serve public/index.html"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"parcel build public/index.html"</span><span class="p">,</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<h2>
+<span id="indexhtmlいじる" class="fragment"></span><a href="#indexhtml%E3%81%84%E3%81%98%E3%82%8B"><i class="fa fa-link"></i></a>index.htmlいじる。</h2>
+
+<p>ヘッダ部分の<code>%PUBLIC_URL%</code>がパースコケるので消す。parcelだと相対パスにしとけば普通にバンドルしてくれる</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- 
+  &lt;link rel="manifest" href="%PUBLIC_URL%/manifest.json"&gt;
+  &lt;link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico"&gt;
+--&gt;</span>
+
+<span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"manifest"</span> <span class="na">href=</span><span class="s">"./manifest.json"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"shortcut icon"</span> <span class="na">href=</span><span class="s">"./favicon.ico"</span><span class="nt">&gt;</span>
+
+</pre></div></div>
+
+<p>javascriptの読み込み部分も追加。相対パスで指定してやるといい感じにやってくれる</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>  <span class="c">&lt;!-- ↓追加--&gt;</span>
+  <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"../src/index.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+</pre></div></div>
+
+<h2>
+<span id="gitignore設定" class="fragment"></span><a href="#gitignore%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>gitignore設定</h2>
+
+<div class="code-frame" data-lang="gitignore"><div class="highlight"><pre># parcel
+/.cache
+/dist
+</pre></div></div>
+
+<h2>
+<span id="appjs---apptsx" class="fragment"></span><a href="#appjs---apptsx"><i class="fa fa-link"></i></a>App.js -&gt; App.tsx</h2>
+
+<p>ファイル名変更</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ mv src/App.js src/App.tsx
+</pre></div></div>
+
+<p>あとsvgファイルが型定義無くでコケるのめんどいのでts-ignore</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// @ts-ignore</span>
+<span class="k">import</span> <span class="nx">logo</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./logo.svg</span><span class="dl">"</span><span class="p">;</span>
+</pre></div></div>
+
+<p>べつにlogo周り使わないだろうし消してもいいと思う。</p>
+
+<p>css周りは何もせずに動く</p>
+
+<h2>
+<span id="start" class="fragment"></span><a href="#start"><i class="fa fa-link"></i></a>start!</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn start
+</pre></div></div>
+
+<p>これで動く。</p>
+
+<h2>
+<span id="ビルドするとき" class="fragment"></span><a href="#%E3%83%93%E3%83%AB%E3%83%89%E3%81%99%E3%82%8B%E3%81%A8%E3%81%8D"><i class="fa fa-link"></i></a>ビルドするとき</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn build
+</pre></div></div>
+
+<p>でOK。netlifyにもすぐ上げられるはず。</p>
+
+<h1>
+<span id="なんかおかしいとき" class="fragment"></span><a href="#%E3%81%AA%E3%82%93%E3%81%8B%E3%81%8A%E3%81%8B%E3%81%97%E3%81%84%E3%81%A8%E3%81%8D"><i class="fa fa-link"></i></a>なんかおかしいとき</h1>
+
+<p>parcelは結構キャッシュをがっつり持つっぽいので、cacheと出力先ファイルを消すと良い</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ rm .cache
+$ rm dist/
+</pre></div></div>
+
+<p><code>--no-cache</code>オプションでキャッシュさせないというのもアリ</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn start --no-cache
+</pre></div></div>

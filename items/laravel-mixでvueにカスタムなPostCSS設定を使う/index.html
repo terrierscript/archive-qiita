@@ -1,0 +1,35 @@
+
+<h1>
+<span id="tldr" class="fragment"></span><a href="#tldr"><i class="fa fa-link"></i></a>TL;DR</h1>
+
+<p><code>mix.js</code>などではなく、<code>mix.options.postCss</code>に設定する</p>
+
+<h2>
+<span id="設定例-postcss-custom-mediaの例-" class="fragment"></span><a href="#%E8%A8%AD%E5%AE%9A%E4%BE%8B-postcss-custom-media%E3%81%AE%E4%BE%8B-"><i class="fa fa-link"></i></a>設定例( postcss-custom-mediaの例 )</h2>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">mix</span><span class="p">.</span><span class="nx">options</span><span class="p">({</span>
+  <span class="na">postCss</span><span class="p">:</span> <span class="p">[</span>
+    <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">postcss-custom-media</span><span class="dl">"</span><span class="p">)({</span>
+      <span class="dl">"</span><span class="s2">extensions</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+          <span class="dl">'</span><span class="s1">--phone</span><span class="dl">'</span><span class="p">:</span> <span class="dl">'</span><span class="s1">(min-width: 544px)</span><span class="dl">'</span><span class="p">,</span>
+          <span class="dl">'</span><span class="s1">--tablet</span><span class="dl">'</span><span class="p">:</span> <span class="dl">'</span><span class="s1">(min-width: 768px)</span><span class="dl">'</span><span class="p">,</span>
+          <span class="dl">'</span><span class="s1">--desktop</span><span class="dl">'</span><span class="p">:</span> <span class="dl">'</span><span class="s1">(min-width: 992px)</span><span class="dl">'</span><span class="p">,</span>
+      <span class="p">}</span>
+    <span class="p">})</span>
+  <span class="p">]</span>
+<span class="p">})</span>
+
+</pre></div></div>
+
+<h1>
+<span id="詳しく" class="fragment"></span><a href="#%E8%A9%B3%E3%81%97%E3%81%8F"><i class="fa fa-link"></i></a>詳しく</h1>
+
+<p>laravel-mixのvueにおいて、<code>postcss.config.js</code>を配置しても<code>.vue</code>のファイルには利用されずにうまく行かなった。</p>
+
+<p>コードを深追いしてみると、<code>mix.options.postCss</code>を設定すれば効かせてくれるとわかった。<br>
+<a href="https://github.com/JeffreyWay/laravel-mix/blob/d0951a8f91feef2ff0d1dd4e8aba125c5aadf394/src/builder/webpack-rules.js#L252" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/JeffreyWay/laravel-mix/blob/d0951a8f91feef2ff0d1dd4e8aba125c5aadf394/src/builder/webpack-rules.js#L252</a></p>
+
+<p>Autoprefixerはこれと別途設定されている。<br>
+<a href="https://github.com/JeffreyWay/laravel-mix/blob/d0951a8f91feef2ff0d1dd4e8aba125c5aadf394/src/builder/webpack-rules.js#L160-L162" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/JeffreyWay/laravel-mix/blob/d0951a8f91feef2ff0d1dd4e8aba125c5aadf394/src/builder/webpack-rules.js#L160-L162</a><br>
+Autoprefixerはデフォルトでtrueになっている。<br>
+<a href="https://github.com/JeffreyWay/laravel-mix/blob/master/src/config.js#L108" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/JeffreyWay/laravel-mix/blob/master/src/config.js#L108</a></p>

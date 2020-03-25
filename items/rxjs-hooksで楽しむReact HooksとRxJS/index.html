@@ -1,0 +1,260 @@
+<p><a href="https://github.com/facebook/react/pull/14692/files" rel="nofollow noopener" target="_blank">16.8で正式にリリースされる</a>React Hooks。</p>
+
+<p><a href="https://github.com/LeetCode-OpenSource/rxjs-hooks/" rel="nofollow noopener" target="_blank">rxjs-hooks</a>を使うとHooksでRxJS使えていい感じだったのでまとめたい</p>
+
+<h1>
+<span id="1-検索機能を実装する" class="fragment"></span><a href="#1-%E6%A4%9C%E7%B4%A2%E6%A9%9F%E8%83%BD%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>1. 検索機能を実装する</h1>
+
+<p>以前にredux-observableでやったことのあった<a href="https://qiita.com/terrierscript/items/c672ddad4c24936b1061" id="reference-7e43ba9cbdbcfead069e">検索機能</a>をhooksでやってみる。</p>
+
+<ul>
+<li><a href="https://qiita.com/terrierscript/items/c672ddad4c24936b1061#%E5%AE%8C%E6%88%90%E5%93%81--%E6%9C%80%E7%B5%82%E5%BD%A2" id="reference-7e43ba9cbdbcfead069e">redux-observableでの最終型</a></li>
+</ul>
+
+<h2>
+<span id="前提" class="fragment"></span><a href="#%E5%89%8D%E6%8F%90"><i class="fa fa-link"></i></a>前提</h2>
+
+<p>ひとまず前回と同じくAPIとコンポーネントをざっくり作る</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// api.ts</span>
+
+<span class="k">import</span> <span class="nx">fetchJsonp</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">fetch-jsonp</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">qs</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">querystring</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">searchApi</span> <span class="o">=</span> <span class="p">(</span><span class="nx">word</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">baseURL</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">https://ja.wikipedia.org/w/api.php</span><span class="dl">"</span>
+  <span class="kd">const</span> <span class="nx">params</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">action</span><span class="p">:</span> <span class="dl">"</span><span class="s2">opensearch</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">format</span><span class="p">:</span> <span class="dl">"</span><span class="s2">json</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">search</span><span class="p">:</span> <span class="nx">word</span>
+  <span class="p">}</span>
+  <span class="kd">const</span> <span class="nx">url</span> <span class="o">=</span> <span class="s2">`</span><span class="p">${</span><span class="nx">baseURL</span><span class="p">}</span><span class="s2">?</span><span class="p">${</span><span class="nx">qs</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">params</span><span class="p">)}</span><span class="s2">`</span>
+  <span class="k">return</span> <span class="nx">fetchJsonp</span><span class="p">(</span><span class="nx">url</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">((</span><span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">json</span><span class="p">())</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">((</span><span class="nx">json</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">json</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Search</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">word</span><span class="p">,</span> <span class="nx">changeInput</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">input</span> <span class="na">value=</span><span class="si">{</span><span class="nx">word</span><span class="si">}</span> <span class="na">onChange=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">changeInput</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">)</span><span class="si">}</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">Result</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">result</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">h3</span><span class="p">&gt;</span>Result<span class="p">&lt;/</span><span class="nt">h3</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">ul</span><span class="p">&gt;</span>
+      <span class="si">{</span><span class="nx">result</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">r</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+        <span class="p">&lt;</span><span class="nt">li</span> <span class="na">key=</span><span class="si">{</span><span class="nx">i</span><span class="si">}</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">r</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">li</span><span class="p">&gt;</span>
+      <span class="p">))</span><span class="si">}</span>
+    <span class="p">&lt;/</span><span class="nt">ul</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>ここから検索につながる部分を作っていく</p>
+
+<h2>
+<span id="パターンa-usestateとuseobservableを使うパターン" class="fragment"></span><a href="#%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3a-usestate%E3%81%A8useobservable%E3%82%92%E4%BD%BF%E3%81%86%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3"><i class="fa fa-link"></i></a>パターンA: <code>useState</code>と<code>useObservable</code>を使うパターン</h2>
+
+<p>おそらくこっちが適切であろうパターン。</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">useState</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">useObservable</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs-hooks</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">bufferTime</span><span class="p">,</span> <span class="nx">distinctUntilChanged</span><span class="p">,</span> <span class="nx">switchMap</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs/operators</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">useSearch</span> <span class="o">=</span> <span class="p">(</span><span class="nx">word</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">useObservable</span><span class="p">(</span>
+    <span class="p">(</span><span class="nx">word$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="c1">// 渡されるwordのstream</span>
+      <span class="nx">word$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+        <span class="nx">debounceTime</span><span class="p">(</span><span class="mi">400</span><span class="p">),</span>
+        <span class="nx">distinctUntilChanged</span><span class="p">(),</span>
+        <span class="nx">switchMap</span><span class="p">((</span><span class="nx">word</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">searchApi</span><span class="p">(</span><span class="nx">word</span><span class="p">)),</span>
+        <span class="nx">map</span><span class="p">((</span><span class="nx">result</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nx">result</span> <span class="o">!==</span> <span class="kc">undefined</span> <span class="p">?</span> <span class="nx">result</span> <span class="p">:</span> <span class="p">[]))</span>
+      <span class="p">),</span>
+    <span class="p">[],</span> <span class="c1">// 結果の初期値</span>
+    <span class="p">[</span><span class="nx">word</span><span class="p">]</span> <span class="c1">// input。配列にして渡す必要があることに注意</span>
+  <span class="p">)</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// word自体はuseStateで取り出す</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">word</span><span class="p">,</span> <span class="nx">setWord</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="dl">""</span><span class="p">)</span>
+  <span class="c1">// これを独自実装したuseSearchへ渡す</span>
+  <span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">useSearch</span><span class="p">(</span><span class="nx">word</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Search</span> <span class="na">changeInput=</span><span class="si">{</span><span class="nx">setWord</span><span class="si">}</span> <span class="na">word=</span><span class="si">{</span><span class="nx">word</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Result</span> <span class="na">result=</span><span class="si">{</span><span class="nx">result</span><span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>この場合は検索は責務を絞ることができるので、下記のように分離することもできる</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">SearchAndResult</span> <span class="o">=</span> <span class="p">(</span><span class="nx">word</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">useSearch</span><span class="p">(</span><span class="nx">word</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nc">Result</span> <span class="na">result=</span><span class="si">{</span><span class="nx">result</span><span class="si">}</span> <span class="p">/&gt;</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">App2</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">word</span><span class="p">,</span> <span class="nx">setWord</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="dl">""</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Search</span> <span class="na">changeInput=</span><span class="si">{</span><span class="nx">setWord</span><span class="si">}</span> <span class="na">word=</span><span class="si">{</span><span class="nx">word</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nc">SearchAndResult</span> <span class="na">word=</span><span class="si">{</span><span class="nx">word</span><span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="パターンb-useeventcallbackを使うパターンイマイチ" class="fragment"></span><a href="#%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3b-useeventcallback%E3%82%92%E4%BD%BF%E3%81%86%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3%E3%82%A4%E3%83%9E%E3%82%A4%E3%83%81"><i class="fa fa-link"></i></a>パターンB: <code>useEventCallback</code>を使うパターン（イマイチ）</h2>
+
+<p>もう一つやり方があるので記述する。「どうしても全部RxJSに任せたいんだ！」という場合は良いかもしれないがおそらくこの場合においてはデメリットのほうが大きいだろう</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">useEventCallback</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs-hooks</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">startWith</span><span class="p">,</span> <span class="nx">distinctUntilChanged</span><span class="p">,</span> <span class="nx">debounceTime</span><span class="p">,</span> <span class="nx">switchMap</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs/operators</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="na">initial</span><span class="p">:</span> <span class="p">[</span><span class="nx">string</span><span class="p">,</span> <span class="nx">string</span><span class="p">[]]</span> <span class="o">=</span> <span class="p">[</span><span class="dl">""</span><span class="p">,</span> <span class="p">[]]</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">keyboardCallack</span><span class="p">,</span> <span class="p">[</span><span class="nx">word</span><span class="p">,</span> <span class="nx">result</span><span class="p">]]</span> <span class="o">=</span> <span class="nx">useEventCallback</span><span class="p">(</span>   <span class="p">(</span><span class="nx">event$</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">combineLatest</span><span class="p">(</span>
+        <span class="nx">event$</span><span class="p">,</span> <span class="c1">// 入力を即時反映させるために、素のstremを流す必要がある</span>
+        <span class="nx">event$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+          <span class="nx">startWith</span><span class="p">([]),</span> <span class="c1">// 初期値をstatWithで指定</span>
+          <span class="nx">debounceTime</span><span class="p">(</span><span class="mi">400</span><span class="p">),</span>
+          <span class="nx">distinctUntilChanged</span><span class="p">(),</span>
+          <span class="nx">switchMap</span><span class="p">((</span><span class="nx">word</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">searchApi</span><span class="p">(</span><span class="nx">word</span><span class="p">)),</span>
+          <span class="nx">map</span><span class="p">((</span><span class="nx">result</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">result</span> <span class="o">||</span> <span class="p">[])</span>
+        <span class="p">)</span>
+      <span class="p">),</span>
+    <span class="nx">initial</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Search</span> <span class="na">changeInput=</span><span class="si">{</span><span class="nx">keyboardCallack</span><span class="si">}</span> <span class="na">word=</span><span class="si">{</span><span class="nx">word</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Result</span> <span class="na">result=</span><span class="si">{</span><span class="nx">result</span><span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><code>useEventCallback</code>は結果の１つ目がコールバック、二つ目がStreamの結果が返ってくる。</p>
+
+<p>ただSearchのinputを入力に正しく同期するために、注1のように入力をそのまま流してcombineLatestを使ったり、startWithを使って入力の度にstreamが来るようにする工夫が必要になる。</p>
+
+<p>また、入力のコールバックに強く依存してしまう部分も難点だろう。</p>
+
+<h1>
+<span id="2-useeventcallbackで秒間クリック数を取る" class="fragment"></span><a href="#2-useeventcallback%E3%81%A7%E7%A7%92%E9%96%93%E3%82%AF%E3%83%AA%E3%83%83%E3%82%AF%E6%95%B0%E3%82%92%E5%8F%96%E3%82%8B"><i class="fa fa-link"></i></a>2. <code>useEventCallback</code>で秒間クリック数を取る</h1>
+
+<p>上記はinputに対する入力だったため<code>useObservable</code>のほうが都合が良かったが、クリックなどマウスイベント関連なら有効になる。</p>
+
+<p>例示として秒間クリックを取得して出すようなことを考えてみるとこんな具合になりそうだ（そんなユースケースがあるかどうかは不明）</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">useEventCallback</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs-hooks</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">bufferTime</span><span class="p">,</span> <span class="nx">distinctUntilChanged</span><span class="p">,</span> <span class="nx">tap</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs/operators</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">Button</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">updateCount</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">eventCallback</span><span class="p">,</span> <span class="nx">result</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useEventCallback</span><span class="p">(</span>
+    <span class="p">(</span><span class="nx">event$</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">event$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+        <span class="nx">bufferTime</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span> <span class="c1">// 1秒間bufferする</span>
+        <span class="nx">map</span><span class="p">((</span><span class="nx">v</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">v</span><span class="p">.</span><span class="nx">length</span><span class="p">),</span> <span class="c1">// 受け取ったイベント＝クリック数</span>
+        <span class="nx">distinctUntilChanged</span><span class="p">()</span>
+        <span class="nx">tap</span><span class="p">((</span><span class="nx">result</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">updateCount</span><span class="p">(</span><span class="nx">result</span><span class="p">))</span>
+      <span class="p">),</span>
+    <span class="mi">0</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">eventCallback</span><span class="si">}</span><span class="p">&gt;</span>Click!<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// 状態自体はstateに収める</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">count</span><span class="p">,</span> <span class="nx">setCount</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Button</span> <span class="na">updateCount=</span><span class="si">{</span><span class="nx">setCount</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">count</span><span class="si">}</span> click / second<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="3おまけ-baを検出する" class="fragment"></span><a href="#3%E3%81%8A%E3%81%BE%E3%81%91-ba%E3%82%92%E6%A4%9C%E5%87%BA%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>3.(おまけ) ↑↑↓↓←→←→BAを検出する</h1>
+
+<p><a href="https://ja.wikipedia.org/wiki/%E3%82%B3%E3%83%8A%E3%83%9F%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89" rel="nofollow noopener" target="_blank">有名なコマンド</a>が入力されたら発火するようなイースターエッグを仕込みたいときに使えるかもしれない。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">useObservable</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs-hooks</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">filter</span><span class="p">,</span> <span class="nx">scan</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs/operators</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">fromEvent</span><span class="p">,</span> <span class="nx">pipe</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">arrowMap</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">ArrowUp</span><span class="p">:</span> <span class="dl">"</span><span class="s2">↑</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">ArrowDown</span><span class="p">:</span> <span class="dl">"</span><span class="s2">↓</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">ArrowLeft</span><span class="p">:</span> <span class="dl">"</span><span class="s2">←</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">ArrowRight</span><span class="p">:</span> <span class="dl">"</span><span class="s2">→</span><span class="dl">"</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">convertVisible</span> <span class="o">=</span> <span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">arrowMap</span><span class="p">[</span><span class="nx">key</span><span class="p">])</span> <span class="k">return</span> <span class="nx">arrowMap</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">key</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">1</span><span class="p">)</span> <span class="k">return</span> <span class="nx">key</span><span class="p">.</span><span class="nx">toUpperCase</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">null</span>
+<span class="p">}</span>
+
+<span class="c1">// keydownイベントのストリームを配列化</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useKeyCommnads</span> <span class="o">=</span> <span class="p">(</span><span class="nx">length</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">useObservable</span><span class="p">(</span>
+    <span class="p">()</span> <span class="o">=&gt;</span>
+      <span class="nx">fromEvent</span><span class="p">(</span><span class="nb">document</span><span class="p">,</span> <span class="dl">"</span><span class="s2">keydown</span><span class="dl">"</span><span class="p">).</span><span class="nx">pipe</span><span class="p">(</span>
+        <span class="nx">pluck</span><span class="p">(</span><span class="dl">"</span><span class="s2">key</span><span class="dl">"</span><span class="p">),</span>
+        <span class="nx">map</span><span class="p">(</span><span class="nx">convertVisible</span><span class="p">),</span>
+        <span class="nx">filter</span><span class="p">((</span><span class="nx">value</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="o">!!</span><span class="nx">value</span><span class="p">),</span>
+        <span class="nx">scan</span><span class="o">&lt;</span><span class="nx">string</span><span class="o">&gt;</span><span class="p">((</span><span class="nx">curr</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">[...</span><span class="nx">curr</span><span class="p">,</span> <span class="nx">next</span><span class="p">],</span> <span class="p">[]),</span>
+        <span class="nx">map</span><span class="p">((</span><span class="nx">cmd</span><span class="p">:</span> <span class="nx">string</span><span class="p">[])</span> <span class="o">=&gt;</span> <span class="nx">cmd</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="nx">length</span><span class="p">))</span>
+      <span class="p">),</span>
+    <span class="p">[]</span>
+  <span class="p">)</span>
+
+<span class="c1">// 流れてきたコマンドが任意のものかどうかを検証する</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useTargetCommand</span> <span class="o">=</span> <span class="p">(</span><span class="nx">targetCommand</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">keyeventLog</span> <span class="o">=</span> <span class="nx">useKeyCommnads</span><span class="p">(</span><span class="nx">targetCommand</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">keyeventLog</span><span class="p">,</span>
+    <span class="na">konami</span><span class="p">:</span> <span class="nx">targetCommand</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="dl">""</span><span class="p">)</span> <span class="o">===</span> <span class="nx">keyeventLog</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="dl">""</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">command</span> <span class="o">=</span> <span class="p">[</span><span class="dl">"</span><span class="s2">↑</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">↑</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">↓</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">↓</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">←</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">→</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">←</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">→</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">B</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">A</span><span class="dl">"</span><span class="p">]</span>
+
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">keyeventLog</span><span class="p">,</span> <span class="nx">succeed</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useTargetCommand</span><span class="p">(</span><span class="nx">command</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>please key type: <span class="si">{</span><span class="nx">keyeventLog</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">succeed</span> <span class="p">?</span> <span class="p">&lt;</span><span class="nc">Success</span> <span class="p">/&gt;</span> <span class="p">:</span> <span class="kc">null</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>斜め入力まで考慮したい場合のサンプルは下記においたので興味があればご参照を<br>
+<a href="https://codesandbox.io/s/mzxx7wy318?module=%2Fsrc%2Findex.tsx" class="autolink" rel="nofollow noopener" target="_blank">https://codesandbox.io/s/mzxx7wy318?module=%2Fsrc%2Findex.tsx</a></p>
+
+<h1>
+<span id="他のrxjs--hooks手法" class="fragment"></span><a href="#%E4%BB%96%E3%81%AErxjs--hooks%E6%89%8B%E6%B3%95"><i class="fa fa-link"></i></a>他のRxJS + Hooks手法</h1>
+
+<ul>
+<li><a href="https://github.com/jadbox/rxhooks_examples/blob/master/src/App.tsx" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/jadbox/rxhooks_examples/blob/master/src/App.tsx</a></li>
+<li><a href="https://github.com/jadbox/rxhooks/" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/jadbox/rxhooks/</a></li>
+<li><a href="https://mobile.twitter.com/YassineElouafi2/status/1093562456302108673" class="autolink" rel="nofollow noopener" target="_blank">https://mobile.twitter.com/YassineElouafi2/status/1093562456302108673</a></li>
+<li><a href="https://mobile.twitter.com/tavaresn/status/1092956526661165057" class="autolink" rel="nofollow noopener" target="_blank">https://mobile.twitter.com/tavaresn/status/1092956526661165057</a></li>
+</ul>

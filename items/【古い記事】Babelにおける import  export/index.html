@@ -1,0 +1,390 @@
+
+<h4>
+<span id="2016-01-31追記" class="fragment"></span><a href="#2016-01-31%E8%BF%BD%E8%A8%98"><i class="fa fa-link"></i></a>2016-01-31追記</h4>
+
+<p>この記事を最初に書いた頃は他に何も情報がありませんでしたが、今ではよりだいぶわかりやすい資料が出揃ってきました。しっかりとしたimport/exportの仕様をもっと知りたい場合は下記を参照することを推奨します</p>
+
+<ul>
+<li><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/import" class="autolink" rel="nofollow noopener" target="_blank">https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/import</a></li>
+<li><a href="http://www.slideshare.net/teppeis/effective-es6" class="autolink" rel="nofollow noopener" target="_blank">http://www.slideshare.net/teppeis/effective-es6</a></li>
+<li><a href="http://uehaj.hatenablog.com/entry/2015/11/07/001848" class="autolink" rel="nofollow noopener" target="_blank">http://uehaj.hatenablog.com/entry/2015/11/07/001848</a></li>
+</ul>
+
+<hr>
+
+<h4>
+<span id="20151205追記" class="fragment"></span><a href="#20151205%E8%BF%BD%E8%A8%98"><i class="fa fa-link"></i></a>2015/12/05追記</h4>
+
+<p>コメント欄より</p>
+
+<blockquote>
+<p>Babel v6 から Babel 公式の transform である transform-es2015-modules-commonjs を使った場合 ES6 の export default を出力したときに exports.default に変更されてしまいました。<br>
+もし以前のように module.exports として出力したい場合は add-module-exports を使う必要がありそうです。</p>
+</blockquote>
+
+<p>Babelのversion upに伴い、この記事の情報は一部古くなっている部分が出てきました。ご注意下さい。</p>
+
+<hr>
+
+<p>ES6のimportやらexportやら。こんな感想を持った。</p>
+
+<ul>
+<li>なんかpythonっぽい</li>
+<li>pythonのあれもいまいちよくわからん</li>
+</ul>
+
+<p>なんとなーくこういうことなんだろうなというのはわかりつついまいち理解できてない。<br>
+Draftとかちゃんと追えるのがいいんだけど<a href="http://www.2ality.com/2014/09/es6-modules-final.html" rel="nofollow noopener" target="_blank">なんだか難しい</a>（軟弱）</p>
+
+<p>そうだ、Babelの変換コードを見たら何やるのかわかるんじゃね！？</p>
+
+<p>・・・邪道だなあと自分でも思いつつ、取っ掛かりとしてはよさそうなので<a href="https://babeljs.io/repl/" rel="nofollow noopener" target="_blank">Try it out</a>してみることにする。</p>
+
+<h2>
+<span id="import編" class="fragment"></span><a href="#import%E7%B7%A8"><i class="fa fa-link"></i></a>import編</h2>
+
+<p>まず読み込む方</p>
+
+<h3>
+<span id="普通の使いかた" class="fragment"></span><a href="#%E6%99%AE%E9%80%9A%E3%81%AE%E4%BD%BF%E3%81%84%E3%81%8B%E3%81%9F"><i class="fa fa-link"></i></a>普通の使いかた</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">);</span>
+</pre></div>
+</div>
+
+<p>なるほど。これ左辺無いの使いどころあるのか・・・？</p>
+
+<h3>
+<span id="でかこむ" class="fragment"></span><a href="#%E3%81%A7%E3%81%8B%E3%81%93%E3%82%80"><i class="fa fa-link"></i></a>{}でかこむ</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">foo</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span> 
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">foo</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">).</span><span class="nx">foo</span><span class="p">;</span>
+</pre></div>
+</div>
+
+<p>おお。これよこれ。でもfooのfooを呼ぶのか。</p>
+
+<h3>
+<span id="fromをあわせる" class="fragment"></span><a href="#from%E3%82%92%E3%81%82%E3%82%8F%E3%81%9B%E3%82%8B"><i class="fa fa-link"></i></a>fromをあわせる</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="nx">foo</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">_interopRequire</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">obj</span> <span class="o">&amp;&amp;</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">__esModule</span> <span class="p">?</span> <span class="nx">obj</span><span class="p">[</span><span class="dl">"</span><span class="s2">default</span><span class="dl">"</span><span class="p">]</span> <span class="p">:</span> <span class="nx">obj</span><span class="p">;</span> <span class="p">};</span>
+
+<span class="kd">var</span> <span class="nx">foo</span> <span class="o">=</span> <span class="nx">_interopRequire</span><span class="p">(</span><span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">));</span>
+</pre></div>
+</div>
+
+<p>おおう。途端に複雑になったか。<br>
+いや、ちゃんと見ればそう難しくは無いはず。どうもこういうことらしい</p>
+
+<ul>
+<li>基本的にはrequireを普通にしている</li>
+<li>
+<code>obj.__esModule</code>が<code>true</code>であれば <code>obj["default"]</code>を返す。
+
+<ul>
+<li>module.exports.defaultというアレか。</li>
+<li>
+<code>__esModule</code>は他のtranspi特にbabel用ではないのか？ちょっと調べきれなかった。</li>
+</ul>
+</li>
+<li>
+<code>__esModule</code>が無くても<code>require</code>されているオブジェクトを返しているだけだ。</li>
+</ul>
+
+<h3>
+<span id="を使う" class="fragment"></span><a href="#%E3%82%92%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>*を使う</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">foo</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre>
+<span class="kd">var</span> <span class="nx">_interopRequireWildcard</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">obj</span> <span class="o">&amp;&amp;</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">__esModule</span> <span class="p">?</span> <span class="nx">obj</span> <span class="p">:</span> <span class="p">{</span> <span class="dl">"</span><span class="s2">default</span><span class="dl">"</span><span class="p">:</span> <span class="nx">obj</span> <span class="p">};</span> <span class="p">};</span>
+
+<span class="kd">var</span> <span class="nx">foo</span> <span class="o">=</span> <span class="nx">_interopRequireWildcard</span><span class="p">(</span><span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">));</span>
+</pre></div>
+</div>
+
+<p>微妙に違う。</p>
+
+<ul>
+<li>objectそのものを<code>foo</code>に当てているようだ。</li>
+<li>
+<code>__esModule</code>でなければ<code>default</code>のプロパティに元のobjectが入っているobjectを返すらしい。</li>
+</ul>
+
+<h3>
+<span id="-as-で囲んでみる" class="fragment"></span><a href="#-as-%E3%81%A7%E5%9B%B2%E3%82%93%E3%81%A7%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>{ as }で囲んでみる</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="p">{</span><span class="nx">oof</span> <span class="k">as</span> <span class="nx">foo</span><span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">;</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">foo</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">).</span><span class="nx">oof</span><span class="p">;</span>
+</pre></div>
+</div>
+
+<p>なるほど。asの後が変数。</p>
+
+<h4>
+<span id="欄外-import-utility-as-utilsみたいなやつ" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96-import-utility-as-utils%E3%81%BF%E3%81%9F%E3%81%84%E3%81%AA%E3%82%84%E3%81%A4"><i class="fa fa-link"></i></a>欄外 <code>import 'utility' as utils;</code>みたいなやつ</h4>
+
+<p>このあたりを調べていると<br>
+<a href="http://www.sitepoint.com/understanding-es6-modules/" class="autolink" rel="nofollow noopener" target="_blank">http://www.sitepoint.com/understanding-es6-modules/</a><br>
+ここで上記のような記載がされていた。<br>
+が、どうもこれはコンパイル通っていない。策定前の話だろうか？</p>
+
+<h2>
+<span id="export編" class="fragment"></span><a href="#export%E7%B7%A8"><i class="fa fa-link"></i></a>export編</h2>
+
+<p>次はmodule書く方。<br>
+<code>export</code>と<code>default</code>を組み合わせていく。</p>
+
+<h3>
+<span id="export-default-function" class="fragment"></span><a href="#export-default-function"><i class="fa fa-link"></i></a>export default function</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="k">export</span> <span class="k">default</span> <span class="kd">function</span><span class="p">(){</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{};</span>
+</pre></div>
+</div>
+
+<p>うん、わかりやすい。今までっぽい書き方はこうやるのね。</p>
+
+<h3>
+<span id="export-function" class="fragment"></span><a href="#export-function"><i class="fa fa-link"></i></a>export function</h3>
+
+<p>じゃあdefaultをつけないと？</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="k">export</span> <span class="kd">function</span> <span class="nx">foo</span><span class="p">(){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="nx">exports</span><span class="p">.</span><span class="nx">foo</span> <span class="o">=</span> <span class="nx">foo</span><span class="p">;</span>
+<span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">exports</span><span class="p">,</span> <span class="dl">"</span><span class="s2">__esModule</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">value</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">});</span>
+
+<span class="kd">function</span> <span class="nx">foo</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>ほほーん。また複雑な感じ。</p>
+
+<ul>
+<li>
+<code>Object.defineProperty</code>で__esModulesを設定している。</li>
+<li>
+<code>import foo from "foo"</code>で呼ばれているのがこれなんだろう。</li>
+<li>loose modeだと<code>exports.__esModule = true</code>
+
+<ul>
+<li>IE8だと動かない問題ありそう。</li>
+</ul>
+</li>
+<li>
+<code>module.exports</code>ではなくなるのね。</li>
+</ul>
+
+<h3>
+<span id="-で囲んでみる" class="fragment"></span><a href="#-%E3%81%A7%E5%9B%B2%E3%82%93%E3%81%A7%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>{} で囲んでみる</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="kd">function</span> <span class="nx">foo</span><span class="p">()</span> <span class="p">{</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">baz</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="p">{</span> <span class="nx">foo</span><span class="p">,</span> <span class="nx">baz</span> <span class="p">}</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="dl">"</span><span class="s2">use strict</span><span class="dl">"</span><span class="p">;</span>
+
+<span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">exports</span><span class="p">,</span> <span class="dl">"</span><span class="s2">__esModule</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">value</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">});</span>
+<span class="kd">function</span> <span class="nx">foo</span><span class="p">()</span> <span class="p">{}</span>
+
+<span class="kd">function</span> <span class="nx">baz</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="p">{}</span>
+
+<span class="nx">exports</span><span class="p">.</span><span class="nx">foo</span> <span class="o">=</span> <span class="nx">foo</span><span class="p">;</span>
+<span class="nx">exports</span><span class="p">.</span><span class="nx">baz</span> <span class="o">=</span> <span class="nx">baz</span><span class="p">;</span>
+</pre></div>
+</div>
+
+<ul>
+<li>definePropertyまわりはいままでと一緒。</li>
+<li>exportsに色々突っ込んでいる。</li>
+</ul>
+
+<h3>
+<span id="as-を使う" class="fragment"></span><a href="#as-%E3%82%92%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>as を使う</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="kd">function</span> <span class="nx">foo</span><span class="p">()</span> <span class="p">{</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="p">{</span> <span class="nx">foo</span> <span class="k">as</span> <span class="nx">oof</span><span class="p">}</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">exports</span><span class="p">,</span> <span class="dl">"</span><span class="s2">__esModule</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">value</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">});</span>
+<span class="kd">function</span> <span class="nx">foo</span><span class="p">()</span> <span class="p">{}</span>
+
+<span class="nx">exports</span><span class="p">.</span><span class="nx">oof</span> <span class="o">=</span> <span class="nx">foo</span><span class="p">;</span>
+</pre></div>
+</div>
+
+<p>単純にこれは当て込む変数を変えているだけっぽい</p>
+
+<h3>
+<span id="とdefaultを組み合わせる" class="fragment"></span><a href="#%E3%81%A8default%E3%82%92%E7%B5%84%E3%81%BF%E5%90%88%E3%82%8F%E3%81%9B%E3%82%8B"><i class="fa fa-link"></i></a>{}とdefaultを組み合わせる</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">es6.js</span></div>
+<div class="highlight"><pre><span class="kd">function</span> <span class="nx">foo</span><span class="p">()</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span> <span class="na">foo</span> <span class="p">:</span> <span class="nx">foo</span> <span class="p">}</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">babel.js</span></div>
+<div class="highlight"><pre><span class="dl">"</span><span class="s2">use strict</span><span class="dl">"</span><span class="p">;</span>
+
+<span class="kd">function</span> <span class="nx">foo</span><span class="p">()</span> <span class="p">{}</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span> <span class="na">foo</span><span class="p">:</span> <span class="nx">foo</span> <span class="p">};</span>
+</pre></div>
+</div>
+
+<p>こうするとたまによくやる<code>module.exports.foo</code>とかの代わりに使える。</p>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<p>ここまでをざっくり表にしてみるとこんな感じ<br>
+（一部表の都合で簡略化しているのはご了承）</p>
+
+<h4>
+<span id="import" class="fragment"></span><a href="#import"><i class="fa fa-link"></i></a>import</h4>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left">EcmaScript6</th>
+<th style="text-align: left">Babel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left"><code>import "foo"</code></td>
+<td style="text-align: left"><code>require("foo");</code></td>
+</tr>
+<tr>
+<td style="text-align: left"><code>import { foo } from "foo"</code></td>
+<td style="text-align: left"><code>var foo = require("foo").foo;</code></td>
+</tr>
+<tr>
+<td style="text-align: left"><code>import foo from "foo"</code></td>
+<td style="text-align: left">
+<code>var foo = require("foo")</code>　(*)</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>import * as foo from "foo"</code></td>
+<td style="text-align: left">
+<code>var foo = { "default" : require("foo")}</code>　(*)</td>
+</tr>
+<tr>
+<td style="text-align: left"><code>import {oof as foo} from "foo";</code></td>
+<td style="text-align: left"><code>var foo = require("foo").oof;</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>(*) 1行で書けるように略式</p>
+
+<h4>
+<span id="export" class="fragment"></span><a href="#export"><i class="fa fa-link"></i></a>export</h4>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left">EcmaScript6</th>
+<th style="text-align: left">Babel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left"><code>export default function(){}</code></td>
+<td style="text-align: left"><code>module.exports = function () {};</code></td>
+</tr>
+<tr>
+<td style="text-align: left"><code>export function foo(){}</code></td>
+<td style="text-align: left"><code>exports.foo = foo;</code></td>
+</tr>
+<tr>
+<td style="text-align: left"><code>export { foo, baz }</code></td>
+<td style="text-align: left"><code>exports.foo = foo; exports.baz = baz;</code></td>
+</tr>
+<tr>
+<td style="text-align: left"><code>export { foo as oof}</code></td>
+<td style="text-align: left"><code>exports.oof = foo;</code></td>
+</tr>
+</tbody>
+</table>

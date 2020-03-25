@@ -1,0 +1,29 @@
+<p>swift + cocoapodsでYMCPhysicsDebuggerを入れてみたけどエラーが出てしまった。</p>
+
+<p>が、よく調べるとすでにこれはSpritekitに標準で機能が備わっているっぽい</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="kd">class</span> <span class="kt">GameViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">viewDidLoad</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">scene</span> <span class="o">=</span> <span class="kt">GameScene</span><span class="o">.</span><span class="nf">unarchiveFromFile</span><span class="p">(</span><span class="s">"GameScene"</span><span class="p">)</span> <span class="k">as?</span> <span class="kt">GameScene</span> <span class="p">{</span>
+
+            <span class="c1">// Configure the view.</span>
+            <span class="k">let</span> <span class="nv">skView</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">view</span> <span class="k">as!</span> <span class="kt">SKView</span>
+            <span class="n">skView</span><span class="o">.</span><span class="n">showsFPS</span> <span class="o">=</span> <span class="kc">true</span>
+            <span class="n">skView</span><span class="o">.</span><span class="n">showsNodeCount</span> <span class="o">=</span> <span class="kc">true</span>
+
+            <span class="n">skView</span><span class="o">.</span><span class="n">ignoresSiblingOrder</span> <span class="o">=</span> <span class="kc">true</span>
+            <span class="n">skView</span><span class="o">.</span><span class="n">showsPhysics</span> <span class="o">=</span> <span class="kc">true</span> <span class="c1">// これ</span>
+            <span class="n">scene</span><span class="o">.</span><span class="n">scaleMode</span> <span class="o">=</span> <span class="o">.</span><span class="kt">AspectFit</span>
+
+            <span class="n">skView</span><span class="o">.</span><span class="nf">presentScene</span><span class="p">(</span><span class="n">scene</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div></div>
+
+<p>オブジェクトに青線が出る。<br>
+よかった。使えた。</p>

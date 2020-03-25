@@ -1,0 +1,27 @@
+<p><a href="/ykzts" class="user-mention js-hovercard" title="ykzts" data-hovercard-target-type="user" data-hovercard-target-name="ykzts">@ykzts</a> </p>
+
+<p>書き方が不十分でしたので訂正しました。複数ファイルで<code>require</code>してそれぞれ読み込んでいるような状況を指しておりました。</p>
+
+<p>このような場合です</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/a.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/b.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">a.js</span></div>
+<div class="highlight"><pre><span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">babel-polyfill</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="c1">// some code...</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">b.js</span></div>
+<div class="highlight"><pre><span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">babel-polyfill</span><span class="dl">"</span><span class="p">)</span> <span class="c1">// throw errro</span>
+
+<span class="c1">// some code...</span>
+</pre></div>
+</div>
+
+<p>そんなに頻繁に起きるケースではないのですが、うっかりしてるとやってしまう系ですね・・・</p>

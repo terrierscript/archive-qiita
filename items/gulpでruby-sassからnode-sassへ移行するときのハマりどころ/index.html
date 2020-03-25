@@ -1,0 +1,123 @@
+<p><a href="https://github.com/sass/node-sass/releases/tag/v3.0.0" rel="nofollow noopener" target="_blank">node-sass 3.0</a>が出て、Libsassも3.2に上がった。これによって<a href="/at-root" class="user-mention js-hovercard" title="at-root" data-hovercard-target-type="user" data-hovercard-target-name="at-root">@at-root</a>など（個人的に）重要な機能が使えるようになったので移行した。</p>
+
+<p>互換性に関しては<a href="http://sass-compatibility.github.io/" rel="nofollow noopener" target="_blank">sass-compability</a>が有用。</p>
+
+<h1>
+<span id="なんでlibsassにしたいのか" class="fragment"></span><a href="#%E3%81%AA%E3%82%93%E3%81%A7libsass%E3%81%AB%E3%81%97%E3%81%9F%E3%81%84%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>なんでlibsassにしたいのか？</h1>
+
+<ul>
+<li>gulp-sassのコンパイルが超早い。
+
+<ul>
+<li>今回の環境では100ファイルぐらいで6〜8秒ぐらいなのが1〜2秒ぐらいになった。</li>
+</ul>
+</li>
+<li>gulp-ruby-sassの独特な記法から逃れられる</li>
+<li>rubyを別途依存させる必要がない</li>
+</ul>
+
+<p>とかあたり。</p>
+
+<h1>
+<span id="ハマりどころ" class="fragment"></span><a href="#%E3%83%8F%E3%83%9E%E3%82%8A%E3%81%A9%E3%81%93%E3%82%8D"><i class="fa fa-link"></i></a>ハマりどころ</h1>
+
+<p>互換性が担保されているとはいえ、ちょいちょい引っ掛かりがあった。</p>
+
+<h2>
+<span id="不正な色コードはエラーになる" class="fragment"></span><a href="#%E4%B8%8D%E6%AD%A3%E3%81%AA%E8%89%B2%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AF%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AB%E3%81%AA%E3%82%8B"><i class="fa fa-link"></i></a>不正な色コードはエラーになる</h2>
+
+<p>今まではカラーコードが不正でも無視してくれていたが、libsassでは怒られてしまう。まあこれは普通になおすかそもそも効いてなかったので消せばよかった。</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="nc">.foo</span><span class="p">{</span>
+  <span class="nl">color</span><span class="p">:</span> <span class="mh">#12345</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="ieのexpression構文がコケる" class="fragment"></span><a href="#ie%E3%81%AEexpression%E6%A7%8B%E6%96%87%E3%81%8C%E3%82%B3%E3%82%B1%E3%82%8B"><i class="fa fa-link"></i></a>IEのexpression構文がコケる</h2>
+
+<p>IEのexpression構文がどうもコケる。現在node-sassはlibsass3.2.2を利用しているようだが、<a href="https://github.com/sass/libsass/issues/1102" rel="nofollow noopener" target="_blank">3.2.4では改善されるらしい。</a></p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="nt">html</span> <span class="p">{</span> 
+  <span class="nl">filter</span><span class="p">:</span> <span class="nf">expression</span><span class="p">(</span><span class="n">document</span><span class="o">.</span><span class="nf">execCommand</span><span class="p">(</span><span class="s2">"BackgroundImageCache"</span><span class="o">,</span><span class="bp">false</span><span class="o">,</span> <span class="bp">true</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>が、わりと古い対応だったので削った。</p>
+
+<p>本気で対応したい場合はJavaScriptで書きなおしちゃうのが筋として良いかもしれない。</p>
+
+<h2>
+<span id="at-rootでのが不正なエラーになる" class="fragment"></span><a href="#at-root%E3%81%A7%E3%81%AE%E3%81%8C%E4%B8%8D%E6%AD%A3%E3%81%AA%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AB%E3%81%AA%E3%82%8B"><i class="fa fa-link"></i></a><a href="/at-root" class="user-mention js-hovercard" title="at-root" data-hovercard-target-type="user" data-hovercard-target-name="at-root">@at-root</a>での#{&amp;}が不正なエラーになる。</h2>
+
+<p>これは一番変なハマり方した。<br>
+<code>@at-root</code>と<code>#{&amp;}</code>の組み合わせでエラーになるようだ。<br>
+エラーメッセージも<code>unknown</code>となってしまってなかなか発見に時間がかかった。</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="k">@mixin</span> <span class="nf">box-sizing-border</span><span class="p">{</span>
+  <span class="k">@at-root</span><span class="p">{</span>
+    <span class="si">#{</span><span class="o">&amp;</span><span class="si">}</span><span class="p">{</span>
+      <span class="nl">box-sizing</span><span class="p">:</span> <span class="n">border-box</span><span class="p">;</span>
+
+      <span class="o">*,</span> <span class="o">*</span><span class="nd">:before</span><span class="o">,</span> <span class="o">*</span><span class="nd">:after</span> <span class="p">{</span>
+        <span class="nl">box-sizing</span><span class="p">:</span> <span class="nb">inherit</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>この問題は一時変数に&amp;を入れることで解決。</p>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="k">@mixin</span> <span class="nf">box-sizing-border</span><span class="p">{</span>
+  <span class="k">@at-root</span><span class="p">{</span>
+    <span class="nv">$selector</span><span class="p">:</span> <span class="o">&amp;</span>
+    <span class="si">#{</span><span class="nv">$selector</span><span class="si">}</span><span class="p">{</span>
+      <span class="nl">box-sizing</span><span class="p">:</span> <span class="n">border-box</span><span class="p">;</span>
+
+      <span class="o">*,</span> <span class="o">*</span><span class="nd">:before</span><span class="o">,</span> <span class="o">*</span><span class="nd">:after</span> <span class="p">{</span>
+        <span class="nl">box-sizing</span><span class="p">:</span> <span class="nb">inherit</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>完全にバグを踏んだ気がするので、<a href="https://github.com/sass/libsass/issues/1204" rel="nofollow noopener" target="_blank">issue</a>を報告してみたらこれも3.2.4で動くようになるから待っててねという感じっぽい。</p>
+
+<h2>
+<span id="calcの中で-o-calcが動かない" class="fragment"></span><a href="#calc%E3%81%AE%E4%B8%AD%E3%81%A7-o-calc%E3%81%8C%E5%8B%95%E3%81%8B%E3%81%AA%E3%81%84"><i class="fa fa-link"></i></a>calcの中で<code>-o-calc</code>が動かない</h2>
+
+<p><code>-o-calc(100% - 16px)</code>だと%とpxで計算しているぞと怒られてしまう。</p>
+
+<p>おそらく<a href="https://github.com/sass/libsass/pull/900" rel="nofollow noopener" target="_blank">-ms-calcの対応issue</a>があるので、同様に<code>-o-calc</code>も入れなければなさそう。</p>
+
+<p>今回の場合は別途で既に<a href="https://github.com/postcss/autoprefixer" rel="nofollow noopener" target="_blank">autoprefixer</a>を入れていて、その消し忘れだったのでさくっと消した。<br>
+おそらくそうでなくてもautopreifxerを使うようにシフトするのが良いだろうと思う。</p>
+
+<h2>
+<span id="相対パスが効かないエラーが出ない" class="fragment"></span><a href="#%E7%9B%B8%E5%AF%BE%E3%83%91%E3%82%B9%E3%81%8C%E5%8A%B9%E3%81%8B%E3%81%AA%E3%81%84%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%8C%E5%87%BA%E3%81%AA%E3%81%84"><i class="fa fa-link"></i></a>相対パスが効かない？(エラーが出ない）</h2>
+
+<p>これはちょっと深くは未検証。pathオプションなどの問題かもしれない</p>
+
+<p>だいたいこんな構成だったとして</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>sass
+├── _basic.scss
+└── application.scss
+</pre></div></div>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">application.scss</span></div>
+<div class="highlight"><pre><span class="c1">// 読み込まれない（エラー出ない）</span>
+<span class="k">@import</span> <span class="s2">"basic"</span><span class="p">;</span>            
+
+<span class="c1">// 読み込まれる</span>
+<span class="k">@import</span> <span class="s2">"sass/basic"</span><span class="p">;</span>
+
+</pre></div>
+</div>
+
+<p>というように相対パスなら解決出来そうな（ruby-sassだとできていた）ものが読み込まれなくなっていた。</p>
+
+<p>エラーも無かったのでdiffでやっと気づいた。あぶないあぶない。</p>

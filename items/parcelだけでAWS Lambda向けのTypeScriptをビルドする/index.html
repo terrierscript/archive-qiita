@@ -1,0 +1,66 @@
+<p>AWS Lambda FunctionでTypeScriptを使いたい場合、通常Serverless frameworkやapexを使うのが一般的だろう。<br>
+しかし、ちょこっと使いたいだけの場合に重苦しい。</p>
+
+<p>もしかしたらParcelだけでいけるのでは？と思ったらいけたのでメモ</p>
+
+<h1>
+<span id="手順" class="fragment"></span><a href="#%E6%89%8B%E9%A0%86"><i class="fa fa-link"></i></a>手順</h1>
+
+<p>まずはTypeScriptインストール</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>yarn add -D typescript
+</pre></div></div>
+
+<p>parcelも入れる。zip化するとアップロードも楽になるのでpluginも入れる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>yarn add -D parcel parcel-plugin-zip
+</pre></div></div>
+
+<p>そしてfunction本体。今回は<code>handler.ts</code>という名前にしておく</p>
+
+<div class="code-frame" data-lang="typescript"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">handler</span> <span class="o">=</span> <span class="k">async</span> <span class="p">():</span> <span class="nb">Promise</span><span class="o">&lt;</span><span class="nx">any</span><span class="o">&gt;</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">Hello World!</span><span class="dl">'</span><span class="p">);</span>
+  <span class="k">return</span> <span class="p">{};</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>これだけでもうビルドはできる。下記のようなコマンドだ</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn parcel build handler.ts --target=node --global=handler -o index.js --bundle-node-modules --no-source-maps
+</pre></div></div>
+
+<p>それぞれ引数は下記のようなことをしている</p>
+
+<ul>
+<li>
+<code>--target=node</code> で対象をnodeに</li>
+<li>
+<code>--bundle-node-modules</code>でnode_modulesからの読み込み物を追加</li>
+<li>sourcemapは不要なので<code>--no-source-map</code>
+</li>
+<li>
+<code>-o index.js</code>で出漁対象をindex.jsにへこう</li>
+<li>
+<code>--global=handler</code> でhandlerに外からアクセスできる形でビルド（ちゃんと検証してないけどもしかしたら不要かも？）</li>
+</ul>
+
+<p>これを<code>package.json</code>に仕掛ければおしまい</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="nl">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"yarn parcel build handler.ts --target=node --global=handler -o index.js --bundle-node-modules --no-source-maps"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"deploy:aws"</span><span class="p">:</span><span class="w"> </span><span class="s2">"aws lambda update-function-code --function-name my-special-function --zip-file fileb://./dist.zip --region=ap-northeast-1"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"deploy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"yarn build; yarn deploy:aws"</span><span class="p">,</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<p>上記では<code>aws</code>コマンドを使ってコードをアップロードするところまでやっている（ここについては今回説明は割愛する）</p>
+
+<p>あとは<code>yarn deploy</code>でビルドまでできる</p>
+
+<h1>
+<span id="参考" class="fragment"></span><a href="#%E5%8F%82%E8%80%83"><i class="fa fa-link"></i></a>参考</h1>
+
+<ul>
+<li><a href="https://scotch.io/@nwayve/how-to-build-a-lambda-function-in-typescript" class="autolink" rel="nofollow noopener" target="_blank">https://scotch.io/@nwayve/how-to-build-a-lambda-function-in-typescript</a></li>
+<li><a href="https://github.com/parcel-bundler/parcel/issues/192#issuecomment-366032738" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/parcel-bundler/parcel/issues/192#issuecomment-366032738</a></li>
+</ul>

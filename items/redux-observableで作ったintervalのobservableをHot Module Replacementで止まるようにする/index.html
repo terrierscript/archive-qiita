@@ -1,0 +1,59 @@
+<p>epicでintervalを利用するような場合、HMRが効いてるとそのまま動いてしまう。<br>
+storeはHMRで更新されるので影響は無いが、consoleなどで追っかけているとObserverが動いていてちょっと気持ち悪い</p>
+
+<h1>
+<span id="解決方法-subjectを利用してmodulehotdisposeで発火して止める" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA%E6%96%B9%E6%B3%95-subject%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%A6modulehotdispose%E3%81%A7%E7%99%BA%E7%81%AB%E3%81%97%E3%81%A6%E6%AD%A2%E3%82%81%E3%82%8B"><i class="fa fa-link"></i></a>解決方法： Subjectを利用して<code>module.hot.dispose</code>で発火して止める</h1>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">combineEpics</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux-observable</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">interval</span><span class="p">,</span> <span class="nx">Subject</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">takeUntil</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs/operators</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">disposer</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Subject</span><span class="p">()</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">timerEpic</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">interval</span><span class="p">(</span><span class="mi">1000</span><span class="p">).</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">takeUntil</span><span class="p">(</span><span class="nx">disposer</span><span class="p">),</span> <span class="c1">// disposerが動くまでtimerを動かす</span>
+    <span class="nx">map</span><span class="p">((</span><span class="nx">time</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+      <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">TIMER</span><span class="dl">"</span><span class="p">,</span>
+      <span class="na">value</span><span class="p">:</span> <span class="nx">time</span>
+    <span class="p">}))</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="nx">module</span><span class="p">.</span><span class="nx">hot</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">module</span><span class="p">.</span><span class="nx">hot</span><span class="p">.</span><span class="nx">dispose</span><span class="p">((</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">disposer</span><span class="p">.</span><span class="nx">next</span><span class="p">()</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>typescriptの場合、<code>module.hot</code>は<code>@types/webpack-env</code>に定義されているので入れると良い</p>
+
+<h3>
+<span id="hmr部分を分離する" class="fragment"></span><a href="#hmr%E9%83%A8%E5%88%86%E3%82%92%E5%88%86%E9%9B%A2%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>HMR部分を分離する</h3>
+
+<p>こんな感じにHot Reload関連の部分を切り出しておくのも良いだろう。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// hotReload.ts</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Subject</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">takeUntil</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rxjs/operators</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">hmrDisposer</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Subject</span><span class="p">()</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">registerDisposeHandler</span> <span class="o">=</span> <span class="p">(</span><span class="nx">module</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">module</span><span class="p">.</span><span class="nx">hot</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">module</span><span class="p">.</span><span class="nx">hot</span><span class="p">.</span><span class="nx">dispose</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">hmrDisposer</span><span class="p">.</span><span class="nx">next</span><span class="p">())</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">takeUntilHotReload</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">takeUntil</span><span class="p">(</span><span class="nx">hmrDisposer</span><span class="p">)</span>
+</pre></div></div>
+
+<p>ただし<code>module.hot</code>のフックは全てのdependencyのルートであるrootEpicの記述箇所と一緒にしておかないと上手く発火されないので注意</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">rootEpic</span> <span class="o">=</span> <span class="nx">combineEpics</span><span class="p">(</span><span class="nx">pingEpic</span><span class="p">)</span>
+
+<span class="c1">// 全てのepicが更新されたタイミングでdisposeを呼び出すように仕掛ける</span>
+<span class="nx">registerDisposeHandler</span><span class="p">(</span><span class="nx">module</span><span class="p">)</span>
+</pre></div></div>

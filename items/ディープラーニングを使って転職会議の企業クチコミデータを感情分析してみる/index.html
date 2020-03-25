@@ -1,0 +1,421 @@
+<p>せっかく会社の名前を借りたAdvent Calendarの記事なので、会社に絡んだ題材を扱います。</p>
+
+<h1>
+<span id="前置き転職会議-について" class="fragment"></span><a href="#%E5%89%8D%E7%BD%AE%E3%81%8D%E8%BB%A2%E8%81%B7%E4%BC%9A%E8%AD%B0-%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6"><i class="fa fa-link"></i></a>（前置き）<a href="http://jobtalk.jp/" rel="nofollow noopener" target="_blank">転職会議</a> について</h1>
+
+<p>Livesenseでは、転職会議という転職者による企業の評判クチコミを扱ったサイトを運営しており、日々企業についてのクチコミが投稿されている。</p>
+
+<p>これまで転職会議では、クチコミのテキストデータと5段階からなる評点データを別々のデータとして取得していたが、先日のリニューアルで、評点とテキストデータを同時に投稿できるようになり、さらに読みやすいクチコミを提供できるようになった。</p>
+
+<table>
+<thead>
+<tr>
+<th>リニューアル以前に投稿されたクチコミ</th>
+<th>リニューアル後に投稿されたクチコミ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://jobtalk.jp/company/answer_1388452.html" rel="nofollow noopener" target="_blank"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F680fd65f-5b4f-6919-0ab7-b53163d3d0eb.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=1d5adf88dcd6ab1c934952a543f34800" width="400" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/680fd65f-5b4f-6919-0ab7-b53163d3d0eb.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F680fd65f-5b4f-6919-0ab7-b53163d3d0eb.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=02f0c5f6a3d3517149ef7ba1fad11514 1x" loading="lazy"></a></td>
+<td><a href="http://jobtalk.jp/company/answer_2000003.html" rel="nofollow noopener" target="_blank"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F85f25beb-8cc9-6b03-2afc-a0a1995b84d8.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=b77e19b3e9bf0cc533db93fb876ac9a5" width="400" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/85f25beb-8cc9-6b03-2afc-a0a1995b84d8.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F85f25beb-8cc9-6b03-2afc-a0a1995b84d8.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=b5fa12943bfb7b7890e8692e11005230 1x" loading="lazy"></a></td>
+</tr>
+</tbody>
+</table>
+
+<h3>
+<span id="ここで感じる課題感" class="fragment"></span><a href="#%E3%81%93%E3%81%93%E3%81%A7%E6%84%9F%E3%81%98%E3%82%8B%E8%AA%B2%E9%A1%8C%E6%84%9F"><i class="fa fa-link"></i></a>ここで感じる課題感</h3>
+
+<p>新しく投稿されるクチコミは評点によって読みやすくなったものの、過去に蓄積された大量の投稿には当然5段階の評点データは無いし、そのままでは顔アイコンを出すことは当然出来ない。</p>
+
+<p>しかしこの課題を解決して、<strong>過去のクチコミも同じように読みやすくなったらもっと良いサイトになるはず！</strong></p>
+
+<p>という所を解決することは出来ないかやってみることにした。</p>
+
+<h1>
+<span id="取っ掛かり探し手法を調べる" class="fragment"></span><a href="#%E5%8F%96%E3%81%A3%E6%8E%9B%E3%81%8B%E3%82%8A%E6%8E%A2%E3%81%97%E6%89%8B%E6%B3%95%E3%82%92%E8%AA%BF%E3%81%B9%E3%82%8B"><i class="fa fa-link"></i></a>取っ掛かり探し。手法を調べる</h1>
+
+<p>調べてみると、この問題は感情分析（他には評判分析、 Sentiment Analysis または Sentiment Classificationとか)と呼ばれている問題だそう。</p>
+
+<p>さらにその手法は大別するとこんなあたりが確認できた。</p>
+
+<ul>
+<li>感情辞書を使った判定手法
+
+<ul>
+<li><a href="http://qiita.com/kenmatsu4/items/52ab6deffdd61e7d8c0f" id="reference-39985d57d13bee7acde8">Twitter Stream APIデータに対して初歩的な感情分析を試みる</a></li>
+<li><a href="http://tt-house.com/2013/08/twitter-nega-posi.html" rel="nofollow noopener" target="_blank">PythonでTwitterでのツイートをネガポジ判定してみた結果</a></li>
+</ul>
+</li>
+<li>機械学習を使った手法
+
+<ul>
+<li><a href="http://qiita.com/hogefugabar/items/93fcb2bc27d7b268cbe6" id="reference-83ef8a6a6b47e2083890">深層学習でツイートの感情分析</a></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="手法1-感情辞書を使った手法" class="fragment"></span><a href="#%E6%89%8B%E6%B3%951-%E6%84%9F%E6%83%85%E8%BE%9E%E6%9B%B8%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E6%89%8B%E6%B3%95"><i class="fa fa-link"></i></a>手法1: 感情辞書を使った手法</h2>
+
+<p>感情辞書を使う手法は、例えば「<code>残業</code>」がネガティブだとして「<code>残業はない</code>」であれば打ち消されてポジティブと判定する、というような単純なロジックだ。<br>
+しかし、すぐに困難に当たった。</p>
+
+<blockquote>
+<p>残業はそんなにありませんでした</p>
+</blockquote>
+
+<p>例えば上記のような場合、チョチョイと係り受けをするだけでは解決せず、色々なパターンを考えなければならなそうだった。<br>
+さらに転職のクチコミという性質のせいか、このような言い回しはよく使われているようだった。。。</p>
+
+<p>という所まで来てこの手法は早々に断念</p>
+
+<h2>
+<span id="手法2-機械学習による手法" class="fragment"></span><a href="#%E6%89%8B%E6%B3%952-%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E3%81%AB%E3%82%88%E3%82%8B%E6%89%8B%E6%B3%95"><i class="fa fa-link"></i></a>手法2: 機械学習による手法</h2>
+
+<p>機械学習やらディープラーニングやらの未知の領域。<br>
+個人的には全く無知だし難易度高そうだなあ、、、と思いつつ、個人的にもそろそろ気になっていたのでこの手法を模索してみることにした。</p>
+
+<h3>
+<span id="機械学習による感情分析について調べる" class="fragment"></span><a href="#%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E3%81%AB%E3%82%88%E3%82%8B%E6%84%9F%E6%83%85%E5%88%86%E6%9E%90%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E8%AA%BF%E3%81%B9%E3%82%8B"><i class="fa fa-link"></i></a>機械学習による感情分析について調べる</h3>
+
+<p>ゆるふわな知識しか無いところから、「Sentiment Analysis」というワードを頼りに更に調査を進めると、だいたい下記のような事が見えてきた。</p>
+
+<ul>
+<li>
+<p>再帰型ニューラルネットワーク（RNN）というのが文章などを扱うにはよさそうらしい。</p>
+
+<ul>
+<li>中でもLSTMというのが精度が良くなりやすいとか。</li>
+<li><a href="http://qiita.com/icoxfog417/items/2791ee878deee0d0fd9c" id="reference-0da109d626203f9e984c">ニューラルネットワークで時系列データの予測を行う</a></li>
+<li>
+<a href="http://karpathy.github.io/2015/05/21/rnn-effectiveness/" rel="nofollow noopener" target="_blank">The Unreasonable Effectiveness of Recurrent Neural Networks</a>
+
+<ul>
+<li>上記の<a href="http://qiita.com/GushiSnow/items/c0ff3f213cade8b760b8" id="reference-2dfba8032d507c42fb47">日本語翻訳された記事</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Sentiment Analysisをしているサンプルもそれなりに見つけられた。</p>
+
+<ul>
+<li>
+<a href="https://github.com/dennybritz/sentiment-analysis" rel="nofollow noopener" target="_blank">Tensorflowを使ったサンプル</a>(github)
+
+<ul>
+<li>日本語を文字単位に区切って入力としている。</li>
+<li>良さそうだったが、ちょっと自由に操るのは難しそうだった。</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/pfnet/chainer/tree/master/examples/sentiment" rel="nofollow noopener" target="_blank">Chainerのサンプル</a>(github)
+
+<ul>
+<li>英文を係り受け？にしているっぽい。</li>
+<li>使うには下処理が色々必要そう</li>
+<li><a href="http://qiita.com/K-1/items/282f2d8c4d5e33bc95ab" id="reference-d8ccfe9a4e57efbbc1be">参考記事</a></li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/yusuketomoto/chainer-char-rnn" rel="nofollow noopener" target="_blank">Chaninerで文字単位のRNNを行っているサンプル</a>(github)
+
+<ul>
+<li>これはSentiment Analysisではなく次に来る文章を生成するものっぽい。これも楽しそう</li>
+</ul>
+</li>
+<li>
+<a href="http://deeplearning.net/tutorial/lstm.html" rel="nofollow noopener" target="_blank">Theanoを使ったサンプル</a>
+
+<ul>
+<li>英文の映画レビューを判定しているっぽい。</li>
+<li>どこで何やっているのかなんとなくわかる。</li>
+<li><strong>データを作れればなんか動かせそう</strong></li>
+<li>希望が見えてきた。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="ここから本題lstmで感情分析を行う" class="fragment"></span><a href="#%E3%81%93%E3%81%93%E3%81%8B%E3%82%89%E6%9C%AC%E9%A1%8Clstm%E3%81%A7%E6%84%9F%E6%83%85%E5%88%86%E6%9E%90%E3%82%92%E8%A1%8C%E3%81%86"><i class="fa fa-link"></i></a>(ここから本題）LSTMで感情分析を行う</h1>
+
+<p>今回は <a href="http://deeplearning.net/tutorial/lstm.html" rel="nofollow noopener" target="_blank">Theanoを使ったサンプル</a> を流用して検証を進める事にする。</p>
+
+<p>（利用にあたって<a href="http://qiita.com/inuscript/items/84f972af73c2af27849a" id="reference-986852c3e8213cd02d8d">コードリーディングした書き置き</a>を別記事にしたので、興味がある方はそちらを参照）</p>
+
+<h2>
+<span id="学習データの特徴とか問題設定とか" class="fragment"></span><a href="#%E5%AD%A6%E7%BF%92%E3%83%87%E3%83%BC%E3%82%BF%E3%81%AE%E7%89%B9%E5%BE%B4%E3%81%A8%E3%81%8B%E5%95%8F%E9%A1%8C%E8%A8%AD%E5%AE%9A%E3%81%A8%E3%81%8B"><i class="fa fa-link"></i></a>学習データの特徴とか問題設定とか</h2>
+
+<h3>
+<span id="学習データの特徴" class="fragment"></span><a href="#%E5%AD%A6%E7%BF%92%E3%83%87%E3%83%BC%E3%82%BF%E3%81%AE%E7%89%B9%E5%BE%B4"><i class="fa fa-link"></i></a>学習データの特徴</h3>
+
+<p>今回学習データにする転職会議のクチコミデータは、1つのクチコミについて下記のような特徴がある。</p>
+
+<ul>
+<li>
+<p>テキストデータ</p>
+
+<ul>
+<li>100文字以上</li>
+<li>1つの企業のついてのレビュー（今回はあんまり関係しない）</li>
+<li>1つの質問項目についてのレビュー（今回はあんまり関係しない）</li>
+</ul>
+</li>
+<li>
+<p>評点データ</p>
+
+<ul>
+<li>会社についての5段階評価</li>
+<li>1が最も低く、5が最も高い評価</li>
+<li>星をいくつつけるかで選んでもらうよくあるアレ</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="問題設定" class="fragment"></span><a href="#%E5%95%8F%E9%A1%8C%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>問題設定</h3>
+
+<p>ここまでの結果を踏まえ、改めて下記のように問題設定をする。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>書き込まれたクチコミの文章が、ポジティブであるかネガティブであるかを判定できるモデルを作る
+</pre></div></div>
+
+<p>本来であればデータにあわせて5段階評価まで目指したいものの、まあやっぱり難易度が高そうなので、今回は見送り。</p>
+
+<p>あと今回はざっくり感覚に基づいてやってみるので、評点が低く付くような文章が「<strong>ネガティブ</strong>」、高く付くような文章が「<strong>ポジティブ</strong>」であるというような前提・仮定をして進める。</p>
+
+<h3>
+<span id="データの準備" class="fragment"></span><a href="#%E3%83%87%E3%83%BC%E3%82%BF%E3%81%AE%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>データの準備</h3>
+
+<p>データの下処理として、だいたいこんな感じで準備を進めていく</p>
+
+<ul>
+<li>入力は1文字ずつを辞書の数値化したものを利用
+
+<ul>
+<li>例:) いい会社 -&gt; <code>[1,1,2,3]</code>
+</li>
+</ul>
+</li>
+<li>サンプルに、1300件ずつ、評点が1(ネガティブ)、5(ポジティブ)であるクチコミを準備。</li>
+<li>ネガティブを0、ポジティブを1として再ラベリング</li>
+<li>
+<a href="http://deeplearning.net/tutorial/code/imdb.py" rel="nofollow noopener" target="_blank">データ読み込みのスクリプト</a>を修正して独自のデータが読み込めるように調整
+
+<ul>
+<li>このスクリプト側で学習データを、訓練用と検証用に分割してくれたりする。</li>
+<li>学習データと同様に、テストデータも用意。
+
+<ul>
+<li>今回のスクリプトでは、テストデータは、学習から完全に独立して、誤差測定にのみ利用される。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="とりあえずサンプル的に動かしてみる" class="fragment"></span><a href="#%E3%81%A8%E3%82%8A%E3%81%82%E3%81%88%E3%81%9A%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB%E7%9A%84%E3%81%AB%E5%8B%95%E3%81%8B%E3%81%97%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>とりあえずサンプル的に動かしてみる。</h2>
+
+<p>データの準備ができたら動かす。 <br>
+デフォルトだと結構時間がかかるので、適度に隠れ層の数などを調整するほうが良さそうだった。</p>
+
+<h3>
+<span id="簡易スクリプトで試す" class="fragment"></span><a href="#%E7%B0%A1%E6%98%93%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%83%88%E3%81%A7%E8%A9%A6%E3%81%99"><i class="fa fa-link"></i></a>簡易スクリプトで試す</h3>
+
+<p>しばらく待ってモデルが構築されたら、ひとまず簡易なワードを投げてうまく行ってそうか動かしてみる。</p>
+
+<p><a href="http://deeplearning.net/tutorial/code/lstm.py" rel="nofollow noopener" target="_blank">学習スクリプト</a>の400行目あたりの<code>pred_probs()</code>を見ると 「学習済みのモデルで検証したかったらこれ参考にすると良いよ」的な事が書いてあるので、これを参考にちょっとしたスクリプトで検証。</p>
+
+<div class="code-frame" data-lang="python">
+<div class="code-lang"><span class="bold">negaposi.py</span></div>
+<div class="highlight"><pre><span class="n">model</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">"lstm_model.npz"</span><span class="p">)</span>
+<span class="n">tparams</span> <span class="o">=</span> <span class="n">lstm</span><span class="o">.</span><span class="n">init_tparams</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+<span class="p">(</span><span class="n">use_noise</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">f_pred_prob</span><span class="p">,</span> <span class="n">f_pred</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span> <span class="o">=</span> <span class="n">lstm</span><span class="o">.</span><span class="n">build_model</span><span class="p">(</span><span class="n">tparams</span><span class="p">,</span> 
+    <span class="c1"># このへんのoptions投げないとKeyErrorになってしまう。
+</span>    <span class="s">'encoder'</span><span class="p">:</span> <span class="s">'lstm'</span><span class="p">,</span>
+    <span class="s">'dim_proj'</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
+    <span class="s">'use_dropout'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+<span class="p">})</span>
+
+<span class="c1"># 最低限に簡略化
+</span><span class="k">def</span> <span class="nf">pred_probs</span><span class="p">(</span><span class="n">f_pred_prob</span><span class="p">,</span> <span class="n">sentence</span><span class="p">):</span>
+    <span class="n">probs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">floatX</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">_y</span> <span class="o">=</span> <span class="n">imdb</span><span class="o">.</span><span class="n">prepare_data</span><span class="p">([</span><span class="n">sentence</span><span class="p">],</span>
+                              <span class="mi">1</span><span class="p">,</span> <span class="c1"># dummy。利用されないので適当に。
+</span>                              <span class="n">maxlen</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f_pred_prob</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># それぞれ文字列を数値化した入力
+</span><span class="n">sentences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s">"data"</span><span class="p">:</span> <span class="p">[</span><span class="mi">27</span><span class="p">,</span> <span class="mi">72</span><span class="p">,</span> <span class="mi">104</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">106</span><span class="p">,</span> <span class="mi">23</span><span class="p">],</span>
+        <span class="s">"text"</span><span class="p">:</span> <span class="s">"とても良い会社だ"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s">"data"</span><span class="p">:</span> <span class="p">[</span><span class="mi">27</span><span class="p">,</span> <span class="mi">72</span><span class="p">,</span> <span class="mi">104</span><span class="p">,</span> <span class="mi">402</span><span class="p">,</span> <span class="mi">121</span><span class="p">,</span> <span class="mi">73</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">106</span><span class="p">,</span> <span class="mi">23</span><span class="p">],</span>
+        <span class="s">"text"</span><span class="p">:</span> <span class="s">"とても最悪な会社だ"</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">pred_probs</span><span class="p">(</span><span class="n">f_pred_prob</span><span class="p">,</span> <span class="n">sentence</span><span class="p">[</span><span class="s">"data"</span><span class="p">])</span>
+    <span class="k">print</span> <span class="s">"==="</span>
+    <span class="k">print</span> <span class="n">result</span>
+    <span class="k">print</span> <span class="n">sentence</span><span class="p">[</span><span class="s">"text"</span><span class="p">],</span> <span class="p">(</span><span class="s">"is positive"</span> <span class="k">if</span> <span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">else</span> <span class="s">"is negative"</span><span class="p">)</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="実行" class="fragment"></span><a href="#%E5%AE%9F%E8%A1%8C"><i class="fa fa-link"></i></a>実行</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% python sample.py
+===
+input: とても良い会社だ =&gt; [27, 72, 104, 150, 19, 8, 106, 23]
+output: [ 0.06803907  0.93196093]
+とても良い会社だ is positive
+===
+input: とても最悪な会社だ =&gt; [27, 72, 104, 402, 121, 73, 8, 106, 23]
+output: [ 0.73581125  0.26418875]
+とても最悪な会社だ is negative
+</pre></div></div>
+
+<p>なんかそれっぽく出てきた。すごい。<br>
+出力はLSTMを通した結果で、それぞれのクラスである確率が返ってきているらしい。</p>
+
+<p>いけそうな感触が出てきたので、更に検証を進める。</p>
+
+<h2>
+<span id="試験結果" class="fragment"></span><a href="#%E8%A9%A6%E9%A8%93%E7%B5%90%E6%9E%9C"><i class="fa fa-link"></i></a>試験結果</h2>
+
+<p>色々パラメータをいじりつつ、実行結果を細かく見てみる。<br>
+とりあえず今回はそれなりに良さそうな結果になったdim_proj=8(隠れ層)、validFreq=30(検証頻度)の結果。</p>
+
+<h3>
+<span id="エラー率の推移" class="fragment"></span><a href="#%E3%82%A8%E3%83%A9%E3%83%BC%E7%8E%87%E3%81%AE%E6%8E%A8%E7%A7%BB"><i class="fa fa-link"></i></a>エラー率の推移</h3>
+
+<p>今回実行したスクリプトは、検証用データとテストデータのエラーの遷移を記録している。<br>
+だいたいこんな推移らしい。</p>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F5ec90d0b-6d5d-77ac-8c9c-57f96dc0baa8.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=9bbcf7c2d529c67062a24d7ecdd603fa" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F5ec90d0b-6d5d-77ac-8c9c-57f96dc0baa8.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=9bbcf7c2d529c67062a24d7ecdd603fa" width="500" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/5ec90d0b-6d5d-77ac-8c9c-57f96dc0baa8.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F5ec90d0b-6d5d-77ac-8c9c-57f96dc0baa8.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=bcde3c335c5ccb1a096bf4003b37405c 1x" loading="lazy"></a></p>
+
+<p>検証データを終える2600 updateを超えたあたりで1エポックを終えるので、その後から誤差が縮んでいる様子が見える。</p>
+
+<p>また、訓練スクリプトの中で、Early stoppingをしてくれているので、過剰適合が起きる前で適度に止まってくれている様子も伺える。</p>
+
+<h3>
+<span id="testデータの結果分析" class="fragment"></span><a href="#test%E3%83%87%E3%83%BC%E3%82%BF%E3%81%AE%E7%B5%90%E6%9E%9C%E5%88%86%E6%9E%90"><i class="fa fa-link"></i></a>Testデータの結果分析</h3>
+
+<p>検証では、最終的にテストデータのエラー率は0.2〜0.3程度ということなので、だいたい正答率7〜8割が期待できる。</p>
+
+<p>本当にそうなっているか、それぞれTestとして利用したデータの中を見てみる。</p>
+
+<h4>
+<span id="評点と感情分類の分布を見る" class="fragment"></span><a href="#%E8%A9%95%E7%82%B9%E3%81%A8%E6%84%9F%E6%83%85%E5%88%86%E9%A1%9E%E3%81%AE%E5%88%86%E5%B8%83%E3%82%92%E8%A6%8B%E3%82%8B"><i class="fa fa-link"></i></a>評点と感情分類の分布を見る</h4>
+
+<p>先ほど利用した<code>negaposi.py</code>を拡張して、テストサンプルをnegative / positveで分類をし、それぞれの分布を出すとこんな感じ</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: left">評点</th>
+<th style="text-align: left">negative(%)</th>
+<th style="text-align: left">positive(%)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left"><strong>★1つのクチコミ</strong></td>
+<td style="text-align: left"><strong>84.34</strong></td>
+<td style="text-align: left">15.66</td>
+</tr>
+<tr>
+<td style="text-align: left">★2つのクチコミ</td>
+<td style="text-align: left">66.53</td>
+<td style="text-align: left">33.47</td>
+</tr>
+<tr>
+<td style="text-align: left">★3つのクチコミ</td>
+<td style="text-align: left">45.07</td>
+<td style="text-align: left">54.93</td>
+</tr>
+<tr>
+<td style="text-align: left">★4つのクチコミ</td>
+<td style="text-align: left">25.77</td>
+<td style="text-align: left">74.23</td>
+</tr>
+<tr>
+<td style="text-align: left"><strong>★5つのクチコミ</strong></td>
+<td style="text-align: left">27.59</td>
+<td style="text-align: left"><strong>72.41</strong></td>
+</tr>
+</tbody>
+</table>
+
+<p>だいたいこんな事が見て取れる</p>
+
+<ul>
+<li>所感：割りと良さそう</li>
+<li>★1、★5でだいたい正答率70%~80%。やはり結果とも大きくは相違無さそう。</li>
+<li>テスト時には除外していた★4、★2もそれなりに妥当な数値になっている。</li>
+<li>★3が五分五分に近い数値になっているのちょっと興味深い。
+
+<ul>
+<li>ちょっと中身をじっくり見ると何か気づきがありそう</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="検証結果を受けて" class="fragment"></span><a href="#%E6%A4%9C%E8%A8%BC%E7%B5%90%E6%9E%9C%E3%82%92%E5%8F%97%E3%81%91%E3%81%A6"><i class="fa fa-link"></i></a>検証結果を受けて</h2>
+
+<ul>
+<li>結果：まあ成功ぐらいな感じ
+
+<ul>
+<li>大成功！とまではいかないまでも、もうちょっとがんばれば使えるものになりそう。</li>
+<li>結構実用化も夢ではなさそう</li>
+</ul>
+</li>
+<li>
+<p>さっくりやっただけの割にここまで来れた。LSTMすごい！</p>
+
+<ul>
+<li>正直係り受け頑張ってここまで辿りつけたかというとあんまり自信無い</li>
+</ul>
+</li>
+<li>
+<p>精度をもうちょっとあげることを考えたらこのへん出来そう</p>
+
+<ul>
+<li>年代や、業界などの情報を絞ったら精度が上がらないか？</li>
+<li>隠れ層などパラメータをもっと調整？</li>
+<li>データ量がまだ少ない？もう少し待つ？</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="感想" class="fragment"></span><a href="#%E6%84%9F%E6%83%B3"><i class="fa fa-link"></i></a>感想</h1>
+
+<ul>
+<li>調べてる間は「全然わからん・・・」となっていたけど動かしつつやってみていたらだんだんわかって来ることが多かった。
+
+<ul>
+<li>とりあえずやってみるの大事</li>
+</ul>
+</li>
+<li>いろんなわからないことが出尽くしたタイミングで<a href="http://www.amazon.co.jp/dp/4061529021/ref=cm_sw_r_tw_dp_Si.ywb1KFVVJH" rel="nofollow noopener" target="_blank">深層学習</a>を読んだらすごい脳みそが穴埋めされた感じあってすごい助かった。</li>
+<li>数日もがいてみた程度だが、いろんな意味で機械学習の世界のヤバさの片鱗を感じる事が出来た。
+
+<ul>
+<li>数年後にエンジニアの必須科目になっててもおかしくないとすら思えるポテンシャル</li>
+</ul>
+</li>
+<li>
+<a href="http://pandas.pydata.org/" rel="nofollow noopener" target="_blank">pandas</a>扱いやすくて最高だった。pandaありがとう。</li>
+</ul>

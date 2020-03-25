@@ -1,0 +1,14 @@
+<p>ありがとうございます。</p>
+
+<blockquote>
+<p>ネイティブで使える函数についてはそちらが優先されて使われます。</p>
+</blockquote>
+
+<p>こちら、書き方が悪かったです。（訂正しました）</p>
+
+<p>どちらもpolyfillが関数そのものはネイティブなのですが、core-js内の関数をコールするオーバヘッドが、プロダクトによっては無視できなくなる程度のパフォーマンスの影響をあたえる可能性を考えておりました<br>
+（そのレベルでパフォーマンスを考えるプロダクトにおいてbabelを使うことの是非がそもそもありそうですが・・・）</p>
+
+<p>またglobalの汚染については抜け落ちた視点でしたので、こちらについても追記させていただきました。</p>
+
+<p>どちらが良いかというお話で言うと、<code>babel-plugin-transform-runtime</code>も、一部うまく変換できないのか<a href="https://github.com/babel/babel/blob/master/packages/babel-plugin-transform-runtime/src/definitions.js#L29" rel="nofollow noopener" target="_blank">disableにされている</a>場合があるようですし、なかなか一概には決めれないかもしれません</p>

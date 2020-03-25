@@ -1,0 +1,296 @@
+<p>vuejsではvue2-google-mapなどgoogle-mapを利用するライブラリがあるが、色々小回りを効かせたいくて直接APIを触れるようにしたかったのでやってみたらvueのあらゆる機能を触ることになったので実装をまとめてみる。</p>
+
+<h1>
+<span id="出来たもの" class="fragment"></span><a href="#%E5%87%BA%E6%9D%A5%E3%81%9F%E3%82%82%E3%81%AE"><i class="fa fa-link"></i></a>出来たもの</h1>
+
+<p>Demo: <a href="https://vue-google-map-provider-sample.netlify.com/" class="autolink" rel="nofollow noopener" target="_blank">https://vue-google-map-provider-sample.netlify.com/</a><br>
+Source: <a href="https://github.com/inuscript/example-vue-inject-provide-google-map" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/inuscript/example-vue-inject-provide-google-map</a></p>
+
+<h1>
+<span id="実装" class="fragment"></span><a href="#%E5%AE%9F%E8%A3%85"><i class="fa fa-link"></i></a>実装</h1>
+
+<p>登場人物は下記のようになる</p>
+
+<ul>
+<li>index.html (起動するファイル）</li>
+<li>MyMap.vue (マップの大本の実装。コンポーネントを組み合わせる親）</li>
+<li>MapLoader.vue (Google Mapを呼び出すだけ）</li>
+<li>MapProvider.vue (vueのprovideを提供するだけ）</li>
+<li>ChildMarker.vue (例として子要素でマーカーを表示する）</li>
+</ul>
+
+<p>google-map以外でもcallbackを利用するような場合に扱える知見を得ることが出来たので、ここから実装について書いてみる。</p>
+
+<h2>
+<span id="indexhtml" class="fragment"></span><a href="#indexhtml"><i class="fa fa-link"></i></a>index.html</h2>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="c">&lt;!-- index.html --&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"app"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;my-map</span> <span class="na">:markers=</span><span class="s">'[
+        {"lat":35.6432027,"lng":139.6729435},
+        {"lat":35.5279833,"lng":139.6989209},
+        {"lat":35.6563623,"lng":139.7215211},
+        {"lat":35.6167531,"lng":139.5469376},
+        {"lat":35.6950961,"lng":139.5037899}
+      ]'</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;/my-map&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+</pre></div></div>
+
+<p>index.htmlは呼び出すだけなので何も無し</p>
+
+<h2>
+<span id="mymapvue" class="fragment"></span><a href="#mymapvue"><i class="fa fa-link"></i></a>MyMap.vue</h2>
+
+<p>呼び出しの中核はこんな感じにしてみた。<br>
+ここは汎用的に使えないものとして書いている。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- MyMap.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;h1&gt;</span>Map<span class="nt">&lt;/h1&gt;</span>
+    <span class="nt">&lt;map-loader</span> 
+      <span class="na">:map-config=</span><span class="s">"mapConfig"</span>
+      <span class="na">apiKey=</span><span class="s">"YOUR API KEY"</span>
+    <span class="nt">&gt;</span>
+      <span class="nt">&lt;template</span> <span class="na">v-for=</span><span class="s">"marker in markers"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;child-marker</span> <span class="na">:position=</span><span class="s">"marker"</span> <span class="nt">/&gt;</span>
+      <span class="nt">&lt;/template&gt;</span>
+    <span class="nt">&lt;/map-loader&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">import</span> <span class="nx">MapLoader</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./MapLoader.vue</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">ChildMarker</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./ChildMarker</span><span class="dl">'</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">props</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">markers</span><span class="p">:</span> <span class="nb">Array</span>
+  <span class="p">},</span>
+  <span class="nx">data</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">mapConfig</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">zoom</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="na">center</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">markers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="na">components</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">MapLoader</span><span class="p">,</span>
+    <span class="nx">ChildMarker</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<p>ここから<code>map-loader</code>を呼び出し、内部で<code>child-marker</code>を利用している</p>
+
+<h2>
+<span id="maploader" class="fragment"></span><a href="#maploader"><i class="fa fa-link"></i></a>MapLoader</h2>
+
+<p>肝の部分その１。google mapをロードを担う</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- MapLoader.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"map"</span><span class="nt">&gt;&lt;/div&gt;</span> <span class="c">&lt;!-- point 1 --&gt;</span>
+    <span class="nt">&lt;template</span> <span class="na">v-if=</span><span class="s">"!!this.google &amp;&amp; !!this.map"</span><span class="nt">&gt;</span> <span class="c">&lt;!-- point 2 --&gt;</span>
+      <span class="nt">&lt;map-provider</span>
+        <span class="na">:google=</span><span class="s">"google"</span>
+        <span class="na">:map=</span><span class="s">"map"</span>
+      <span class="nt">&gt;</span>
+        <span class="nt">&lt;slot/&gt;</span>
+      <span class="nt">&lt;/map-provider&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">import</span> <span class="nx">GoogleMapsApiLoader</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">google-maps-api-loader</span><span class="dl">'</span>
+<span class="k">import</span> <span class="nx">MapProvider</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./MapProvider</span><span class="dl">'</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">props</span><span class="p">:{</span>
+    <span class="na">mapConfig</span><span class="p">:</span> <span class="nb">Object</span><span class="p">,</span>
+    <span class="na">apiKey</span><span class="p">:</span> <span class="nb">String</span>
+  <span class="p">},</span>
+  <span class="na">components</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">MapProvider</span>
+  <span class="p">},</span>
+  <span class="nx">data</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">google</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+      <span class="na">map</span><span class="p">:</span> <span class="kc">null</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nx">mounted</span> <span class="p">()</span> <span class="p">{</span> <span class="c1">// point 3</span>
+    <span class="nx">GoogleMapsApiLoader</span><span class="p">({</span>
+      <span class="na">apiKey</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">apiKey</span>
+    <span class="p">}).</span><span class="nx">then</span><span class="p">((</span><span class="nx">google</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">google</span> <span class="o">=</span> <span class="nx">google</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">initializeMap</span><span class="p">()</span>
+    <span class="p">})</span>
+  <span class="p">},</span>
+  <span class="na">methods</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">initializeMap</span> <span class="p">(){</span>
+      <span class="kd">const</span> <span class="nx">mapContainer</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">$el</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">'</span><span class="s1">#map</span><span class="dl">'</span><span class="p">)</span> <span class="c1">// point 1</span>
+      <span class="kd">const</span> <span class="p">{</span> <span class="nb">Map</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">google</span><span class="p">.</span><span class="nx">maps</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Map</span><span class="p">(</span><span class="nx">mapContainer</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">mapConfig</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="nt">&lt;/script&gt;</span>
+
+<span class="nt">&lt;style </span><span class="na">scoped</span><span class="nt">&gt;</span>
+<span class="nf">#map</span> <span class="p">{</span>
+  <span class="nl">height</span><span class="p">:</span> <span class="m">100vh</span><span class="p">;</span>
+  <span class="nl">width</span><span class="p">:</span> <span class="m">100%</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nt">&lt;/style&gt;</span>
+</pre></div></div>
+
+<ul>
+<li>point 1: <code>#map</code> google mapを吐き出す部分としてdomを使っている。それを後半で<code>this.$el</code>を利用してマウントしている。</li>
+<li>point 2: 一番のキモ。<code>google</code>と<code>map</code>がロード完了するまで子を <strong>レンダリングさせない</strong>。この制御をすることで、provide/injectをうまく利用出来る。</li>
+<li>point 3: ロードの処理どのタイミングでやるの？というのは<code>mounted</code>で行う。ここで<code>GoogleMapApiLoader</code>
+</li>
+</ul>
+
+<h2>
+<span id="mapprovider" class="fragment"></span><a href="#mapprovider"><i class="fa fa-link"></i></a>MapProvider</h2>
+
+<p>キモその２。<br>
+vueのprovide/injectを利用するために、loaderから分離した。<br>
+provideはコンポーネントがロードされた初期のタイミングでのみ評価されるらしく、loaderで値の算出が完了した後に実行されるようにしないといけない。<br>
+loaderが<code>google</code>と<code>map</code>が揃うまで子要素をレンダリングしないようにすることで、<code>MapProvider</code>は確実に<code>google</code>と<code>map</code>の値を取得出来る状態になっている。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- MapProvider.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;slot</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">props</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">google</span><span class="p">:</span> <span class="nb">Object</span><span class="p">,</span>
+    <span class="na">map</span><span class="p">:</span> <span class="nb">Object</span><span class="p">,</span>
+  <span class="p">},</span>
+  <span class="nx">provide</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">google</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">google</span><span class="p">,</span>
+      <span class="na">map</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+<span class="p">}</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<h2>
+<span id="childmarker" class="fragment"></span><a href="#childmarker"><i class="fa fa-link"></i></a>ChildMarker</h2>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- ChildMarker.vue --&gt;</span>
+<span class="nt">&lt;template&gt;&lt;/template&gt;</span>
+<span class="nt">&lt;script&gt;</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">inject</span><span class="p">:</span> <span class="p">[</span><span class="dl">"</span><span class="s2">google</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">map</span><span class="dl">"</span><span class="p">],</span>
+  <span class="na">props</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">position</span><span class="p">:</span> <span class="nb">Object</span>
+  <span class="p">},</span>
+  <span class="nx">data</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="na">marker</span><span class="p">:</span> <span class="kc">null</span><span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nx">mounted</span><span class="p">(){</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">Marker</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">google</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">marker</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Marker</span><span class="p">({</span>
+      <span class="na">position</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">position</span><span class="p">,</span>
+      <span class="na">map</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">,</span>
+      <span class="na">title</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Child marker!</span><span class="dl">"</span>
+    <span class="p">})</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="nt">&lt;/script&gt;</span>
+
+</pre></div></div>
+
+<p>子要素の実装側。<br>
+<code>inject</code>を利用して<code>provide</code>された値を貰ってくる。<br>
+<code>MapLoader</code>でやったのと同じく、<code>mounted</code>で処理をする。表示は何もしなくて良いので空にしている。</p>
+
+<h1>
+<span id="provideinjectを使わないパターンslot-scopeを使う" class="fragment"></span><a href="#provideinject%E3%82%92%E4%BD%BF%E3%82%8F%E3%81%AA%E3%81%84%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3slot-scope%E3%82%92%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>provide/injectを使わないパターン（slot-scopeを使う）</h1>
+
+<p>provide / injectは公式ドキュメントによれば「ライブラリ向けで、一般ユーザーは使うべきでない」という話もある。<br>
+これらを使わない場合は、値をバケツリレーして子要素に渡していくことになる。<br>
+ここでvueの場合は<code>slot-socpe</code>を利用する必要が出てくる</p>
+
+<p>MapLoaderはMapProvierを利用せず、<code>slot</code>に直接<code>google</code>と<code>map</code>の値を渡す</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- MapLoader.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"map"</span><span class="nt">&gt;&lt;/div&gt;</span>
+    <span class="nt">&lt;template</span> <span class="na">v-if=</span><span class="s">"!!this.google &amp;&amp; !!this.map"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;slot</span>
+        <span class="na">:google=</span><span class="s">"google"</span>
+        <span class="na">:map=</span><span class="s">"map"</span>
+      <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+ <span class="p">:</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<p>そしてMyMap側で<code>slot-scope</code>を利用して、<code>map-loader</code>から受け取った<code>google</code>と<code>map</code>の変数を<code>child-marker</code>へ渡す</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- MyMap --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;h1&gt;</span>Map<span class="nt">&lt;/h1&gt;</span>
+    <span class="nt">&lt;map-loader</span> 
+      <span class="na">:map-config=</span><span class="s">"mapConfig"</span>
+      <span class="na">apiKey=</span><span class="s">"YOUR API KEY"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;template</span> <span class="na">slot-scope=</span><span class="s">"scopeProps"</span><span class="nt">&gt;</span> <span class="c">&lt;!-- slot-scope --&gt;</span>
+        <span class="nt">&lt;child-marker</span> 
+          <span class="na">v-for=</span><span class="s">"(marker,i) in markers"</span>
+          <span class="na">:key=</span><span class="s">"i"</span>
+          <span class="na">:position=</span><span class="s">"marker"</span> 
+          <span class="na">:google=</span><span class="s">"scopeProps.google"</span>
+          <span class="na">:map=</span><span class="s">"scopeProps.map"</span>
+        <span class="nt">/&gt;</span>
+      <span class="nt">&lt;/template&gt;</span>
+    <span class="nt">&lt;/map-loader&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+</pre></div></div>
+
+<p>ChildMarkerは<code>inject</code>がなくなり<code>props</code>で値を受けるようになる</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- ChildMarker --&gt;</span>
+<span class="nt">&lt;template&gt;&lt;/template&gt;</span>
+<span class="nt">&lt;script&gt;</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">props</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">google</span><span class="p">:</span> <span class="nb">Object</span><span class="p">,</span>
+    <span class="na">map</span><span class="p">:</span> <span class="nb">Object</span><span class="p">,</span>
+    <span class="na">position</span><span class="p">:</span> <span class="nb">Object</span>
+  <span class="p">},</span>
+  <span class="nx">data</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="p">{</span> <span class="na">marker</span><span class="p">:</span> <span class="kc">null</span> <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nx">mounted</span><span class="p">(){</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">Marker</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">google</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">marker</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Marker</span><span class="p">({</span>
+      <span class="na">position</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">position</span><span class="p">,</span>
+      <span class="na">map</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">,</span>
+      <span class="na">title</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Child marker!</span><span class="dl">"</span>
+    <span class="p">})</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>

@@ -1,0 +1,135 @@
+<p>三周か四周遅れな話でレスポンシブだどうのこうの考える時代になんでこんなことをやっているんだと思いつつ実際深く考えたことなかったのでちゃんと調べた。</p>
+
+<p>結論としてはsusyでも960px(or 940px)のグリッドは妥当になりうるかなというところ。</p>
+
+<h3>
+<span id="前提" class="fragment"></span><a href="#%E5%89%8D%E6%8F%90"><i class="fa fa-link"></i></a>前提</h3>
+
+<p>そもそもこの前提を成り立たせるには条件があると思う。</p>
+
+<ul>
+<li>現状横幅としては1200がmaxだろう</li>
+<li>広告などでサイドバーを300pxにする制約がかかりやすい</li>
+<li>レイアウトはsusyのようなgrid systemで計算する
+
+<ul>
+<li>「960であれば割りやすい」というのはあるのだけど機械的に行うので、この理由を一旦除外する。</li>
+</ul>
+</li>
+</ul>
+
+<p>横幅を広げるほどファーストビューの情報量も増えるだろうし、特に広告などの制約が無いならサイトのユーザーに合わせて1024ぐらいでやっちゃっていいんじゃないかと思う。</p>
+
+<h3>
+<span id="計算" class="fragment"></span><a href="#%E8%A8%88%E7%AE%97"><i class="fa fa-link"></i></a>計算</h3>
+
+<p>上記前提で、サイドバーが300pxにならないといけないとすると<code>span(x)</code>で300pxが算出されるgutterとcolumnの組み合わせでないといけない。</p>
+
+<p>そういう組み合わせがどの程度存在するのかを知りたいのでテキトースクリプトでざざっと計算する</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">calc.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">span</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">gutter</span><span class="p">,</span> <span class="nx">column</span><span class="p">){</span>
+  <span class="k">return</span> <span class="nx">column</span> <span class="o">*</span> <span class="nx">x</span> <span class="o">+</span> <span class="nx">gutter</span> <span class="o">*</span> <span class="p">(</span><span class="nx">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="kd">var</span> <span class="nx">grid</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">g</span><span class="p">,</span> <span class="nx">gutter</span><span class="p">,</span> <span class="nx">column</span><span class="p">){</span>
+  <span class="kd">var</span> <span class="nx">arr</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="nx">g</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
+    <span class="nx">arr</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">span</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span> <span class="nx">gutter</span><span class="p">,</span> <span class="nx">column</span><span class="p">))</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">arr</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">num</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1">// 説明陽の通し番号</span>
+<span class="kd">var</span> <span class="nx">gridNum</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="kd">var</span> <span class="nx">target</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">g</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span> <span class="nx">g</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">;</span> <span class="nx">g</span><span class="o">++</span><span class="p">){</span>
+  <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">c</span> <span class="o">=</span> <span class="mi">50</span> <span class="p">;</span> <span class="nx">c</span> <span class="o">&lt;</span> <span class="mi">90</span><span class="p">;</span> <span class="nx">c</span><span class="o">++</span><span class="p">){</span>
+    <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">grid</span><span class="p">(</span><span class="nx">gridNum</span><span class="p">,</span> <span class="nx">g</span><span class="p">,</span> <span class="nx">c</span><span class="p">)</span>
+    <span class="nx">result</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">r</span><span class="p">){</span>
+      <span class="k">if</span><span class="p">(</span><span class="nx">r</span> <span class="o">==</span> <span class="p">(</span><span class="nx">target</span><span class="p">)){</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">Hit number: </span><span class="dl">"</span><span class="o">+</span> <span class="nx">num</span><span class="p">)</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span> <span class="nx">g</span><span class="p">,</span> <span class="p">(</span><span class="nx">result</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span><span class="o">+</span><span class="nx">g</span><span class="p">)</span><span class="o">+</span><span class="dl">"</span><span class="s2"> grid</span><span class="dl">"</span><span class="p">)</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">""</span><span class="p">)</span>
+        <span class="nx">num</span><span class="o">++</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">})</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</pre></div>
+</div>
+
+<p>この結果がこちら</p>
+
+<div class="code-frame" data-lang="result"><div class="highlight"><pre>Hit number: 1
+52 10 '744 grid'
+[ 52, 114, 176, 238, 300, 362, 424, 486, 548, 610, 672, 734 ]
+
+Hit number: 2
+66 12 '936 grid'
+[ 66, 144, 222, 300, 378, 456, 534, 612, 690, 768, 846, 924 ]
+
+Hit number: 3
+63 16 '948 grid'
+[ 63, 142, 221, 300, 379, 458, 537, 616, 695, 774, 853, 932 ]
+
+Hit number: 4
+88 18 '1272 grid'
+[ 88, 194, 300, 406, 512, 618, 724, 830, 936, 1042, 1148, 1254 ]
+
+Hit number: 5
+60 20 '960 grid'
+[ 60, 140, 220, 300, 380, 460, 540, 620, 700, 780, 860, 940 ]
+
+Hit number: 6
+86 21 '1284 grid'
+[ 86, 193, 300, 407, 514, 621, 728, 835, 942, 1049, 1156, 1263 ]
+
+Hit number: 7
+57 24 '972 grid'
+[ 57, 138, 219, 300, 381, 462, 543, 624, 705, 786, 867, 948 ]
+
+Hit number: 8
+84 24 '1296 grid'
+[ 84, 192, 300, 408, 516, 624, 732, 840, 948, 1056, 1164, 1272 ]
+
+Hit number: 9
+82 27 '1308 grid'
+[ 82, 191, 300, 409, 518, 627, 736, 845, 954, 1063, 1172, 1281 ]
+
+Hit number: 10
+54 28 '984 grid'
+[ 54, 136, 218, 300, 382, 464, 546, 628, 710, 792, 874, 956 ]
+</pre></div></div>
+
+<p>ふむ。組み合わせは色々あるようだ。<br>
+細かく見てみると<br>
+1番はまず小さすぎて論外だろう。<br>
+2,3も960よりは小さい。<br>
+3,6,7,9は奇数が含まれるしあえて好んで使う理由もないだろう<br>
+4,6,8,9は1200オーバーになってカバーできるユーザーが少なそう</p>
+
+<p>となると残るは10の984gridか5番の960gridということになる。</p>
+
+<p>あとは好き好みな感じだが14px広がる程度だとだいたい1行あたり1文字文ファーストビューが上がりやすくなるとは言える。<br>
+が、300以外の数値の数値の綺麗さで言っても960が選ばれるだろう。</p>
+
+<p>ということで960pxのグリッドはやっぱ無難なんですね。という結論に至った。<br>
+1000〜1100px台でよさそうな組み合わせが出てくれればと思ったけどそういう感じにもならなかった。</p>
+
+<h3>
+<span id="susyでの指定" class="fragment"></span><a href="#susy%E3%81%A7%E3%81%AE%E6%8C%87%E5%AE%9A"><i class="fa fa-link"></i></a>Susyでの指定</h3>
+
+<p>ちなみにsusyのドキュメントの960gridのショートハンドが間違っていたので注意(<a href="https://github.com/ericam/susy/pull/432" rel="nofollow noopener" target="_blank">pullreq済み</a>）</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>@include layout(12 (60px 20px) split static);
+</pre></div></div>
+
+<p>もし10番の 984 gridを使いたければ</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>@include layout(12 (54px 28px) split static);
+</pre></div></div>
+
+<p>となるだろう。</p>

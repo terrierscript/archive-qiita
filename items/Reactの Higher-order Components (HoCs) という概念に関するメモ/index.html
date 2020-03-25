@@ -1,0 +1,153 @@
+
+<h1>
+<span id="higher-order-components" class="fragment"></span><a href="#higher-order-components"><i class="fa fa-link"></i></a>Higher-order Components</h1>
+
+<p>ReduxなどReact関連のライブラリで時々出てくるHigher-order Componentsについて色々わかんなくなったので調べたことをメモ程度に留めてまとめる</p>
+
+<p>通称 HoCとかHoCsとか略されるが、この記事では Higher-order Components、HoCsで統一しておく。</p>
+
+<h2>
+<span id="higher-order-componentshocsとは" class="fragment"></span><a href="#higher-order-componentshocs%E3%81%A8%E3%81%AF"><i class="fa fa-link"></i></a>Higher-order Components(HoCs)とは？</h2>
+
+<p>語の元となったのは<a href="https://ja.wikipedia.org/wiki/%E9%AB%98%E9%9A%8E%E9%96%A2%E6%95%B0" rel="nofollow noopener" target="_blank">高階関数</a>(Higher-order function)であると思われる。</p>
+
+<p>高階関数は、「関数を引数にとり、関数を戻り値とする」ような関数の事。</p>
+
+<p>HoCsも同様で、「Componentを引数にとり、Componentを戻り値とする」ような関数（または実装パターン）の事 <sup id="fnref1"><a href="#fn1" rel="footnote" title="「関数を適応したComponent」を指している場合もある。若干このあたり理解甘い。">1</a></sup></p>
+
+<h2>
+<span id="なぜこんな概念が出てきたのか" class="fragment"></span><a href="#%E3%81%AA%E3%81%9C%E3%81%93%E3%82%93%E3%81%AA%E6%A6%82%E5%BF%B5%E3%81%8C%E5%87%BA%E3%81%A6%E3%81%8D%E3%81%9F%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>なぜこんな概念が出てきたのか？</h2>
+
+<p>この記事が良く出される</p>
+
+<p><a href="https://medium.com/@dan_abramov/mixins-are-dead-long-live-higher-order-components-94a0d2f9e750" rel="nofollow noopener" target="_blank">Mixins Are Dead. Long Live Composition</a></p>
+
+<p>ざっくり要約すると</p>
+
+<ul>
+<li>ES2015のclass記法においては、mixinは使えなくなった</li>
+<li>今後、classのmixinが取り込まれる可能性はある</li>
+<li>けど、mixinはそもそも色々モロい部分もある</li>
+<li>多分Reactに復帰することも積極的ではなさそう</li>
+<li>そこで、Higher-order Componentsですよ。という話</li>
+</ul>
+
+<h2>
+<span id="mixinって何またはなんだっけ" class="fragment"></span><a href="#mixin%E3%81%A3%E3%81%A6%E4%BD%95%E3%81%BE%E3%81%9F%E3%81%AF%E3%81%AA%E3%82%93%E3%81%A0%E3%81%A3%E3%81%91"><i class="fa fa-link"></i></a>Mixinって何？またはなんだっけ？</h2>
+
+<p>ちょっと忘れているのでおさらい。</p>
+
+<ul>
+<li><a href="http://qiita.com/koba04/items/55d28f0aba4d1f53e735" id="reference-b2c894a1d8fc96a8905d">React.jsのmixinについて</a></li>
+<li><a href="https://facebook.github.io/react/docs/reusable-components.html#mixins" rel="nofollow noopener" target="_blank">Mixins(公式)</a></li>
+</ul>
+
+<p>Reactの<code>createClass</code>で利用できる、いわゆるMixin。<br>
+継承をせずに、Componentに同一の挙動を与えるものだった。</p>
+
+<h2>
+<span id="ざっくりどんな実装をしているのか" class="fragment"></span><a href="#%E3%81%96%E3%81%A3%E3%81%8F%E3%82%8A%E3%81%A9%E3%82%93%E3%81%AA%E5%AE%9F%E8%A3%85%E3%82%92%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>ざっくりどんな実装をしているのか？</h2>
+
+<p><a href="https://gist.github.com/sebmarkbage/ef0bf1f338a7182b6775" class="autolink" rel="nofollow noopener" target="_blank">https://gist.github.com/sebmarkbage/ef0bf1f338a7182b6775</a><br>
+HoCsの初出（らしい）こちらのGistがわかりやすい。</p>
+
+<p>噛み砕いてコードリーディングしてみる</p>
+
+<ul>
+<li>登場するのはこの２つ
+
+<ul>
+<li>Enhancer = コンポーネントを受け取ってコンポーネントを返す関数。HoCs</li>
+<li>MyComponent = 例として適応される側のコード</li>
+</ul>
+</li>
+<li>Enhancerを見てみる
+
+<ul>
+<li>
+<code>Enhancer = (ComposedComponent) =&gt; class extends Component...</code>という部分がかなり特殊に見える。</li>
+<li>「<a href="https://gist.github.com/sebmarkbage/ef0bf1f338a7182b6775#gistcomment-1392065" rel="nofollow noopener" target="_blank">ワンライナーでやってるけどこういうことだよ</a>」と展開後のコメントで書かれている</li>
+<li>やっていることは「<code>ComposedComponent</code>」という元のComponentを受けて、匿名のクラス（<code>class extends Component</code>）を返している</li>
+<li>この時に、<code>componentDidMount</code>だったり、<code>state</code>の利用だったりをして、mixinがやっていたようなことをやっている</li>
+</ul>
+</li>
+<li>
+<code>export default Enhance(MyComponent)</code>で、HoCs適応済みのComponentを返している。</li>
+</ul>
+
+<p>ということで、やっていること自体はとても簡素。好みによっては<code>props.children</code>でも代用出来るかもしれない（多分コードの簡素さと、DOMが深くならないとかの理由でclassでwrapしてる方を採用しているんだと思う）。</p>
+
+<h2>
+<span id="各ライブラリにおける実例" class="fragment"></span><a href="#%E5%90%84%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8B%E5%AE%9F%E4%BE%8B"><i class="fa fa-link"></i></a>各ライブラリにおける実例</h2>
+
+<p>HoCsは、Reduxやらreact-routerやら有名ライブラリで使われている。以下見つけられた例。</p>
+
+<ul>
+<li>
+<a href="https://github.com/reactjs/react-redux/blob/master/docs/api.md#connectmapstatetoprops-mapdispatchtoprops-mergeprops-options" rel="nofollow noopener" target="_blank">react-redux#connent</a>
+
+<ul>
+<li>例：<code>connect(null, actionCreators)(TodoApp)</code>　というHoCsを提供している</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/reactjs/react-router/blob/master/docs/API.md#withroutercomponent" rel="nofollow noopener" target="_blank">react-router#withRouter</a>
+
+<ul>
+<li>
+<code>withRouter</code>という関数が、HoCs。</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/i18next/react-i18next#translate-hoc" rel="nofollow noopener" target="_blank">react-i18next#translate</a>
+
+<ul>
+<li>i18nをするライブラリ。<code>translate</code>をHoCsとして提供している </li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/Yomguithereal/baobab-react#higher-order-components" rel="nofollow noopener" target="_blank">baobab-react#higher-order-components</a>
+
+<ul>
+<li>名前まま。</li>
+<li>Qiitaにもこれを利用した実例の記事があった<a href="http://qiita.com/airtoxin/items/00b92b221bc0043c93b1" id="reference-d8e83705e483c1e19e81">baobab-reactを使って軽量fluxを回す</a>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="hocs-に関する記事参考文献など" class="fragment"></span><a href="#hocs-%E3%81%AB%E9%96%A2%E3%81%99%E3%82%8B%E8%A8%98%E4%BA%8B%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>HoCs に関する記事、参考文献など</h3>
+
+<ul>
+<li>
+<a href="http://qiita.com/pirosikick/items/9a32933e1afcb4a2b38f" id="reference-e33c91e94a82dee88c1e">Higher-Order Componetを使ってES6 Class記法でmixinっぽいことをする</a>
+
+<ul>
+<li>探した限り唯一ぐらいの日本語記事</li>
+</ul>
+</li>
+<li><a href="http://engineering.blogfoster.com/higher-order-components-theory-and-practice/" rel="nofollow noopener" target="_blank">Higher Order Components: Theory and Practice</a></li>
+<li><a href="https://egghead.io/lessons/react-react-fundamentals-higher-order-components-replaces-mixins" rel="nofollow noopener" target="_blank">React Fundamentals: Higher Order Components (replaces Mixins)(動画)</a></li>
+<li><a href="https://medium.com/@franleplant/react-higher-order-components-in-depth-cf9032ee6c3e#.855f4r6xc" rel="nofollow noopener" target="_blank">What are Higher Order Components?</a></li>
+<li><a href="http://jamesknelson.com/structuring-react-applications-higher-order-components/" rel="nofollow noopener" target="_blank">Structuring React Applications: Higher-Order Components</a></li>
+<li>
+<a href="https://medium.com/@franleplant/react-higher-order-components-in-depth-cf9032ee6c3e" rel="nofollow noopener" target="_blank">React Higher Order Components in depth
+</a>
+
+<ul>
+<li><a href="http://postd.cc/react-higher-order-components-in-depth/" rel="nofollow noopener" target="_blank">日本語訳記事</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>「関数を適応したComponent」を指している場合もある。若干このあたり理解甘い。 <a href="#fnref1">↩</a></p>
+</li>
+
+</ol>
+</div>

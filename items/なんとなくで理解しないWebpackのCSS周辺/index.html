@@ -1,0 +1,335 @@
+<p><a href="http://qiita.com/inuscript/items/0cfdb1a0c1d172e27694" id="reference-23937620d98a032f7e7f">CSS in JSに夢を見た</a>が、なかなか一筋縄では行かなかったので<sup id="fnref1"><a href="#fn1" rel="footnote" title="既存のコードにはバッチリだったが、新規開発にはちょっと向いてない部分が多かった。">1</a></sup>、webpackにおけるCSSと本気で向き合ってみた。</p>
+
+<p>しかしまだ理解が甘いところがあったのでloader, pluginまわりの関係性を整理した。</p>
+
+<h1>
+<span id="前置きwebpackの基礎情報" class="fragment"></span><a href="#%E5%89%8D%E7%BD%AE%E3%81%8Dwebpack%E3%81%AE%E5%9F%BA%E7%A4%8E%E6%83%85%E5%A0%B1"><i class="fa fa-link"></i></a>（前置き）webpackの基礎情報</h1>
+
+<p>css関連の本題にはいる前に、webpackの基礎を再確認する。</p>
+
+<h2>
+<span id="webpackの特徴" class="fragment"></span><a href="#webpack%E3%81%AE%E7%89%B9%E5%BE%B4"><i class="fa fa-link"></i></a>Webpackの特徴</h2>
+
+<p>webpackの特徴的な事項として、CSSや画像など、javascriptでないデータも基本的に全てをjavascriptで扱ってしまう、という事が挙げられる。</p>
+
+<p>同等の対抗として挙げられるbrowserifyやrollupは、あくまでも「javascriptのmodule解決」にフォーカスしているのに対して、webpackは全く違う方向を向いている</p>
+
+<h2>
+<span id="loaderとpluginの違い" class="fragment"></span><a href="#loader%E3%81%A8plugin%E3%81%AE%E9%81%95%E3%81%84"><i class="fa fa-link"></i></a>loaderとpluginの違い</h2>
+
+<p>結構あやふやに扱っていたが、上記のwebpackの基本部分を明確にして考えると考えやすい。</p>
+
+<ul>
+<li>loader
+
+<ul>
+<li>「どんなものでも最終的な出力をjavascriptで実行できる形に変換する」もの。</li>
+<li>受け付けるinputは、画像やらCSSやらなんでも良い</li>
+<li>outputは、必ずjavascript。</li>
+<li>例
+
+<ul>
+<li>css-loader -&gt; CSSを、javascriptのコードとして扱わせる</li>
+<li>url-loader -&gt; 画像データなどを、base64エンコードして、javascriptで扱えるようにする</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>plugin 
+
+<ul>
+<li>「何らかの別な出力や、作用をもたらすもの」</li>
+<li>inputもoutputも制限は無いので、ある意味「loader以外の色々」と言っても語弊は無さそう</li>
+<li>例
+
+<ul>
+<li>javascriptファイル以外の書き出し</li>
+<li>コンソール出力の加工</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="cssをwebpackで扱うことの利点と欠点" class="fragment"></span><a href="#css%E3%82%92webpack%E3%81%A7%E6%89%B1%E3%81%86%E3%81%93%E3%81%A8%E3%81%AE%E5%88%A9%E7%82%B9%E3%81%A8%E6%AC%A0%E7%82%B9"><i class="fa fa-link"></i></a>CSSをwebpackで扱うことの利点と欠点</h2>
+
+<p>下記が挙げられる。特に欠点については、注意深く取り扱うべきものがある</p>
+
+<ul>
+<li>利点
+
+<ul>
+<li>ビルドツールの単一化。javascriptのビルドとcssのビルドを一元化しやすい。</li>
+<li>既存の資産を活かしやすい</li>
+<li>CSS modulesなど、style情報とjavascriptの結びつきを強めた状態を無理なく作りやすい
+
+<ul>
+<li>モジュール密度を高めた開発が可能になる</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>欠点
+
+<ul>
+<li>webpackでしか解決できない機能が多く、依存度が高くなる。
+
+<ul>
+<li>脱webpackなどの時代が来た時に負債化しやすい</li>
+<li>browserify向けのcss-modulesifyというのもあるが、highly experimentalな上に、browserifyとしてもイレギュラーな扱いになる。</li>
+</ul>
+</li>
+<li>webpack以外のエコシステムでエラーになる
+
+<ul>
+<li>テストツールなどでよく問題になる。
+
+<ul>
+<li>mochaなどでは、<a href="http://stackoverflow.com/questions/32683440/handle-webpack-css-imports-when-testing-with-mocha" rel="nofollow noopener" target="_blank">compilerを工夫する</a>など、そこそこ頑張らないと解決出来ない事がある。</li>
+</ul>
+</li>
+<li>比較的モダンなテストツールの場合、標準的に対応オプションを明示してくれている場合もある
+
+<ul>
+<li>jestでは<a href="http://facebook.github.io/jest/docs/configuration.html#modulenamemapper-object-string-string" rel="nofollow noopener" target="_blank">moduleNameMapper</a>オプションが用意されている。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>loaderは内部的にかなり無茶をやっている場合があるので、注意深く選定する必要がある。</li>
+</ul>
+</li>
+</ul>
+
+<p>総じて、利点としてはデザイナーフレンドリーで、かつCSSの問題点を解決する手法を得る事が出来る。<br>
+対して、欠点としてはwebpackが独特であるが故にもたらされる事象が多い。</p>
+
+<h1>
+<span id="本題-css周りの様々なloader-pluginの責務分割" class="fragment"></span><a href="#%E6%9C%AC%E9%A1%8C-css%E5%91%A8%E3%82%8A%E3%81%AE%E6%A7%98%E3%80%85%E3%81%AAloader-plugin%E3%81%AE%E8%B2%AC%E5%8B%99%E5%88%86%E5%89%B2"><i class="fa fa-link"></i></a>(本題) CSS周りの様々なloader, pluginの責務分割</h1>
+
+<p>だいたい下記のような責務に分割出来る。<br>
+一番左は便宜的に通し番号をつけている。</p>
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>役割</th>
+<th>代表的なloader,plugin</th>
+<th>必須？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>CSSのデータ -&gt; HTML上で読み込めるものにする</td>
+<td>style-loader, extract-text-webpack-plugin</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>B</td>
+<td>CSS -&gt; javascriptで読み込めるという状態にする役割</td>
+<td>css-loader, raw-loader</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>C</td>
+<td>メタCSS言語をコンパイルする役割</td>
+<td>sass-loader, stylus-loader, less-loader</td>
+<td>no</td>
+</tr>
+<tr>
+<td>D</td>
+<td>CSSの事後処理を担当するもの</td>
+<td>postcss-loader</td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+
+<p>一般的な場合、それぞれの分類をから一つずつ選択することになる。<br>
+例えば一般的な組み合わせで言えば、style-loader(A) + css-loader(B) + postcss-loader(D) や、extract-text-webpack-plugin(A) + raw-loader(B) + sass-loader(C)など。</p>
+
+<p>逆に、同じ役割のものを複数扱う場合というのはレアケースだろう。<br>
+AとBはCSSの利用にあたって必要になる。<br>
+Dは技術的には必須ではないが、実務上はほぼ必須と言っても良い。</p>
+
+<p>以下、それぞれの分類を細かめに砕いていく</p>
+
+<h2>
+<span id="a-cssのデータ---html上で読み込めるものにする" class="fragment"></span><a href="#a-css%E3%81%AE%E3%83%87%E3%83%BC%E3%82%BF---html%E4%B8%8A%E3%81%A7%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%82%81%E3%82%8B%E3%82%82%E3%81%AE%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>A. CSSのデータ -&gt; HTML上で読み込めるものにする</h2>
+
+<p>対象は以下</p>
+
+<ul>
+<li>style-loader</li>
+<li>extract-text-webpack-plugin</li>
+</ul>
+
+<p>大本の所になる、CSSを「扱える状態にする」もの。<br>
+CSSの内容そのものについては全く関与しない。</p>
+
+<h3>
+<span id="style-loaderのやっていること" class="fragment"></span><a href="#style-loader%E3%81%AE%E3%82%84%E3%81%A3%E3%81%A6%E3%81%84%E3%82%8B%E3%81%93%E3%81%A8"><i class="fa fa-link"></i></a>style-loaderのやっていること</h3>
+
+<p>style-loaderは、loaderなので、前述通り最終的なOutputはjavascriptである。</p>
+
+<p>どのようなコードを出力するのかを端的に言えば「CSSファイルを<code>&lt;style&gt;</code>タグを自動で生成して、その中に指定のCSSのソースを入れ込むjavascript」という歯切れの悪い感じになる。</p>
+
+<p>利点として、下記のようなことが考えられる。</p>
+
+<ul>
+<li>CSSについて、javascriptのみで完結することができる</li>
+<li>更新した場合のcache busterやdigestについて気にしなくて良い。
+
+<ul>
+<li>rails上であればsprocketsとの連携なども気にしなくてよくなる。</li>
+</ul>
+</li>
+<li>Hot module reloadやsource mapなどを別途対応せずとも対応してくれる</li>
+</ul>
+
+<p>逆に欠点として、下記のような部分が存在する。ここが問題となる場合は、extract-text-webpack-pluginを利用すると良い</p>
+
+<ul>
+<li>
+<code>&lt;style&gt;</code>を差し込む形なので、レガシーなCSSの置き換えが目的であったり、SSRを前提としている場合は、style適用に遅延が発生して、画面がチラつくなどの問題が出やすい。</li>
+<li>共通のCSSを色々なjavascriptから読み込んでいる場合、ブラウザキャッシュが効かないので非効率になる</li>
+<li>CSSとjavascriptがワンパックなので、それぞれを並列で読み込んだ場合より遅くなりやすい
+
+<ul>
+<li>CSSが肥大化してくるとより顕著になってくることが考えられる</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="extract-text-webpack-pluginのやっていること" class="fragment"></span><a href="#extract-text-webpack-plugin%E3%81%AE%E3%82%84%E3%81%A3%E3%81%A6%E3%81%84%E3%82%8B%E3%81%93%E3%81%A8"><i class="fa fa-link"></i></a>extract-text-webpack-pluginのやっていること</h3>
+
+<p><a href="https://github.com/webpack/extract-text-webpack-plugin/" rel="nofollow noopener" target="_blank">extract-text-webpack-plugin</a>は、「loaderが実行した結果を別途textに吐き出す」というもの。（CSSに限ったpluginではない）。loaderではなくpluginとして提供されているのも、最終的にjavascriptへ変換するものではないからだ。</p>
+
+<p><code>style-loader</code>では「javascriptとして吐き出す」だったのに対し、こちらでは変換されたCSSファイルを「通常のCSSファイル」として吐き出すことが出来る。</p>
+
+<p>当然だが、CSSの読み込みそのものは別に管理してくれないので、自分で<code>&lt;link&gt;</code>タグの読み込みやdigestは別途管理することになる。<br>
+この辺りをハンドリングしたい場合や、<code>style-loader</code>での欠点を解消しなければならない場合は利用価値が高い。</p>
+
+<h2>
+<span id="b-css---javascriptで読み込めるという状態にする役割" class="fragment"></span><a href="#b-css---javascript%E3%81%A7%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%82%81%E3%82%8B%E3%81%A8%E3%81%84%E3%81%86%E7%8A%B6%E6%85%8B%E3%81%AB%E3%81%99%E3%82%8B%E5%BD%B9%E5%89%B2"><i class="fa fa-link"></i></a>B. CSS -&gt; javascriptで読み込めるという状態にする役割</h2>
+
+<p>対象は以下</p>
+
+<ul>
+<li>css-loader</li>
+<li>raw-loader</li>
+</ul>
+
+<p><code>import foo from 'foo.css'</code>や<code>require('foo.css')</code>といった、「javascriptからCSSを読む」という、webpack独特なやり方を解決する役割として、css-loaderやraw-loaderが存在する。</p>
+
+<p>あくまでも「javascript上で扱えるようにする」という部分のみを責務としている。</p>
+
+<h3>
+<span id="css-loader" class="fragment"></span><a href="#css-loader"><i class="fa fa-link"></i></a>css-loader</h3>
+
+<p>cssをloadする場合、そこそこ高機能になるのが<code>css-loader</code>。<br>
+基本はこちらを使う方がスタンダードと思われる。</p>
+
+<ul>
+<li>url解決</li>
+<li>
+<code>@import</code>解決</li>
+<li>css-moudles対応（local/globalスコープなど）</li>
+</ul>
+
+<p>この他にもかなり色々機能を持っている。（そのうち別途まとめたい）</p>
+
+<h3>
+<span id="raw-loader" class="fragment"></span><a href="#raw-loader"><i class="fa fa-link"></i></a>raw-loader</h3>
+
+<p>css-loaderは色々やってくれるが、「いや、単にCSSをjs上で解決出来てくれればそれでいいんだ」という人には<code>raw-loader</code>で十分になる。</p>
+
+<p>raw-loaderはごくシンプルに</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="err">対象のファイル</span><span class="p">)</span>
+</pre></div></div>
+
+<p>ということをやっているだけである。<br>
+extract-text-webpack-plugin同様、これもcssを主目的としたloaderではないので、対象は何でも利用できる。</p>
+
+<h2>
+<span id="c-メタcss言語をコンパイルする役割" class="fragment"></span><a href="#c-%E3%83%A1%E3%82%BFcss%E8%A8%80%E8%AA%9E%E3%82%92%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%81%99%E3%82%8B%E5%BD%B9%E5%89%B2"><i class="fa fa-link"></i></a>C. メタCSS言語をコンパイルする役割</h2>
+
+<p>対象は以下。この他にもおそらく存在するが、ここでは代表的なものを取り上げる</p>
+
+<ul>
+<li>sass-loader</li>
+<li>stylus-loader</li>
+<li>less-loader</li>
+</ul>
+
+<p>いわゆるメタCSS言語であるscssやstylus, less。<br>
+これらの変換には、別途それぞれのloaderが存在する。<br>
+このあたりを利用する場合、gulpなどで変換して「cssファイルにする」、というのが馴染み深い手法だが、loaderを利用した場合、あくまでも「cssの文字列」にしているだけである。</p>
+
+<p>less-loaderの文頭にはこんな感じでの記載が存在している。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">css</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">!raw!less!./file.less</span><span class="dl">"</span><span class="p">);</span>
+<span class="c1">// =&gt; returns compiled css code from file.less, resolves imports</span>
+<span class="kd">var</span> <span class="nx">css</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">!css!less!./file.less</span><span class="dl">"</span><span class="p">);</span>
+<span class="c1">// =&gt; returns compiled css code from file.less, resolves imports and url(...)s</span>
+</pre></div></div>
+
+<p>この場合、「CSSとして変換されたlessファイルを<code>css</code>というjavascript上の変数に格納している」という処理をしているに過ぎない。</p>
+
+<p>そのため、スタイルシートとして利用するには</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">!style!css!less!./file.less</span><span class="dl">"</span><span class="p">);</span>
+</pre></div></div>
+
+<p>のように<code>style-loader</code>を利用してHTML上でスタイルシートとして扱えるようにする必要がある。<br>
+前述で述べた通り<code>style-loader</code>は<code>extract-text-webpack-plugin</code>でも代替可能なものである。<code>extract-text-webpack-plugin</code>を利用した場合はgulpを利用するのと近い形でcssをファイルとして取得出来る</p>
+
+<h2>
+<span id="d-cssの事後処理を担当するもの" class="fragment"></span><a href="#d-css%E3%81%AE%E4%BA%8B%E5%BE%8C%E5%87%A6%E7%90%86%E3%82%92%E6%8B%85%E5%BD%93%E3%81%99%E3%82%8B%E3%82%82%E3%81%AE"><i class="fa fa-link"></i></a>D. CSSの事後処理を担当するもの</h2>
+
+<p>下記が対象。</p>
+
+<ul>
+<li>postcss-loader</li>
+</ul>
+
+<p>autoprefixer-loaderというのも存在するが、こちらはdeprecated。</p>
+
+<p>postcssについては昨今ドキュメントや利用事例も増加してきているので、多くは記載しないが、「CSSの事後処理」と位置づけられる工程となる。</p>
+
+<p>様々な <a href="https://github.com/postcss/postcss#plugins" rel="nofollow noopener" target="_blank">plugin</a> の組み合わせから、下記のようなことを選択的に行える。</p>
+
+<ul>
+<li>
+<code>-webkit</code>,<code>-moz</code>などの、prefixerと呼ばれる接頭辞の追加（autoprefixer)
+
+<ul>
+<li>昨今の開発ではほぼ必須。</li>
+</ul>
+</li>
+<li>様々な最新のCSS構文を後方互換的に変換(cssnext)
+
+<ul>
+<li>javascriptにおけるbabelに近い</li>
+<li>但し、cssnextで取り扱われているものの中には、少々将来的に取り込まれる可能性が低いのでは？と思えるものも一部存在するので、取扱いには要注意</li>
+</ul>
+</li>
+</ul>
+
+<p>postcssのプラグインの中には、postcss-assetsなど画像を扱うものもあるが、これらはwebpack上で扱う場合には役割が重複してしまうので、あまり出番は無いと思われる。</p>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>既存のコードにはバッチリだったが、新規開発にはちょっと向いてない部分が多かった。 <a href="#fnref1">↩</a></p>
+</li>
+
+</ol>
+</div>

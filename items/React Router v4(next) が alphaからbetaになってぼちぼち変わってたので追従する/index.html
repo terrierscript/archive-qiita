@@ -1,0 +1,264 @@
+<blockquote class="twitter-tweet">
+<p>🎉🎉 React Router v4 beta! 🎉🎉<br><br>Docs: <a href="https://t.co/xEsQD8H38v" rel="nofollow noopener" target="_blank">https://t.co/xEsQD8H38v</a><br>Code: <a href="https://t.co/VULptzNaQs" rel="nofollow noopener" target="_blank">https://t.co/VULptzNaQs</a><br>Try it: npm i react-router@next<br><br>We 😍 <a href="https://twitter.com/reactnative" rel="nofollow noopener" target="_blank">@reactnative</a>!</p>— MICHAEL JACKSON (@mjackson) <a href="https://twitter.com/mjackson/status/826114904914489344" rel="nofollow noopener" target="_blank">2017年1月30日</a>
+</blockquote>
+
+
+
+<p>ということでreact-router@v4が<a href="https://github.com/ReactTraining/react-router/tree/v4.0.0-alpha.6" rel="nofollow noopener" target="_blank">alpha</a>から<a href="https://github.com/ReactTraining/react-router/tree/v4.0.0-beta.1/" rel="nofollow noopener" target="_blank">beta</a>になった。<br>
+かなりアグレッシブに変更されていて色々変える所あったのでメモ <sup id="fnref1"><a href="#fn1" rel="footnote" title="「unstableだし覚悟はしてたけど、やってくれたな！」という気持ちありつつ、「乗り換えたいライブラリもないし、自前しても同じような感じになりそうだし、幸いv4-alphaのコードはある程度把握してるし、まあ気軽に心中してみるか」という気持ちで臨んだ。">1</a></sup> <sup id="fnref2"><a href="#fn2" rel="footnote" title="自分が見つけられた部分だけです。他にもあったらコメント欄 or 編集リクエストでもいただければ幸いです。">2</a></sup></p>
+
+<h1>
+<span id="packageの分離" class="fragment"></span><a href="#package%E3%81%AE%E5%88%86%E9%9B%A2"><i class="fa fa-link"></i></a>packageの分離</h1>
+
+<p><code>react-router</code>は下記の3パッケージに分離した</p>
+
+<ul>
+<li>
+<p><code>react-router</code></p>
+
+<ul>
+<li>コア部分。</li>
+<li>
+<code>react-router</code>の利用者がこのパッケージをインストールする機会は無いかもしれない。</li>
+<li>このパッケージに含まれるもの
+
+<ul>
+<li>
+<a href="https://reacttraining.com/react-router/#router" rel="nofollow noopener" target="_blank"><code>&lt;Router&gt;</code></a> (多分直で使う事はないローレベルなクラス）
+
+<ul>
+<li><a href="https://reacttraining.com/react-router/#memoryrouter" rel="nofollow noopener" target="_blank"><code>&lt;MemoryRouter&gt;</code></a></li>
+<li><a href="https://reacttraining.com/react-router/#staticrouter" rel="nofollow noopener" target="_blank"><code>&lt;StaticRouter&gt;</code></a></li>
+</ul>
+</li>
+<li>
+<a href="https://reacttraining.com/react-router/#route" rel="nofollow noopener" target="_blank"><code>&lt;Route&gt;</code></a> (旧Match ：後述）</li>
+<li>
+<a href="https://reacttraining.com/react-router/#switch" rel="nofollow noopener" target="_blank"><code>&lt;Switch&gt;</code></a> (新機能：後述）</li>
+<li>Route(旧Match)</li>
+<li><a href="https://reacttraining.com/react-router/#redirect" rel="nofollow noopener" target="_blank"><code>&lt;Redirect&gt;</code></a></li>
+<li>
+<a href="https://reacttraining.com/react-router/#prompt" rel="nofollow noopener" target="_blank"><code>&lt;Prompt&gt;</code></a> (旧NavigationPrompt：後述)</li>
+<li>
+<a href="https://reacttraining.com/react-router/#withrouter" rel="nofollow noopener" target="_blank">withRouter</a> </li>
+<li><a href="https://reacttraining.com/react-router/#match" rel="nofollow noopener" target="_blank">match(matchPath)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><code>react-router-dom</code></p>
+
+<ul>
+<li>ブラウザ用</li>
+<li>今までのreact-rouerの機能がこっちにごそっと移動された感じ</li>
+<li>現行、<code>react-router</code>の機能をre-importして提供されているものもあるが、stable時にどうなるかは不明。</li>
+<li>このパッケージに含まれるもの
+
+<ul>
+<li><a href="https://reacttraining.com/react-router/#browserrouter" rel="nofollow noopener" target="_blank"><code>&lt;BrowserRouter&gt;</code></a></li>
+<li><a href="https://reacttraining.com/react-router/#hashrouter" rel="nofollow noopener" target="_blank"><code>&lt;HashRouter&gt;</code></a></li>
+<li><a href="https://reacttraining.com/react-router/#link" rel="nofollow noopener" target="_blank"><code>&lt;Link&gt;</code></a></li>
+<li>
+<code>&lt;NavLink&gt;</code> (2017/02/01時点ではまだUndocumented,  まだ不安定気味。後述）</li>
+<li>
+<code>react-router</code>を一通り再importしたもの</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><code>react-router-native</code></p>
+
+<ul>
+<li>ネイティブ用</li>
+<li>あんまり自分の要件で使うことがなさそうなのでスルー気味。</li>
+<li>Android用とiOS用が分岐してるっぽく見える。</li>
+<li>
+<a href="https://reacttraining.com/react-router/#nativerouter" rel="nofollow noopener" target="_blank"><code>&lt;NativeRouter&gt;</code></a>というのがRouterになるもよう</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="documentationの変更" class="fragment"></span><a href="#documentation%E3%81%AE%E5%A4%89%E6%9B%B4"><i class="fa fa-link"></i></a>documentationの変更</h1>
+
+<p>URLが新しくなった。</p>
+
+<p><a href="https://reacttraining.com/react-router/" class="autolink" rel="nofollow noopener" target="_blank">https://reacttraining.com/react-router/</a></p>
+
+<p>alpha版のドキュメントリダイレクトされてしまうため、<a href="https://github.com/ReactTraining/react-router/tree/v4.0.0-alpha.6/website/api" rel="nofollow noopener" target="_blank">github漁る</a>ぐらいでしか出てこなそう</p>
+
+<h1>
+<span id="installationsの変更" class="fragment"></span><a href="#installations%E3%81%AE%E5%A4%89%E6%9B%B4"><i class="fa fa-link"></i></a>installationsの変更</h1>
+
+<p>パッケージが分離したので、<code>react-router</code>ではなく<code>react-router-dom</code>をinstallするようになる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="dl">"</span><span class="s2">react-router</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">4.0.0-alpha.6</span><span class="dl">"</span><span class="p">,</span>
+</pre></div></div>
+
+<p>↓</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="dl">"</span><span class="s2">react-router-dom</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">4.0.0-beta.3</span><span class="dl">"</span><span class="p">,</span>
+</pre></div></div>
+
+<p><a href="https://reacttraining.com/react-router/#installation" rel="nofollow noopener" target="_blank">Installation</a>には「<code>react-router-dom@next</code>でインストールしてね！」というのがあるが、この方法でインストールするとバージョンがダイナミックに変わるので、個人的にはバージョンベタ決めでいいんじゃないかと思っている。<br>
+（以前から<code>react-router@next</code>でinstallしてたら今回の変更で無事死亡していただろう）<sup id="fnref3"><a href="#fn3" rel="footnote" title="本音を言えばreact-router@betaとかreact-router@v5.0.0-betaとかでpublishしてほしかった気持ちが無くもない">3</a></sup></p>
+
+<h1>
+<span id="コードベースの変更" class="fragment"></span><a href="#%E3%82%B3%E3%83%BC%E3%83%89%E3%83%99%E3%83%BC%E3%82%B9%E3%81%AE%E5%A4%89%E6%9B%B4"><i class="fa fa-link"></i></a>コードベースの変更</h1>
+
+<h2>
+<span id="matchは廃止routeになった戻った" class="fragment"></span><a href="#match%E3%81%AF%E5%BB%83%E6%AD%A2route%E3%81%AB%E3%81%AA%E3%81%A3%E3%81%9F%E6%88%BB%E3%81%A3%E3%81%9F"><i class="fa fa-link"></i></a><code>&lt;Match&gt;</code>は廃止。<code>&lt;Route&gt;</code>になった（戻った）</h2>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="c1">// 旧(alpah)</span>
+<span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/user/:id</span><span class="dl">"</span> <span class="o">/&gt;</span>
+
+<span class="c1">// 新(beta)</span>
+<span class="p">&lt;</span><span class="nc">Route</span> <span class="na">path=</span><span class="s2">"/user/:id"</span> <span class="p">/&gt;</span>
+</pre></div></div>
+
+<p><a href="https://github.com/ReactTraining/react-router/commit/c2d40ff641df3698ab8b144b475fd7c84fae7144" rel="nofollow noopener" target="_blank">このコミット</a>で変わった。<br>
+明確な理由は見つけられなかったが、現行バージョンに近い形に戻された。</p>
+
+<p><a href="https://gist.github.com/mjackson/33f51e9d6b9ea18b467c613fbbcf50e1" rel="nofollow noopener" target="_blank">v2/v3からの移植も楽になるっぽい</a>。</p>
+
+<ul>
+<li><a href="https://github.com/ReactTraining/react-router/blob/v4.0.0-alpha.6/website/api/Match.md" rel="nofollow noopener" target="_blank"><code>&lt;Match&gt;</code>の旧ドキュメント</a></li>
+<li><a href="https://reacttraining.com/react-router/#route" rel="nofollow noopener" target="_blank"><code>&lt;Route&gt;</code>のドキュメント</a></li>
+</ul>
+
+<h2>
+<span id="missが廃止switchで代用" class="fragment"></span><a href="#miss%E3%81%8C%E5%BB%83%E6%AD%A2switch%E3%81%A7%E4%BB%A3%E7%94%A8"><i class="fa fa-link"></i></a><code>&lt;Miss&gt;</code>が廃止。<code>&lt;Switch&gt;</code>で代用</h2>
+
+<p>下記のサンプルがわかりやすい。<br>
+<a href="https://reacttraining.com/react-router/examples/no-match" class="autolink" rel="nofollow noopener" target="_blank">https://reacttraining.com/react-router/examples/no-match</a></p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="c1">// 旧(alpha)</span>
+<span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+  <span class="p">&lt;</span><span class="nc">Match</span> <span class="na">pattern=</span><span class="s2">"/foo"</span> <span class="na">component=</span><span class="si">{</span> <span class="nx">Foo</span> <span class="si">}</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;</span><span class="nc">Miss</span> <span class="na">component=</span><span class="si">{</span> <span class="nx">NotFound</span> <span class="si">}</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="err">/</span><span class="nt">div</span><span class="p">&gt;</span>
+
+// 新(beta)
+<span class="p">&lt;</span><span class="nc">Switch</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nc">Route</span> <span class="na">path=</span><span class="s2">"/foo"</span> <span class="na">component=</span><span class="si">{</span> <span class="nx">Foo</span> <span class="si">}</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;</span><span class="nc">Route</span> <span class="na">component=</span><span class="si">{</span> <span class="nx">NotFound</span> <span class="si">}</span> <span class="p">/&gt;</span>
+<span class="p">&lt;/</span><span class="nc">Switch</span><span class="p">&gt;</span>
+</pre></div></div>
+
+<ul>
+<li><a href="https://github.com/ReactTraining/react-router/blob/v4.0.0-alpha.6/website/api/Miss.md" rel="nofollow noopener" target="_blank"><code>&lt;Miss&gt;</code>の旧ドキュメント</a></li>
+<li><a href="https://reacttraining.com/react-router/#switch" rel="nofollow noopener" target="_blank"><code>&lt;Switch&gt;</code>のドキュメント</a></li>
+</ul>
+
+<p><code>&lt;Switch&gt;</code>は、若干理解しづらいが、「Routeが <em>包括的(inclusively)</em> にレンダリングするのに対し、Switchは <em>排他的(exclusively)</em> にレンダリングするという機能らしい。</p>
+
+<p>このコンポーネントが出来た事で、「どれにも当てはまらなかった場合」という場合に<code>path</code>が無いrouteを出して排他的に処理することでNotFoundな場合のコンポーネントとして扱える。このため<code>Miss</code>は不要になった、ということらしい。</p>
+
+<h2>
+<span id="linkからactive系のが消えたnavlinkになる予定" class="fragment"></span><a href="#link%E3%81%8B%E3%82%89active%E7%B3%BB%E3%81%AE%E3%81%8C%E6%B6%88%E3%81%88%E3%81%9Fnavlink%E3%81%AB%E3%81%AA%E3%82%8B%E4%BA%88%E5%AE%9A"><i class="fa fa-link"></i></a><code>&lt;Link&gt;</code>から<code>active</code>系のが消えた。<code>&lt;NavLink&gt;</code>になる予定</h2>
+
+<p>これまで<code>&lt;Link&gt;</code>は現在のURLと同じURLの場合に<code>activeClassName</code>のstyleがあたる、というようなものを持っていたりしたが、新しい<code>&lt;Link&gt;</code>はこのあたりのstyle管理を持たなくなった。<br>
+代替として<code>&lt;NavLink&gt;</code>というコンポーネントがこの代替をする予定のようだが、今のところundocumentedで若干不安定。</p>
+
+<p>今のところで言うと<code>&lt;Route&gt;</code>を作ってサクッと自前でやることも可能。<br>
+こちらのサンプルに乗っている<br>
+<a href="https://reacttraining.com/react-router/examples/custom-link" class="autolink" rel="nofollow noopener" target="_blank">https://reacttraining.com/react-router/examples/custom-link</a></p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="c1">// 旧(alpha)</span>
+<span class="o">&lt;</span><span class="nx">Link</span> <span class="nx">to</span><span class="o">=</span><span class="dl">"</span><span class="s2">/about</span><span class="dl">"</span> <span class="nx">activeClassName</span><span class="o">=</span><span class="dl">"</span><span class="s2">active</span><span class="dl">"</span><span class="o">&gt;</span>
+  <span class="nx">About</span>
+<span class="o">&lt;</span><span class="sr">/Link</span><span class="err">&gt;
+</span>
+<span class="c1">// 新(beta)(代替バージョン)</span>
+<span class="kd">const</span> <span class="nx">SomeLink</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">label</span><span class="p">,</span> <span class="nx">to</span><span class="p">,</span> <span class="nx">activeOnlyWhenExact</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="p">&lt;</span><span class="nc">Route</span> <span class="na">path=</span><span class="si">{</span><span class="nx">to</span><span class="si">}</span> <span class="na">exact=</span><span class="si">{</span><span class="nx">activeOnlyWhenExact</span><span class="si">}</span> <span class="na">children=</span><span class="si">{</span><span class="p">({</span> <span class="nx">match</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+    <span class="c1">// children要素でfuncを渡すことで、この&lt;Route&gt;がmatchしたかどうかなど判定出来る。</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="si">{</span><span class="nx">match</span> <span class="p">?</span> <span class="dl">'</span><span class="s1">active</span><span class="dl">'</span> <span class="p">:</span> <span class="dl">''</span><span class="si">}</span><span class="p">&gt;</span>
+      <span class="si">{</span><span class="nx">match</span> <span class="p">?</span> <span class="dl">'</span><span class="s1">&gt; </span><span class="dl">'</span> <span class="p">:</span> <span class="dl">''</span><span class="si">}</span><span class="p">&lt;</span><span class="nc">Link</span> <span class="na">to=</span><span class="si">{</span><span class="nx">to</span><span class="si">}</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">label</span><span class="si">}</span><span class="p">&lt;/</span><span class="nc">Link</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span><span class="si">}</span><span class="p">/&gt;</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<ul>
+<li><a href="https://github.com/ReactTraining/react-router/blob/v4.0.0-alpha.6/website/api/Link.md" rel="nofollow noopener" target="_blank">Linkの旧ドキュメント</a></li>
+</ul>
+
+<h2>
+<span id="matchrouteのproperty変更-exactly---exact" class="fragment"></span><a href="#matchroute%E3%81%AEproperty%E5%A4%89%E6%9B%B4-exactly---exact"><i class="fa fa-link"></i></a><code>&lt;Match(Route)&gt;</code>のproperty変更: <code>exactly</code> -&gt; <code>exact</code>
+</h2>
+
+<p><code>Match</code>(現Route)のexactlyというproertyがexactになった。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="c1">// 旧(alpha)</span>
+<span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">exactly</span> <span class="p">...</span> <span class="o">/&gt;</span>
+
+<span class="c1">// 旧(bet)</span>
+<span class="p">&lt;</span><span class="nc">Route</span> <span class="nt">exact</span> <span class="p">...</span> <span class="p">/&gt;</span>
+</pre></div></div>
+
+<p><a href="https://github.com/ReactTraining/react-router/issues/4237" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ReactTraining/react-router/issues/4237</a></p>
+
+<p>exactlyってよりexactの方が正しいのでは？ってことっぽい（あんまりここらへんのニュアンスわかってない）</p>
+
+<h2>
+<span id="navigationprompt---prompt" class="fragment"></span><a href="#navigationprompt---prompt"><i class="fa fa-link"></i></a><code>&lt;NavigationPrompt&gt;</code> -&gt; <code>&lt;Prompt&gt;</code>
+</h2>
+
+<p>個人的にはまだ使ってなかった機能だったのでハマってなかったが、ドキュメント眺めてたら変更されているようだった。おそらくreact-router-nativeを見越しての命名変更だろう。<br>
+ドキュメント見比べても中身はそんなに変わってなさそう</p>
+
+<ul>
+<li><a href="https://github.com/ReactTraining/react-router/blob/v4.0.0-alpha.6/website/api/NavigationPrompt.md" rel="nofollow noopener" target="_blank"><code>&lt;NavigationPrompt&gt;</code>の旧ドキュメント</a></li>
+<li><a href="https://reacttraining.com/react-router/#prompt" rel="nofollow noopener" target="_blank"><code>&lt;Prompt&gt;</code>のドキュメント</a></li>
+</ul>
+
+<h1>
+<span id="新機能など" class="fragment"></span><a href="#%E6%96%B0%E6%A9%9F%E8%83%BD%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>新機能など</h1>
+
+<h2>
+<span id="route-strictが追加された" class="fragment"></span><a href="#route-strict%E3%81%8C%E8%BF%BD%E5%8A%A0%E3%81%95%E3%82%8C%E3%81%9F"><i class="fa fa-link"></i></a><code>&lt;Route strict&gt;</code>が追加された</h2>
+
+<p><a href="https://reacttraining.com/react-router/#route.strict" class="autolink" rel="nofollow noopener" target="_blank">https://reacttraining.com/react-router/#route.strict</a></p>
+
+<p>個人的にすごい嬉しい機能。<br>
+今まで最後の/(スラッシュ）が無視されなかったが、デフォルトでは無視されるようになった。<br>
+<code>Match</code>と同様スラッシュを区別したい場合にこのプロパティを渡すと良い</p>
+
+<ul>
+<li>
+<code>&lt;Route path="/foo/bar"&gt;</code> -&gt; /foo/bar/でマッチ</li>
+<li>
+<code>&lt;Route path="/foo/bar" strict&gt;</code> -&gt; /foo/bar/でマッチしない(旧Matchの仕様と同じ)</li>
+</ul>
+
+<h2>
+<span id="withrouterが追加された" class="fragment"></span><a href="#withrouter%E3%81%8C%E8%BF%BD%E5%8A%A0%E3%81%95%E3%82%8C%E3%81%9F"><i class="fa fa-link"></i></a><code>withRouter</code>が追加された</h2>
+
+<p>いわゆるRouterのHigherOrderComponent.<br>
+何か複雑なことをやる場合に必要になりそうだが、基本そんなに使わなそう</p>
+
+<ul>
+<li><a href="https://reacttraining.com/react-router/#withrouter" rel="nofollow noopener" target="_blank"><code>withRouter</code>のドキュメント</a></li>
+</ul>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>「unstableだし覚悟はしてたけど、やってくれたな！」という気持ちありつつ、「乗り換えたいライブラリもないし、自前しても同じような感じになりそうだし、幸いv4-alphaのコードはある程度把握してるし、まあ気軽に心中してみるか」という気持ちで臨んだ。 <a href="#fnref1">↩</a></p>
+</li>
+
+<li id="fn2">
+<p>自分が見つけられた部分だけです。他にもあったらコメント欄 or 編集リクエストでもいただければ幸いです。 <a href="#fnref2">↩</a></p>
+</li>
+
+<li id="fn3">
+<p>本音を言えばreact-router@betaとか<a href="mailto:react-router@v5.0.0-beta" class="autolink">react-router@v5.0.0-beta</a>とかでpublishしてほしかった気持ちが無くもない <a href="#fnref3">↩</a></p>
+</li>
+
+</ol>
+</div>

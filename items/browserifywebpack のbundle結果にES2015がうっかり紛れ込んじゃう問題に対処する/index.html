@@ -1,0 +1,226 @@
+<p>先日やらかしたので、その問題と対処</p>
+
+<h1>
+<span id="問題について" class="fragment"></span><a href="#%E5%95%8F%E9%A1%8C%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6"><i class="fa fa-link"></i></a>問題について</h1>
+
+<ul>
+<li>何が起きたか？
+
+<ul>
+<li>browserifyでbundleしたファイル結果にES2015でのみ動く記述（<code>const</code>や<code>arrow function</code>）が混ざって動かなくなった。
+
+<ul>
+<li>結合しているファイルがParse Errorによりごっそり全部動かない事態に。</li>
+</ul>
+</li>
+<li>babelifyも組み合わせていたが、node_modules以下はtranspile対処ではないので、変換されなかった（2016/08/10追記)</li>
+</ul>
+</li>
+<li>なぜ起きたか？
+
+<ul>
+<li>browser対応してないパッケージを利用してしまっていた</li>
+<li>依存するパッケージのソースが、ES2015で書かれていた
+
+<ul>
+<li>NodeJSは既にES2015で問題なく書ける</li>
+<li>パッケージ提供側は全く悪くない。利用者側（＝自分）のミス</li>
+</ul>
+</li>
+<li>同じ機能を持つブラウザ向けのパッケージがあるのを見逃していた</li>
+</ul>
+</li>
+<li>なぜすぐ発見が出来なかったのか？
+
+<ul>
+<li>chromeなどでは、ES2015が動いてしまうので、手元の動作検証で見つけられなかった</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="防止対処策" class="fragment"></span><a href="#%E9%98%B2%E6%AD%A2%E5%AF%BE%E5%87%A6%E7%AD%96"><i class="fa fa-link"></i></a>防止・対処策</h1>
+
+<p>自分のミスではあるのだけど、とはいえ二度と起きないように防ぎたい。<br>
+じゃあどう対処するかという話</p>
+
+<p>地道な動作環境みたいなのは（この問題以外の点でも）やる方が良いのだけど、そこに行くとE2Eテストの話になって行きそうなので、今回はスコープ外とする<sup id="fnref1"><a href="#fn1" rel="footnote" title="npm updateは細かくやりたいけど、その度に全部検証やると若干辛いし、かといってnpm updateしなくなるみたいなのもわりと悪循環になるジレンマを解消すると考えると、seleniumとか頑張っていくみたいな方向しか無いだろうなと感じている。">1</a></sup></p>
+
+<h2>
+<span id="案1-acornでパースする" class="fragment"></span><a href="#%E6%A1%881-acorn%E3%81%A7%E3%83%91%E3%83%BC%E3%82%B9%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>案1: acornでパースする</h2>
+
+<p><a href="https://github.com/ternjs/acorn" rel="nofollow noopener" target="_blank">acorn</a>でパースしてみるという手がある。</p>
+
+<p>acornは<code>eslint</code>などで利用されているパーサーで、<code>babel</code>の利用している<a href="https://github.com/babel/babylon" rel="nofollow noopener" target="_blank">babylon</a>もacornをベースにしている。</p>
+
+<p><code>acorn</code>はコマンドラインからのパースも出来るので、生成後のファイルに対して<code>--ecma5</code>モードでパースをためしてみることで、生成後のファイルがES5で読めるのか検証することが出来る。普通に実行すると当然parse結果が出てくるので、検証のために利用するなら<code>--silent</code>で出力を抑える</p>
+
+<p><code>postbuild</code>あたりにscriptとして仕掛けてみるのも良いかもしれない。どんなふうに仕掛けるかはお好みで。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% npm i -D acorn
+</pre></div></div>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="p">{</span><span class="w">
+   </span><span class="err">:</span><span class="w">
+  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"postbuild"</span><span class="p">:</span><span class="w"> </span><span class="s2">"acorn --ecma5 --silent /path/to/build.js"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+   </span><span class="err">:</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<p>コマンドラインで走らせるならこんな感じ</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% $(npm bin)/acorn --ecma5 --silent /path/to/build.js
+</pre></div></div>
+
+<h2>
+<span id="案2-難読化圧縮化uglufyminify-する" class="fragment"></span><a href="#%E6%A1%882-%E9%9B%A3%E8%AA%AD%E5%8C%96%E5%9C%A7%E7%B8%AE%E5%8C%96uglufyminify-%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>案2: 難読化、圧縮化（uglufy/minify) する</h2>
+
+<p>uglify・minifyによる最適化を既にしている場合、実はこの問題ほとんど気にしなくて良い。<sup id="fnref2"><a href="#fn2" rel="footnote" title="今回自分がハマったコードは、残念ながらminifyしていなかった。">2</a></sup></p>
+
+<p>uglifyやminifyに使われる<a href="https://github.com/mishoo/UglifyJS2" rel="nofollow noopener" target="_blank">uglifyjs</a>などの一般的なメジャーなライブラリは、buildした生成物をparseして最適化や圧縮をしている。<br>
+当然、これらでecma2015な構文が入れば、パースエラーとなり、その時点でこの問題を防止出来る。<br>
+ちなみにuglifyjsはacronとは別な独自なパーサーを利用している様だ。</p>
+
+<p>webpackだとファイル単位でuglifyjsのパースをして具体的どこでエラー出てるか解析してくれている。(<a href="https://github.com/webpack/webpack/blob/bc29455e92f4b760db745775a4fca5cde0d01d23/lib/optimize/UglifyJsPlugin.js#L44" rel="nofollow noopener" target="_blank">このへん</a>でやってる)</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% wepback -p
+SyntaxError: Unexpected token name «i», expected punc «;» [./~/isemail/lib/index.js:130,0]
+</pre></div></div>
+
+<p>browserifyで<a href="https://github.com/hughsk/uglifyify" rel="nofollow noopener" target="_blank">uglifyify</a>を使うならこうなる。<code>-t</code>では自分の書いたコードだけしかuglifyされないので、<code>-g</code>で全体的にuglifyifyをかける。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% browserify -g uglifyify /path/to/file.js -o /path/to/output.js
+</pre></div></div>
+
+<p>難読化して困ることが無いならば、難読化と一緒にこの問題もついでに対処してしまうというのは一つの手だろう。</p>
+
+<p>ただし、minifyは難読化、ファイル圧縮のためなので、この問題の対処という意味ではあくまで副次的な作用なので、そこらへんは注意して扱う必要がある。</p>
+
+<h2>
+<span id="案3-ボツnodeのバージョンを012にする" class="fragment"></span><a href="#%E6%A1%883-%E3%83%9C%E3%83%84node%E3%81%AE%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E3%82%92012%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>案3: (ボツ）nodeのバージョンを0.12にする</h2>
+
+<ul>
+<li>nodeのバージョンが古ければ、es6そもそも対応してないという考え。</li>
+<li>ナシとは言わないが、基本的にはおすすめしない。</li>
+</ul>
+
+<h1>
+<span id="予防策" class="fragment"></span><a href="#%E4%BA%88%E9%98%B2%E7%AD%96"><i class="fa fa-link"></i></a>予防策</h1>
+
+<p>根本的なところではないが、やっておくと多少この問題に当たる事をより少なくする予防策のお話</p>
+
+<h2>
+<span id="save-exactで保存しておく" class="fragment"></span><a href="#save-exact%E3%81%A7%E4%BF%9D%E5%AD%98%E3%81%97%E3%81%A6%E3%81%8A%E3%81%8F"><i class="fa fa-link"></i></a>save exactで保存しておく</h2>
+
+<p>ブラウザでbundleするような前提のパッケージであれば、<code>.npmrc</code>の設定で<code>save-exact</code>を有効にする。これを行うと、<code>^1.0.0</code>という形式でなく、<code>1.0.0</code>という固定バージョンでインストールされるので、依存パッケージがいつの間にか変わっていた、というような機会を減らしてくれるはず。<br>
+npmrcについては<a href="http://qiita.com/inuscript/items/86dbfd26abe6905756c0" id="reference-abd80a1aa50a5100c3fb">こちら</a>について詳しくまとめたので、併せて参考にしてもらえれば幸い。</p>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>save-exact=true
+</pre></div></div>
+
+<p>コマンドで行うならば<code>npm install -E</code>になる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% npm -S -E some-package
+</pre></div></div>
+
+<p>最新版のパッケージに更新したい場合は、下記のようなコマンドを打つことで最新化出来る。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% npm -S -E some-package@latest
+</pre></div></div>
+
+<h2>
+<span id="shrinkwrapをする" class="fragment"></span><a href="#shrinkwrap%E3%82%92%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>shrinkwrapをする</h2>
+
+<p><code>save-exact</code>の更なる部分だけだと、install元のパッケージだけで、孫パッケージなどのバージョンは固定されないので、<code>shrinwkrap</code>を併用することもおすすめする。<br>
+ただし、運用は若干面倒に感じてしまう事もあるかもしれない。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% npm shrinkwrap
+</pre></div></div>
+
+<h2>
+<span id="無理して使おうとしていたら注意信号と感じ取る" class="fragment"></span><a href="#%E7%84%A1%E7%90%86%E3%81%97%E3%81%A6%E4%BD%BF%E3%81%8A%E3%81%86%E3%81%A8%E3%81%97%E3%81%A6%E3%81%84%E3%81%9F%E3%82%89%E6%B3%A8%E6%84%8F%E4%BF%A1%E5%8F%B7%E3%81%A8%E6%84%9F%E3%81%98%E5%8F%96%E3%82%8B"><i class="fa fa-link"></i></a>無理して使おうとしていたら注意信号と感じ取る。</h2>
+
+<p>例えばwebpackで下記のような記法をしたときは、黄色信号と見て良い。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+   <span class="p">:</span>
+  <span class="c1">// `node`で標準moduleを空に出来る</span>
+  <span class="na">node</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">'</span><span class="s1">dns</span><span class="dl">'</span><span class="p">:</span> <span class="dl">"</span><span class="s2">empty</span><span class="dl">"</span>
+  <span class="p">}</span>
+   <span class="p">:</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>これはnodeの標準モジュールをmockやemptyとするものだが、はほぼ非公式なhackをしているに近いので、やっていたら「マズい」と感じで良い。今回の問題だけでなく、様々問題が出うることが予測される。<br>
+そのような場合は、下記について考えてみると良いだろう</p>
+
+<ul>
+<li>
+<p>そもそもそのパッケージがブラウザ対応しているのか？</p>
+
+<ul>
+<li>類似でもっとbrowserに対応しているパッケージは無いのか？</li>
+<li>issueなどでこの点は言及されていないか？
+
+<ul>
+<li>もっと適合したパッケージが勧められている可能性がある</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>どうやって見分けるか？</p>
+
+<ul>
+<li>READMEを読む
+
+<ul>
+<li>browser compabilityについてどうしているのか？</li>
+<li>そもそもbrowser向けとしてないかも？</li>
+</ul>
+</li>
+<li>
+<code>package.json</code>に<code>browser</code>フィールドがあるかを確認してみる
+
+<ul>
+<li>あれば安心度高そう</li>
+<li>browserフィールドについては、下記の記事が参考になる
+
+<ul>
+<li><a href="http://qiita.com/shinout/items/4c9854b00977883e0668" id="reference-c08c39ea2f090efc72ed">package.json の browser field 入門編</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<p>npmは、<a href="http://blog.npmjs.org/post/101775448305/npm-and-front-end-packaging" rel="nofollow noopener" target="_blank">npm and front-end packaging</a>という表明がされていたり、frontendのパッケージ管理にも積極的ではあるのだが、npmはそもそもNodeJS向けのパッケージマネージャで、全てのパッケージがbrowser対応してないるわけではないのは当然の事。</p>
+
+<p>npmの更なる改善に期待しつつ、うまく付き合っていきたい。</p>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>npm updateは細かくやりたいけど、その度に全部検証やると若干辛いし、かといってnpm updateしなくなるみたいなのもわりと悪循環になるジレンマを解消すると考えると、seleniumとか頑張っていくみたいな方向しか無いだろうなと感じている。 <a href="#fnref1">↩</a></p>
+</li>
+
+<li id="fn2">
+<p>今回自分がハマったコードは、残念ながらminifyしていなかった。 <a href="#fnref2">↩</a></p>
+</li>
+
+</ol>
+</div>

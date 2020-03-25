@@ -1,0 +1,59 @@
+<p><em>2016/09/06追記: Babel 6.13以上より、presetsのオプションとして、<code>modules</code>指定ができるようになったため、<code>babel-preset-es2015-rollup</code>は不要になったようです。</em><br>
+<em>詳しくは<a href="https://github.com/rollup/rollup-plugin-babel" rel="nofollow noopener" target="_blank">rollup-plugin-babel</a>をご確認下さい</em></p>
+
+<hr>
+
+<p>ちょっと調べれば良い事だけどちょっとハマったのでメモ</p>
+
+<h1>
+<span id="発端" class="fragment"></span><a href="#%E7%99%BA%E7%AB%AF"><i class="fa fa-link"></i></a>発端</h1>
+
+<p>とりあえずbabel公式ページの<a href="https://babeljs.io/docs/setup/#rollup" rel="nofollow noopener" target="_blank">rollupのinstall</a>にしたがってみたがどうにもうまくいかない</p>
+
+<h2>
+<span id="何が起きたか" class="fragment"></span><a href="#%E4%BD%95%E3%81%8C%E8%B5%B7%E3%81%8D%E3%81%9F%E3%81%8B"><i class="fa fa-link"></i></a>何が起きたか？</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>It looks like your Babel configuration specifies a module transformer. Please disable it. If you're using the "es2015" preset, consider using "es2015-rollup" instead. See https://github.com/rollup/rollup-plugin-babel#configuring-babel for more information
+Error: It looks like your Babel configuration specifies a module transformer. Please disable it. If you're using the "es2015" preset, consider using "es2015-rollup" instead. See https://github.com/rollup/rollup-plugin-babel#configuring-babel for more information
+</pre></div></div>
+
+<p>こんなエラーが。</p>
+
+<h1>
+<span id="解決" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA"><i class="fa fa-link"></i></a>解決</h1>
+
+<p>結局<code>babel-preset-es2015-rollup</code>が必要ということだった。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm install rollup -D
+$ npm install rollup-plugin-babel -D
+$ npm install babel-preset-es2015-rollup -D # これが必要
+</pre></div></div>
+
+<p>babelの設定もあわせてこんな感じで行う</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="w">    </span><span class="err">:</span><span class="w">
+  </span><span class="nl">"babel"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"presets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="s2">"es2015-rollup"</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="err">,</span><span class="w">
+   </span><span class="err">:</span><span class="w">
+</span></pre></div>
+</div>
+
+<p>あとはrollupの設定</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">rollup.config.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="nx">babel</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">rollup-plugin-babel</span><span class="dl">"</span>
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="dl">"</span><span class="s2">src/index.js</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">dest</span><span class="p">:</span> <span class="dl">"</span><span class="s2">dest/index.js</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span><span class="nx">babel</span><span class="p">()]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>うまくいった！</p>

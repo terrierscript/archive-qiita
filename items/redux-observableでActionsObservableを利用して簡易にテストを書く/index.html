@@ -1,0 +1,231 @@
+<p>redux-observableのテストとして、mock-storeを利用したテストやmarble testingが挙げられる。<br>
+mock-storeを利用したテストは<a href="http://qiita.com/inuscript/items/6b64eecad73ddabf256c" id="reference-8aa70a431fdb46026bf2">非同期で小面倒くさ</a>かったり、storeの中身のテストになっていてepicのテストとして扱いづらい。<br>
+marble testingはスマートだけどRx慣れしてない者にとってはちょっと難易度が高い。</p>
+
+<ul>
+<li><a href="https://redux-observable.js.org/docs/recipes/WritingTests.html" rel="nofollow noopener" target="_blank">redux-observable - WritingTests</a></li>
+<li><a href="http://jyane.jp/2016/12/26/redux-observable.html" rel="nofollow noopener" target="_blank">redux-observable の処理を marble testing で簡単にテストする</a></li>
+<li><a href="http://jsbin.com/pufima/edit?js,output" rel="nofollow noopener" target="_blank">marble testing - JSBin</a></li>
+</ul>
+
+<h1>
+<span id="actionsobservableを使って小さめのテストする" class="fragment"></span><a href="#actionsobservable%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%A6%E5%B0%8F%E3%81%95%E3%82%81%E3%81%AE%E3%83%86%E3%82%B9%E3%83%88%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>ActionsObservableを使って小さめのテストする。</h1>
+
+<p>今回は<a href="https://github.com/redux-observable/redux-observable/blob/master/src/ActionsObservable.js" rel="nofollow noopener" target="_blank">ActionsObservable</a>を利用したテストを紹介する。<br>
+ActionsObservableはundocumentedではあるが、<a href="https://github.com/redux-observable/redux-observable/blob/master/index.d.ts#L6" rel="nofollow noopener" target="_blank">index.d.ts</a> などで定義されていたり、marble testingのサンプルとして利用されている。<br>
+テストで利用する分には問題ない気がするが、それ以上に使う時は注意が必要かもしれない。</p>
+
+<p>今回は<code>mocha</code>を利用している前提でサンプルコードを書いていく</p>
+
+<h2>
+<span id="actionsobservableでepicだけテスト" class="fragment"></span><a href="#actionsobservable%E3%81%A7epic%E3%81%A0%E3%81%91%E3%83%86%E3%82%B9%E3%83%88"><i class="fa fa-link"></i></a>ActionsObservableでepicだけテスト</h2>
+
+<p>とりあえずこんなepicを用意する</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">rxjs</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span> <span class="p">}</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>そしてこんな感じでテストが書ける</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">assert</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">assert</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">ActionsObservable</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">redux-observable</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="dl">"</span><span class="s2">epic test</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">"</span><span class="s2">ping epic</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// `ActionObservable`は`Observable`の拡張なので、`of`など使える。</span>
+    <span class="kd">const</span> <span class="nx">mockAction</span> <span class="o">=</span> <span class="nx">ActionsObservable</span><span class="p">.</span><span class="k">of</span><span class="p">({</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">})</span>
+    <span class="nx">pingEpic</span><span class="p">(</span><span class="nx">mockAction</span><span class="p">)</span>
+      <span class="p">.</span><span class="nx">toArray</span><span class="p">()</span> <span class="c1">// assertしやすいように`toArray`する</span>
+      <span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="c1">// subscribeで受取り</span>
+        <span class="nx">assert</span><span class="p">.</span><span class="nx">deepEqual</span><span class="p">(</span><span class="nx">result</span><span class="p">,</span> <span class="p">[</span>
+          <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">}</span> <span class="c1">// こういうactionが来るハズ</span>
+        <span class="p">])</span>
+        <span class="nx">done</span><span class="p">()</span>
+      <span class="p">})</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>Actionをmockするだけでその結果に来るはずのactionをテストすることが可能になった。嬉しい。</p>
+
+<p>また、複数のactionを飛ばせば複数のactionがsubscribe出来る。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>  <span class="nx">it</span><span class="p">(</span><span class="dl">"</span><span class="s2">ping epic</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">mockAction</span> <span class="o">=</span> <span class="nx">ActionsObservable</span><span class="p">.</span><span class="k">of</span><span class="p">(</span>
+      <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">},</span>
+      <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="nx">pingEpic</span><span class="p">(</span><span class="nx">mockAction</span><span class="p">)</span>
+      <span class="p">.</span><span class="nx">toArray</span><span class="p">()</span>
+      <span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">assert</span><span class="p">.</span><span class="nx">deepEqual</span><span class="p">(</span><span class="nx">result</span><span class="p">,</span> <span class="p">[</span>
+          <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">},</span>
+          <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">}</span>
+        <span class="p">])</span>
+        <span class="nx">done</span><span class="p">()</span>
+      <span class="p">})</span>
+  <span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="combineepicsと組み合わせる" class="fragment"></span><a href="#combineepics%E3%81%A8%E7%B5%84%E3%81%BF%E5%90%88%E3%82%8F%E3%81%9B%E3%82%8B"><i class="fa fa-link"></i></a>combineEpicsと組み合わせる</h2>
+
+<p><code>combineEpics</code>を使えば複数のepicがある前提のテストも出来る</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">rxjs</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span> <span class="p">}</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">anotherPingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">,</span> <span class="nx">store</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PUNG</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">}</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">assert</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">assert</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">ActionsObservable</span><span class="p">,</span> <span class="nx">combineEpics</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">redux-observable</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="dl">"</span><span class="s2">epic test</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">"</span><span class="s2">ping epic ( with combine )</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">mockAction</span> <span class="o">=</span> <span class="nx">ActionsObservable</span><span class="p">.</span><span class="k">of</span><span class="p">({</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">})</span>
+    <span class="kd">const</span> <span class="nx">combinedEpic</span> <span class="o">=</span> <span class="nx">combineEpics</span><span class="p">(</span>
+      <span class="nx">pingEpic</span><span class="p">,</span>
+      <span class="nx">anotherPingEpic</span>
+    <span class="p">)</span>
+    <span class="nx">combinedEpic</span><span class="p">(</span><span class="nx">mockAction</span><span class="p">)</span>
+      <span class="p">.</span><span class="nx">toArray</span><span class="p">()</span>
+      <span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="c1">// 一つのactionに対して複数のepicからの処理が返る</span>
+        <span class="nx">assert</span><span class="p">.</span><span class="nx">deepEqual</span><span class="p">(</span><span class="nx">result</span><span class="p">,</span> <span class="p">[</span>
+          <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">},</span> <span class="c1">// pingEpicが吐き出したやつ</span>
+          <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PUNG</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">payload</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">},</span> <span class="c1">// anotherPingEpicが吐き出したやつ</span>
+        <span class="p">])</span>
+        <span class="nx">done</span><span class="p">()</span>
+      <span class="p">})</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>何らか複数のepicが絡む場合のテストがしたいなら使えるだろう</p>
+
+<h2>
+<span id="非同期扱う" class="fragment"></span><a href="#%E9%9D%9E%E5%90%8C%E6%9C%9F%E6%89%B1%E3%81%86"><i class="fa fa-link"></i></a>非同期扱う</h2>
+
+<p>Promiseを利用した非同期も問題なく扱える</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// lazyPing</span>
+<span class="kd">const</span> <span class="nx">lazyPing</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">new</span> <span class="nb">Promise</span><span class="p">(</span> <span class="nx">res</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">setTimeout</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">res</span><span class="p">(</span><span class="dl">"</span><span class="s2">DELAY</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">},</span> <span class="mi">100</span><span class="p">)</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// epic.js</span>
+<span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">rxjs</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">mergeMap</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">lazyPing</span><span class="p">()</span> <span class="p">)</span> <span class="c1">// promiseはmergeMapなどで処理出来る</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="nx">result</span><span class="p">}</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// test.js</span>
+<span class="kd">const</span> <span class="nx">assert</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">assert</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">ActionsObservable</span><span class="p">,</span> <span class="nx">combineEpics</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">redux-observable</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">describe</span><span class="p">.</span><span class="nx">only</span><span class="p">(</span><span class="dl">"</span><span class="s2">epic test</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">"</span><span class="s2">lazy ping epic</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">mockAction</span> <span class="o">=</span> <span class="nx">ActionsObservable</span><span class="p">.</span><span class="k">of</span><span class="p">({</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">})</span>
+    <span class="nx">pingEpic</span><span class="p">(</span><span class="nx">mockAction</span><span class="p">)</span>
+      <span class="p">.</span><span class="nx">toArray</span><span class="p">()</span>
+      <span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">assert</span><span class="p">.</span><span class="nx">deepEqual</span><span class="p">(</span><span class="nx">result</span><span class="p">,</span> <span class="p">[</span>
+          <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DELAY</span><span class="dl">"</span><span class="p">}</span>
+        <span class="p">])</span>
+        <span class="nx">done</span><span class="p">()</span>
+      <span class="p">})</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="storeをmock化して使う" class="fragment"></span><a href="#store%E3%82%92mock%E5%8C%96%E3%81%97%E3%81%A6%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>storeをmock化して使う</h2>
+
+<p>storeも使って何かしらやったりするのも出来る</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// epic.js</span>
+<span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">rxjs</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">counterEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">,</span> <span class="nx">store</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">DO_INCREMENT</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">(</span><span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">{</span> 
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span><span class="p">,</span> 
+        <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">+</span> <span class="nx">store</span><span class="p">.</span><span class="nx">getState</span><span class="p">().</span><span class="nx">baseCount</span>
+      <span class="p">}</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// test.js</span>
+<span class="kd">const</span> <span class="nx">assert</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">assert</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">ActionsObservable</span><span class="p">,</span> <span class="nx">combineEpics</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">redux-observable</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="dl">"</span><span class="s2">epic test</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">"</span><span class="s2">counter epic</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// actionと一緒にstoreもmockする</span>
+    <span class="kd">const</span> <span class="nx">mockAction</span> <span class="o">=</span> <span class="nx">ActionsObservable</span><span class="p">.</span><span class="k">of</span><span class="p">({</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DO_INCREMENT</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+    <span class="kd">const</span> <span class="nx">mockStore</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="nx">getState</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">{</span> <span class="na">baseCount</span><span class="p">:</span> <span class="mi">10</span> <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nx">counterEpic</span><span class="p">(</span><span class="nx">mockAction</span><span class="p">,</span> <span class="nx">mockStore</span><span class="p">)</span>
+      <span class="p">.</span><span class="nx">toArray</span><span class="p">()</span>
+      <span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">assert</span><span class="p">.</span><span class="nx">deepEqual</span><span class="p">(</span><span class="nx">result</span><span class="p">,</span> <span class="p">[</span>
+          <span class="p">{</span><span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="mi">12</span><span class="p">},</span>
+        <span class="p">])</span>
+        <span class="nx">done</span><span class="p">()</span>
+      <span class="p">})</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>ある程度簡易なテストはActionsObservableだけで出来た。</li>
+<li>storeのmockから解放されるのは結構嬉しい
+
+<ul>
+<li>reducerまで絡んでくるとかになるまでは使わなくて良さそう</li>
+</ul>
+</li>
+<li>タイミングなどもっとシビアにやりたいならmarble testingを導入してくのが良さそう
+
+<ul>
+<li>
+<a href="https://www.learnrxjs.io/operators/creation/timer.html" rel="nofollow noopener" target="_blank">Observable.timer</a>とか<a href="https://www.learnrxjs.io/operators/creation/interval.html" rel="nofollow noopener" target="_blank">Observable.interval</a>とかで元actionwお作れそうな気もするが、多分marble testingのほうが見通し良くなりそうな気がする</li>
+</ul>
+</li>
+</ul>

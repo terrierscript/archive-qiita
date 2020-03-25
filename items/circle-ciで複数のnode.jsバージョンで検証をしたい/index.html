@@ -1,0 +1,40 @@
+<p>Travis.ciではできていた複数バージョンでのビルド。<br>
+「どーやるとできますかー」ってhelpで聞いてみたら、教えてくれた<br>
+（チャットっぽいヘルプUIすごい。circle-ciのサポート力高い。）</p>
+
+<div class="code-frame" data-lang="yaml">
+<div class="code-lang"><span class="bold">circle.yml</span></div>
+<div class="highlight"><pre><span class="na">test</span><span class="pi">:</span>
+  <span class="na">override</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">nvm alias default 0.12.0</span>
+    <span class="pi">-</span> <span class="s">npm test</span>
+    <span class="pi">-</span> <span class="s">nvm alias default iojs-v1.3.0</span>
+    <span class="pi">-</span> <span class="s">npm test</span>
+    <span class="pi">-</span> <span class="s">nvm alias default 0.10.34</span>
+    <span class="pi">-</span> <span class="s">npm test</span>
+</pre></div>
+</div>
+
+<p>こんな感じ。<br>
+nvm入っているので切り替えていけばいい。</p>
+
+<p>元々教えてもらったやり方だと、デフォルトのマシンを<code>0.12.0</code>にして最初のnvm切り替えを省略していたが、いまいち可読性が良くなかったので全部nvmで切り替えることにした。</p>
+
+<p>もしparallelにやりたいならこうやると良いらしい。個人的に需要はなかったのでこれは試してない。</p>
+
+<div class="code-frame" data-lang="yaml">
+<div class="code-lang"><span class="bold">circle.yml</span></div>
+<div class="highlight"><pre><span class="na">machine</span><span class="pi">:</span>
+  <span class="na">node</span><span class="pi">:</span>
+    <span class="na">version</span><span class="pi">:</span> <span class="s">0.12.0</span>
+
+<span class="na">dependencies</span><span class="pi">:</span>
+  <span class="na">pre</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">if [ $CIRCLE_NODE_INDEX == "1" ] ; then nvm alias default iojs-v1.3.0 ; fi</span>
+
+<span class="na">test</span><span class="pi">:</span>
+  <span class="na">override</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">npm test</span><span class="pi">:</span>
+        <span class="na">parallel</span><span class="pi">:</span> <span class="no">true</span>
+</pre></div>
+</div>

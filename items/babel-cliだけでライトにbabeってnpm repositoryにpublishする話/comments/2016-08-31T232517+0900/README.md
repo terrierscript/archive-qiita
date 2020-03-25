@@ -1,0 +1,2 @@
+私もこんな感じでやっていますが、`babel-runtime`をdependenciesにいれる必要があるときが多く、辛い思いをしています。そちらはどうされていますか？
+特にgenerator使った時の`regeneratorRuntime`をどう解決するのがベストなのだろうか、と。。

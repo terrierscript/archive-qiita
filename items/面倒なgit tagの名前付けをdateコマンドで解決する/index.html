@@ -1,0 +1,27 @@
+<p>結構個人的には面倒だと感じるタグ打ちをお手軽に解決。<br>
+ここ最近「これ便利っすよ」って教えることが二回ぐらいあって需要ありそうなのでまとめ</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ git tag VERSION-`date +'%Y-%m-%d_%H_%M'`
+</pre></div></div>
+
+<p>で</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ git tag                                                                     
+$ VERSION-2015-02-06_15_53
+</pre></div></div>
+
+<p>イエーイ。平和。</p>
+
+<p>あとは必要ならshellファイルにでもすればよいと思う。</p>
+
+<div class="code-frame" data-lang="shell">
+<div class="code-lang"><span class="bold">tagging.sh</span></div>
+<div class="highlight"><pre>git tag VERSION-<span class="sb">`</span><span class="nb">date</span> +<span class="s1">'%Y-%m-%d_%H_%M'</span><span class="sb">`</span>
+git push <span class="nt">--tag</span>
+</pre></div>
+</div>
+
+<p>git pushはお好みで。</p>
+
+<p><a href="http://qiita.com/SessionIPA/items/1d079e083e8b327345ff" id="reference-7d714a31a6ed23a67519">こちらの記事</a>では日付＋採番を持ってくるということをしているようだ。<br>
+個人的にはすごいチーム規模にでもならない限り基本的に時間と分をつければまず衝突することは無いし必要十分かなあと思っている。</p>

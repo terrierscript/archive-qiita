@@ -1,0 +1,361 @@
+<p><a href="https://github.com/substack/node-browserify" rel="nofollow noopener" target="_blank">ドキュメント</a>や<a href="https://github.com/substack/browserify-handbook#excluding" rel="nofollow noopener" target="_blank">handbook</a>見てもいまいち使い勝手がわかんなかったりする。</p>
+
+<p>コンパイルして何が出てくるのか見てみるとちょっとだけ知見が深まったのでまとめたい。</p>
+
+<h3>
+<span id="免責" class="fragment"></span><a href="#%E5%85%8D%E8%B2%AC"><i class="fa fa-link"></i></a>免責</h3>
+
+<ul>
+<li>サンプル貼り付けるにあたって、requireしているとこらへんとかは省略する</li>
+<li>検証するにあたってformattedな状態で読みたかったので<a href="http://qiita.com/inuscript/items/dd56f1c397419bfc42ca" id="reference-ba733de372ab4d3f049d">出力は工夫した</a>。
+
+<ul>
+<li>同様のことをやる場合は併せて参照されたい</li>
+</ul>
+</li>
+<li>試した結果のリポジトリはこんな感じ
+
+<ul>
+<li><a href="https://github.com/inuscript/example-browserify-options" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/inuscript/example-browserify-options</a></li>
+<li>ちょいちょい試しつつなので、この記事と微妙にずれたりしているがご愛嬌</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="その1-entryオプションだけ指定した基本的なやつ" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE1-entry%E3%82%AA%E3%83%97%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%A0%E3%81%91%E6%8C%87%E5%AE%9A%E3%81%97%E3%81%9F%E5%9F%BA%E6%9C%AC%E7%9A%84%E3%81%AA%E3%82%84%E3%81%A4"><i class="fa fa-link"></i></a>その1. <code>entry</code>オプションだけ指定した基本的なやつ。</h2>
+
+<p>おさらい的な感じだけど</p>
+
+<h3>
+<span id="入力ファイル" class="fragment"></span><a href="#%E5%85%A5%E5%8A%9B%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB"><i class="fa fa-link"></i></a>入力ファイル</h3>
+
+<p>なんらかのlibファイルとentryファイルを想定する</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">somelib.js</span></div>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">somelibだよ！</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">entry1.js</span></div>
+<div class="highlight"><pre><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">entry1だよ！</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">lib</span><span class="p">()</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="実行" class="fragment"></span><a href="#%E5%AE%9F%E8%A1%8C"><i class="fa fa-link"></i></a>実行</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ browserify -e ./src/entry1.js
+</pre></div></div>
+
+<h3>
+<span id="結果" class="fragment"></span><a href="#%E7%B5%90%E6%9E%9C"><i class="fa fa-link"></i></a>結果</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">outout.js</span></div>
+<div class="highlight"><pre><span class="p">(</span><span class="kd">function</span> <span class="nx">e</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span> <span class="p">{</span>
+   <span class="c1">// 省略</span>
+<span class="p">})({</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">somelibだよ！</span><span class="dl">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">},</span> <span class="p">{}],</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">entry1だよ！</span><span class="dl">"</span><span class="p">)</span>
+        <span class="kd">var</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">)</span>
+        <span class="nx">lib</span><span class="p">()</span>
+
+    <span class="p">},</span> <span class="p">{</span>
+        <span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="p">}]</span>
+<span class="p">},</span> <span class="p">{},</span> <span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+</pre></div>
+</div>
+
+<p>出ているものとしては1の方がlibで呼び出しているもので、2が<code>simple.js</code>に相当する。そしてentry指定しているので<code>[2]</code>が実行対象として呼び出されているらしい。</p>
+
+<h2>
+<span id="その2-entryで複数指定するとどうなるか" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE2-entry%E3%81%A7%E8%A4%87%E6%95%B0%E6%8C%87%E5%AE%9A%E3%81%99%E3%82%8B%E3%81%A8%E3%81%A9%E3%81%86%E3%81%AA%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>その2. <code>entry</code>で複数指定するとどうなるか</h2>
+
+<p>ほぼその1のおまけ。複数のファイルを<code>-e</code>で対象にしてみる</p>
+
+<h3>
+<span id="実行-1" class="fragment"></span><a href="#%E5%AE%9F%E8%A1%8C-1"><i class="fa fa-link"></i></a>実行</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ browserify -e ./src/entry.js -e ./src/entry3.js
+</pre></div></div>
+
+<h3>
+<span id="出力" class="fragment"></span><a href="#%E5%87%BA%E5%8A%9B"><i class="fa fa-link"></i></a>出力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">outout.js</span></div>
+<div class="highlight"><pre><span class="p">(</span><span class="kd">function</span> <span class="nx">e</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 省略</span>
+<span class="p">})({</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">somelibだよ！</span><span class="dl">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">},</span> <span class="p">{}],</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">entry1だよ！</span><span class="dl">"</span><span class="p">)</span>
+        <span class="kd">var</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">)</span>
+        <span class="nx">lib</span><span class="p">()</span>
+
+    <span class="p">},</span> <span class="p">{</span>
+        <span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="p">}],</span>
+    <span class="mi">3</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">entry3だよ！</span><span class="dl">"</span><span class="p">)</span>
+
+    <span class="p">},</span> <span class="p">{}]</span>
+<span class="p">},</span> <span class="p">{},</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]);</span>
+</pre></div>
+</div>
+
+<p>実行対象が<code>[2,3]</code>となった！</p>
+
+<h2>
+<span id="その3-external-xとrequire-rオプションを使う" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE3-external-x%E3%81%A8require-r%E3%82%AA%E3%83%97%E3%82%B7%E3%83%A7%E3%83%B3%E3%82%92%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>その3. <code>external</code>(<code>-x</code>)と<code>require</code>(<code>-r</code>)オプションを使う</h2>
+
+<p>これ理解したら一気にbrowserifyの世界が開けた。<br>
+コアな部分を<code>external</code>でentryには混ぜず、<code>require</code>でまとめると超捗る事が期待される。</p>
+
+<h3>
+<span id="入力" class="fragment"></span><a href="#%E5%85%A5%E5%8A%9B"><i class="fa fa-link"></i></a>入力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">somelib.js</span></div>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">somelibだよ！</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">entry.js</span></div>
+<div class="highlight"><pre><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">entry1だよ！</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">lib</span><span class="p">()</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="実行-2" class="fragment"></span><a href="#%E5%AE%9F%E8%A1%8C-2"><i class="fa fa-link"></i></a>実行</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ browserify -r ./lib/somelib.js
+$ browserify -e ./src/entry1.js -x ./lib/**/*.js
+</pre></div></div>
+
+<h3>
+<span id="出力-1" class="fragment"></span><a href="#%E5%87%BA%E5%8A%9B-1"><i class="fa fa-link"></i></a>出力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">require.js</span></div>
+<div class="highlight"><pre><span class="nx">require</span> <span class="o">=</span> <span class="p">(</span><span class="kd">function</span> <span class="nx">e</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 省略</span>
+<span class="p">})({</span>
+    <span class="dl">"</span><span class="s2">/lib/somelib.js</span><span class="dl">"</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">somelibだよ！</span><span class="dl">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">},</span> <span class="p">{}]</span>
+<span class="p">},</span> <span class="p">{},</span> <span class="p">[]);</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">entry.js</span></div>
+<div class="highlight"><pre><span class="p">(</span><span class="kd">function</span> <span class="nx">e</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 省略</span>
+<span class="p">})({</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">entry1だよ！</span><span class="dl">"</span><span class="p">)</span>
+        <span class="kd">var</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">)</span>
+        <span class="nx">lib</span><span class="p">()</span>
+
+    <span class="p">},</span> <span class="p">{</span>
+        <span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">/lib/somelib.js</span><span class="dl">"</span>
+    <span class="p">}]</span>
+<span class="p">},</span> <span class="p">{},</span> <span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</pre></div>
+</div>
+
+<p>requireとentryがこんな感じで出力される。requireがglobalに定義され、それを呼び出す形。htmlで呼びこむときはこんな感じで読むと良さそう</p>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">jquery.html</span></div>
+<div class="highlight"><pre>    <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"./build/require.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"./build/entry.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="その4-exclude-uオプション" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE4-exclude-u%E3%82%AA%E3%83%97%E3%82%B7%E3%83%A7%E3%83%B3"><i class="fa fa-link"></i></a>その4. <code>exclude</code>(<code>-u</code>)オプション</h2>
+
+<p>できれば<code>require</code>と<code>external</code>で完結したいけど、例えばjqueryみたいなのは分割してbundleしたいみたいなときに使うとよいらしい。あんまりお世話になりたくない感じする。</p>
+
+<h3>
+<span id="入力-1" class="fragment"></span><a href="#%E5%85%A5%E5%8A%9B-1"><i class="fa fa-link"></i></a>入力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">entry-jquery.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">$</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">jquery</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="dl">"</span><span class="s2">.foo</span><span class="dl">"</span><span class="p">))</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="実行-3" class="fragment"></span><a href="#%E5%AE%9F%E8%A1%8C-3"><i class="fa fa-link"></i></a>実行</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ browserify -r jquery 
+$ browserify -r ./lib/somelib.js 
+$ browserify ./src/entry-jquery.js -u jquery -x ./lib/somelib.js 
+</pre></div></div>
+
+<h3>
+<span id="出力-2" class="fragment"></span><a href="#%E5%87%BA%E5%8A%9B-2"><i class="fa fa-link"></i></a>出力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">entry-jquery.js</span></div>
+<div class="highlight"><pre><span class="p">(</span><span class="kd">function</span> <span class="nx">e</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 省略</span>
+<span class="p">})({</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">$</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">jquery</span><span class="dl">"</span><span class="p">)</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="dl">"</span><span class="s2">.foo</span><span class="dl">"</span><span class="p">))</span>
+    <span class="p">},</span> <span class="p">{</span>
+        <span class="dl">"</span><span class="s2">jquery</span><span class="dl">"</span><span class="p">:</span> <span class="kc">undefined</span>
+    <span class="p">}]</span>
+<span class="p">},</span> <span class="p">{},</span> <span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</pre></div>
+</div>
+
+<p>これで、下記のようにscriptタグを呼ぶと良い</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"../build/jquery-bundle.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"../build/require-bundle.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">src=</span><span class="s">"../build/entry-jquery.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+</pre></div></div>
+
+<p><code>require-bundle</code>と<code>jquery-bundle</code>で二度window.requireが呼び出されてうまいこと処理されているのがなぜうまく動いてるのかわかってないので今度ちゃんと調べたい。</p>
+
+<p>ちなみにこの例は<a href="https://github.com/substack/browserify-handbook#excluding" rel="nofollow noopener" target="_blank">Handbook</a>に乗っていたのだが、<code>standalone</code>オプションがあるとうまく動かなかった。（<a href="https://github.com/substack/browserify-handbook/pull/58/files" rel="nofollow noopener" target="_blank">issue#58</a>でも指摘されていた。これのせいで理解するまでめっちゃ時間かかった）</p>
+
+<h2>
+<span id="その5-standalone-sオプション" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE5-standalone-s%E3%82%AA%E3%83%97%E3%82%B7%E3%83%A7%E3%83%B3"><i class="fa fa-link"></i></a>その5. <code>standalone</code>(<code>-s</code>)オプション</h2>
+
+<p>正直使わない気がする。なにか最後の手段感がある。<br>
+雑な説明にはなるが、指定したmoduleを<code>window.指定した値</code>に指定するようなイメージをするとよさそう。</p>
+
+<h3>
+<span id="入力-2" class="fragment"></span><a href="#%E5%85%A5%E5%8A%9B-2"><i class="fa fa-link"></i></a>入力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">standalone.js</span></div>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">Standaloneなモジュールだよ”</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="実行-4" class="fragment"></span><a href="#%E5%AE%9F%E8%A1%8C-4"><i class="fa fa-link"></i></a>実行</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ browserify ./lib/standalone.js -s standalone
+</pre></div></div>
+
+<h3>
+<span id="出力-3" class="fragment"></span><a href="#%E5%87%BA%E5%8A%9B-3"><i class="fa fa-link"></i></a>出力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">standalone.js</span></div>
+<div class="highlight"><pre><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">f</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 省略</span>
+    <span class="c1">// window.standalone = module</span>
+    <span class="c1">// になるようなコードが書かれている</span>
+
+<span class="p">})(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// 省略</span>
+   <span class="p">})({</span>
+        <span class="mi">1</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">Standaloneなモジュールだよ”</span><span class="dl">"</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">},</span> <span class="p">{}]</span>
+    <span class="p">},</span> <span class="p">{},</span> <span class="p">[</span><span class="mi">1</span><span class="p">])(</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+
+<p>やっぱりあんまり積極的につかいたい感じはしない。</p>
+
+<h2>
+<span id="その6-ignore-iオプション" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE6-ignore-i%E3%82%AA%E3%83%97%E3%82%B7%E3%83%A7%E3%83%B3"><i class="fa fa-link"></i></a>その6. <code>ignore</code>(<code>-i</code>)オプション</h2>
+
+<p>これはたまにお世話になるかも。moduleの出力結果を空っぽにしてくれる。<code>fs</code>などはデフォルトでこのオプションの対象になっている</p>
+
+<h3>
+<span id="入力-3" class="fragment"></span><a href="#%E5%85%A5%E5%8A%9B-3"><i class="fa fa-link"></i></a>入力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">entry.js</span></div>
+<div class="highlight"><pre><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">entry1だよ！</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">lib</span><span class="p">()</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="実行-5" class="fragment"></span><a href="#%E5%AE%9F%E8%A1%8C-5"><i class="fa fa-link"></i></a>実行</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ browserify -e ./src/entry.js -i ./lib/somelib.js
+</pre></div></div>
+
+<h3>
+<span id="出力-4" class="fragment"></span><a href="#%E5%87%BA%E5%8A%9B-4"><i class="fa fa-link"></i></a>出力</h3>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">ignore.js</span></div>
+<div class="highlight"><pre><span class="p">(</span><span class="kd">function</span> <span class="nx">e</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">r</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 省略</span>
+<span class="p">})({</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="p">},</span> <span class="p">{}],</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="p">[</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span> <span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">entry1だよ！</span><span class="dl">"</span><span class="p">)</span>
+        <span class="kd">var</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">)</span>
+        <span class="nx">lib</span><span class="p">()</span>
+
+    <span class="p">},</span> <span class="p">{</span>
+        <span class="dl">"</span><span class="s2">../lib/somelib</span><span class="dl">"</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="p">}]</span>
+<span class="p">},</span> <span class="p">{},</span> <span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+</pre></div>
+</div>
+
+<p>こんな感じ。<br>
+1の<code>somelib</code>の方が空になっている。<br>
+excludeと何が違うのって話がわかっていなかったけど、ユースケース考えると明確。</p>
+
+<p>例えば<code>iconv</code>みたいにnode-gypを使ってビルドするようなパッケージを部分的に利用しているnpmパッケージを利用していたとして、それをそのまま呼んでしまうと当然コケる。そんなときは<code>iconv</code>だけ空で出力してくれると都合が良い。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ browserify -e ./src/ignore.js -i iconv
+</pre></div></div>
+
+<p>こんな感じ。</p>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<p>とりあえずこのぐらい知っておけば色々怖がらずに使えそう。</p>

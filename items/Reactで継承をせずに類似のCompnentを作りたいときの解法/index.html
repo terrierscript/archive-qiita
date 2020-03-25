@@ -1,0 +1,99 @@
+<p>わりかし似たようなコンポーネントを作るとき、クラス継承みたいなことがやりたくなったりする。</p>
+
+<p>例えば今回はactiveフラグの状態によって切り替わるiconなんかを作りたくなった。</p>
+
+<h1>
+<span id="何も考えずに抽象クラスくさいことをやってみる" class="fragment"></span><a href="#%E4%BD%95%E3%82%82%E8%80%83%E3%81%88%E3%81%9A%E3%81%AB%E6%8A%BD%E8%B1%A1%E3%82%AF%E3%83%A9%E3%82%B9%E3%81%8F%E3%81%95%E3%81%84%E3%81%93%E3%81%A8%E3%82%92%E3%82%84%E3%81%A3%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>何も考えずに抽象クラスくさいことをやってみる</h1>
+
+<p>うっかりclass構文が作れるので、これを利用してabstractっぽい抽象クラスを書いてみる。</p>
+
+<div class="code-frame" data-lang="jsx">
+<div class="code-lang"><span class="bold">bad.jsx</span></div>
+<div class="highlight"><pre><span class="kd">class</span> <span class="nx">Icon</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">activeClass</span><span class="p">(){</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="dl">"</span><span class="s2">Not implemented error</span><span class="dl">"</span><span class="p">)</span>
+  <span class="p">}</span>
+  <span class="nx">inactiveClass</span><span class="p">(){</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="dl">"</span><span class="s2">Not implemented error</span><span class="dl">"</span><span class="p">)</span>
+  <span class="p">}</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="kd">var</span> <span class="p">{</span><span class="nx">key</span><span class="p">,</span> <span class="nx">active</span><span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="kd">const</span> <span class="nx">classes</span> <span class="o">=</span> <span class="nx">active</span> <span class="p">?</span> <span class="k">this</span><span class="p">.</span><span class="nx">activeClass</span><span class="p">()</span> <span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">inactiveClass</span><span class="p">()</span>
+    <span class="kd">const</span> <span class="nx">cls</span> <span class="o">=</span> <span class="nx">classNames</span><span class="p">(</span><span class="dl">"</span><span class="s2">fa</span><span class="dl">"</span><span class="p">,</span> <span class="nx">classes</span><span class="p">);</span>
+    <span class="k">return</span> <span class="p">(&lt;</span><span class="nt">i</span>
+      <span class="na">key=</span><span class="si">{</span><span class="nx">key</span><span class="si">}</span>
+      <span class="na">className=</span><span class="si">{</span><span class="nx">cls</span><span class="si">}</span>
+    <span class="p">/&gt;);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nx">StarIcon</span> <span class="kd">extends</span> <span class="nx">Icon</span><span class="p">{</span>
+  <span class="nx">activeClass</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="dl">"</span><span class="s2">fa-star</span><span class="dl">"</span>
+  <span class="p">}</span>
+  <span class="nx">inactiveClass</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="dl">"</span><span class="s2">fa-star-o</span><span class="dl">"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>うむ。throwとかやってて大変よろしくなさそう。<br>
+なんとかならんものか</p>
+
+<h1>
+<span id="spread-attributesを使う" class="fragment"></span><a href="#spread-attributes%E3%82%92%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>spread attributesを使う</h1>
+
+<p><a href="https://facebook.github.io/react/docs/transferring-props.html" rel="nofollow noopener" target="_blank">transferring props</a>のページと<a href="https://facebook.github.io/react/docs/jsx-spread.html#spread-attributes" rel="nofollow noopener" target="_blank">spread attributes</a>を見てみる</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">props</span> <span class="o">=</span> <span class="p">{};</span>
+  <span class="nx">props</span><span class="p">.</span><span class="nx">foo</span> <span class="o">=</span> <span class="nx">x</span><span class="p">;</span>
+  <span class="nx">props</span><span class="p">.</span><span class="nx">bar</span> <span class="o">=</span> <span class="nx">y</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">component</span> <span class="o">=</span> <span class="p">&lt;</span><span class="nc">Component</span> <span class="err">{</span><span class="p">...</span><span class="nt">props</span><span class="err">}</span> <span class="p">/&gt;;</span>
+</pre></div></div>
+
+<p>ふむ。なるほど。propsを一気に渡せるとな。</p>
+
+<h2>
+<span id="やってみる" class="fragment"></span><a href="#%E3%82%84%E3%81%A3%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>やってみる</h2>
+
+<p>考え方としてはいわゆる「継承より移譲」というやつ。<br>
+StarIconは単にIconにpropsを渡しているだけ。</p>
+
+<div class="code-frame" data-lang="jsx">
+<div class="code-lang"><span class="bold">good.jsx</span></div>
+<div class="highlight"><pre>
+<span class="kd">class</span> <span class="nx">Icon</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="kd">var</span> <span class="p">{</span><span class="nx">key</span><span class="p">,</span> <span class="nx">classNames</span><span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="kd">const</span> <span class="nx">classes</span> <span class="o">=</span> <span class="nx">cx</span><span class="p">(</span><span class="dl">"</span><span class="s2">fa</span><span class="dl">"</span><span class="p">,</span> <span class="nx">classNames</span><span class="p">);</span>
+    <span class="k">return</span> <span class="p">(&lt;</span><span class="nt">i</span>
+      <span class="na">key=</span><span class="si">{</span><span class="nx">key</span><span class="si">}</span>
+      <span class="na">className=</span><span class="si">{</span><span class="nx">classes</span><span class="si">}</span>
+    <span class="p">/&gt;);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nx">StarIcon</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="kd">var</span> <span class="nx">classNames</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">active</span> <span class="p">?</span> <span class="dl">"</span><span class="s2">fa-star</span><span class="dl">"</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">fa-star-o</span><span class="dl">"</span>
+    <span class="k">return</span> <span class="p">(&lt;</span><span class="nc">LevelIcon</span> <span class="err">{</span> <span class="p">...</span><span class="nt">this</span><span class="p">.</span><span class="nt">props</span> <span class="err">}</span> 
+        <span class="na">classNames=</span><span class="si">{</span><span class="nx">classNames</span><span class="si">}</span> <span class="p">/&gt;)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>あとは制約をちゃんと掛けたければPropTypesをつけると。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="nx">Icon</span><span class="p">.</span><span class="nx">PropTypes</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">clssName</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">PropTypes</span><span class="p">.</span><span class="nx">string</span><span class="p">,</span>
+  <span class="na">key</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">PropTypes</span><span class="p">.</span><span class="nx">string</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="nx">StarIcon</span><span class="p">.</span><span class="nx">PropTypes</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">active</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">PropTypes</span><span class="p">.</span><span class="nx">boolean</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>いいんじゃないでしょうか。</p>

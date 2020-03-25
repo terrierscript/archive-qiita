@@ -1,0 +1,768 @@
+<p>こちらは<a href="https://qiita.com/terrierscript/items/4a50ff418a7d425f775d" id="reference-5cb418087d25f5708a09">React Hooksだけでライブラリ使わずにgoogle mapを利用する(基礎編)</a>の続きになります。</p>
+
+<hr>
+
+<p>Google MapのReact Hooksでの利用。前回マップを出すとこまでをとしてまとめた。<br>
+ここからは応用編としていろんな手段を書いて行きたい。</p>
+
+<ul>
+<li>3. クリックしたらマーカーを増やすようにする</li>
+<li>4. クリックしたら削除もするようにする</li>
+<li>5. InfoWindowを出す</li>
+</ul>
+
+<p>応用のため遠慮せずすべてのhooksを色々利用していく。<br>
+なるべく説明は書いているが不足を感じたら公式ドキュメントをご参照いただきたい<br>
+<a href="https://reactjs.org/docs/hooks-reference.html" class="autolink" rel="nofollow noopener" target="_blank">https://reactjs.org/docs/hooks-reference.html</a></p>
+
+<p>また要所要所でリファクタを挟んでいる。<br>
+コードは前回の続きからとしてご覧いただきたい。</p>
+
+<h1>
+<span id="3-クリックしたらマーカーを増やすようにする" class="fragment"></span><a href="#3-%E3%82%AF%E3%83%AA%E3%83%83%E3%82%AF%E3%81%97%E3%81%9F%E3%82%89%E3%83%9E%E3%83%BC%E3%82%AB%E3%83%BC%E3%82%92%E5%A2%97%E3%82%84%E3%81%99%E3%82%88%E3%81%86%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>3. クリックしたらマーカーを増やすようにする</h1>
+
+<p>クリックされたらマーカーを増やすようなことを試してみる。</p>
+
+<p>追加するhooksは下記の２つになる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// hooks.js</span>
+
+<span class="c1">// markerをstate管理する</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMarkerState</span> <span class="o">=</span> <span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">markers</span><span class="p">,</span> <span class="nx">setMarkers</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span>
+  <span class="c1">// マーカーの追加処理はsetMarkersを加工する形に</span>
+  <span class="kd">const</span> <span class="nx">addMarker</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">setMarkers</span><span class="p">([...</span><span class="nx">markers</span><span class="p">,</span> <span class="p">{</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">}])</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">markers</span><span class="p">,</span>
+    <span class="nx">addMarker</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Mapがクリックされたらイベントを飛ばすhooks</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMapClickEvent</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">onClickMap</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">googleMap</span> <span class="o">||</span> <span class="o">!</span><span class="nx">map</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+
+    <span class="kd">const</span> <span class="nx">listener</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">addListener</span><span class="p">(</span><span class="nx">map</span><span class="p">,</span> <span class="dl">"</span><span class="s2">click</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">onClickMap</span><span class="p">({</span>
+        <span class="na">lat</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">latLng</span><span class="p">.</span><span class="nx">lat</span><span class="p">(),</span>
+        <span class="na">lng</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">latLng</span><span class="p">.</span><span class="nx">lng</span><span class="p">()</span>
+      <span class="p">})</span>
+    <span class="p">})</span>
+    <span class="c1">// onClickMapが変更されたらつくったイベントをクリアする</span>
+    <span class="c1">//（じゃないとクリックするたびにイベントが大量閣下さえる）</span>
+    <span class="k">return</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">removeListener</span><span class="p">(</span><span class="nx">listener</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">onClickMap</span><span class="p">])</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>また、<code>useMapMarker</code>も書き換える。<br>
+markerが多重描画されないように、markerの実体を保存する。<br>
+stateで保持しようとすると遅延アップデートがされる都合でうまく保持がされないため</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">useDrawMapMarkers</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// stateだと初回描画ほ保持がうまくいかないのでここではrefを利用する</span>
+  <span class="kd">const</span> <span class="nx">markerObjectsRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">({})</span>
+
+  <span class="c1">// markersが変わるたびに実行する</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// 初期化がまだなら何もしない</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">googleMap</span> <span class="o">||</span> <span class="o">!</span><span class="nx">map</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">Marker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="nx">markers</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">position</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span><span class="p">[</span><span class="nx">i</span><span class="p">])</span> <span class="p">{</span>
+        <span class="c1">// すでに描画済みだったら何もしない。</span>
+        <span class="k">return</span>
+      <span class="p">}</span>
+      <span class="kd">const</span> <span class="nx">markerObj</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Marker</span><span class="p">({</span>
+        <span class="nx">position</span><span class="p">,</span>
+        <span class="nx">map</span><span class="p">,</span>
+        <span class="na">title</span><span class="p">:</span> <span class="dl">"</span><span class="s2">marker!</span><span class="dl">"</span>
+      <span class="p">})</span>
+      <span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="nx">markerObj</span>
+    <span class="p">})</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">])</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>addMarkerのところは<code>useCallback</code>を利用してもいいだろう</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">addMarker</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">setMarkers</span><span class="p">([...</span><span class="nx">markers</span><span class="p">,</span> <span class="p">{</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">}])</span>
+<span class="p">},</span> <span class="p">[</span><span class="nx">markers</span><span class="p">])</span> <span class="c1">// markersが変更したら関数自体を変える。そうしないとstateの状態とmapの実体がずれてくる</span>
+</pre></div></div>
+
+<p>そして利用する側がこんな具合になるだろう。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">MapApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">googleMap</span> <span class="o">=</span> <span class="nx">useGoogleMap</span><span class="p">(</span><span class="nx">API_KEY</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">mapContainerRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">map</span> <span class="o">=</span> <span class="nx">useMap</span><span class="p">({</span>
+    <span class="nx">googleMap</span><span class="p">,</span>
+    <span class="nx">mapContainerRef</span><span class="p">,</span>
+    <span class="nx">initialConfig</span>
+  <span class="p">})</span>
+
+  <span class="c1">// stateとして管理するマーカー</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">addMarker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useMarkerState</span><span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span>
+
+  <span class="c1">// 描画する</span>
+  <span class="nx">useDrawMapMarkers</span><span class="p">({</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span>
+  <span class="c1">// クリックイベントを追加</span>
+  <span class="nx">useMapClickEvent</span><span class="p">({</span>
+    <span class="na">onClickMap</span><span class="p">:</span> <span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">addMarker</span><span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span>
+    <span class="p">},</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="nx">googleMap</span>
+  <span class="p">})</span>
+
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span>
+      <span class="na">style=</span><span class="si">{</span><span class="p">{</span>
+        <span class="na">height</span><span class="p">:</span> <span class="dl">"</span><span class="s2">100vh</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">width</span><span class="p">:</span> <span class="dl">"</span><span class="s2">100%</span><span class="dl">"</span>
+      <span class="p">}</span><span class="si">}</span>
+      <span class="na">ref=</span><span class="si">{</span><span class="nx">mapContainerRef</span><span class="si">}</span>
+    <span class="p">/&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="3をちょっとリファクタ" class="fragment"></span><a href="#3%E3%82%92%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E3%83%AA%E3%83%95%E3%82%A1%E3%82%AF%E3%82%BF"><i class="fa fa-link"></i></a>3をちょっとリファクタ</h2>
+
+<p>ちょっとMapAppが膨れてきてしまったのでリファクタしてみる。<br>
+MapをマウントするコンテナのCSS部分をstyled-components化するのとマーカーのhooksを利用するだけのコンポーネントで分離する</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="k">import</span> <span class="nx">styled</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">styled-components</span><span class="dl">"</span>
+
+<span class="c1">// コンテナのCSS部分をstyled-componentsにする</span>
+<span class="kd">const</span> <span class="nx">MapContainer</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  height: 100vh;
+  width: 100%;
+`</span>
+
+<span class="c1">// マーカーのhooksを利用する</span>
+<span class="kd">const</span> <span class="nx">MapMarkers</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// stateとして管理するマーカー</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">addMarker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useMarkerState</span><span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span>
+  <span class="c1">// 描画する</span>
+  <span class="nx">useMapMarker</span><span class="p">({</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span>
+  <span class="c1">// クリックイベントを追加</span>
+  <span class="nx">useMapClickEvent</span><span class="p">({</span>
+    <span class="na">onClickMap</span><span class="p">:</span> <span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">addMarker</span><span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span>
+    <span class="p">},</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="nx">googleMap</span>
+  <span class="p">})</span>
+  <span class="c1">// hooksのためだけのコンポーネントになるのでこのコンポーネント自体は何も返さない。</span>
+  <span class="c1">// nullを返すのが気持ち悪ければ`&lt;script /&gt;`, `[]`, `""`を返すなどもアリ</span>
+  <span class="k">return</span> <span class="kc">null</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">MapApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">googleMap</span> <span class="o">=</span> <span class="nx">useGoogleMap</span><span class="p">(</span><span class="nx">API_KEY</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">mapContainerRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">map</span> <span class="o">=</span> <span class="nx">useMap</span><span class="p">({</span>
+    <span class="nx">googleMap</span><span class="p">,</span>
+    <span class="nx">mapContainerRef</span><span class="p">,</span>
+    <span class="nx">initialConfig</span>
+  <span class="p">})</span>
+
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;&gt;</span>
+      <span class="p">&lt;</span><span class="nc">MapContainer</span> <span class="na">ref=</span><span class="si">{</span><span class="nx">mapContainerRef</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nc">MapMarkers</span> <span class="na">googleMap=</span><span class="si">{</span><span class="nx">googleMap</span><span class="si">}</span> <span class="na">map=</span><span class="si">{</span><span class="nx">map</span><span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>hooksを利用するだけのコンポーネントがはて良いものかというのは少し悩むところにも感じる...</p>
+
+<p>hooksの部分を独自に切り出して下記のようにするのも良いだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="c1">// hooksを単純に呼び出してるhooks</span>
+<span class="kd">const</span> <span class="nx">useMapMarkerSetup</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">addMarker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useMarkerState</span><span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span>
+  <span class="nx">useMapMarker</span><span class="p">({</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span>
+  <span class="nx">useMapClickEvent</span><span class="p">({</span>
+    <span class="na">onClickMap</span><span class="p">:</span> <span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">addMarker</span><span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span>
+    <span class="p">},</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="nx">googleMap</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">MapMarkers</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">useMapMarkerSetup</span><span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span>
+  <span class="k">return</span> <span class="kc">null</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>また、例えばこんな風にMapが初期化されるまで待つようなコンポーネントを作る事もできるだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">WaitForMap</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">children</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">googleMap</span> <span class="o">||</span> <span class="o">!</span><span class="nx">map</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="kc">null</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">children</span>
+<span class="p">}</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">MapApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">googleMap</span> <span class="o">=</span> <span class="nx">useGoogleMap</span><span class="p">(</span><span class="nx">API_KEY</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">mapContainerRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">map</span> <span class="o">=</span> <span class="nx">useMap</span><span class="p">({</span>
+    <span class="nx">googleMap</span><span class="p">,</span>
+    <span class="nx">mapContainerRef</span><span class="p">,</span>
+    <span class="nx">initialConfig</span>
+  <span class="p">})</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;&gt;</span>
+      <span class="p">&lt;</span><span class="nc">MapContainer</span> <span class="na">ref=</span><span class="si">{</span><span class="nx">mapContainerRef</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nc">WaitForMap</span> <span class="na">googleMap=</span><span class="si">{</span><span class="nx">googleMap</span><span class="si">}</span> <span class="na">map=</span><span class="si">{</span><span class="nx">map</span><span class="si">}</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">MapMarkers</span> <span class="na">googleMap=</span><span class="si">{</span><span class="nx">googleMap</span><span class="si">}</span> <span class="na">map=</span><span class="si">{</span><span class="nx">map</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nc">WaitForMap</span><span class="p">&gt;</span>
+    <span class="p">&lt;/&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// hook.js</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMapMarker</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// このチェックが不要になる</span>
+    <span class="c1">// if (!googleMap || !map) {</span>
+    <span class="c1">//   return</span>
+    <span class="c1">// }</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">Marker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="c1">// ...</span>
+</pre></div></div>
+
+<h3>
+<span id="demo" class="fragment"></span><a href="#demo"><i class="fa fa-link"></i></a>DEMO</h3>
+
+<p><a href="https://gist.github.com/terrierscript/d8c9665f1a1761c48ee3739c0350ab76" class="autolink" rel="nofollow noopener" target="_blank">https://gist.github.com/terrierscript/d8c9665f1a1761c48ee3739c0350ab76</a></p>
+
+<h1>
+<span id="4-クリックしたら削除もするようにする" class="fragment"></span><a href="#4-%E3%82%AF%E3%83%AA%E3%83%83%E3%82%AF%E3%81%97%E3%81%9F%E3%82%89%E5%89%8A%E9%99%A4%E3%82%82%E3%81%99%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>4. クリックしたら削除もするようにする</h1>
+
+<p>更に応用。クリックされたら削除されることを考えてみる。ちょっとここからはだいぶ複雑度が増してくる。</p>
+
+<p>ここでは下記２つの方法を示す</p>
+
+<ul>
+<li>A: markersを配列として描画する</li>
+<li>B: markersを一つずつのコンポーネントとして処理する</li>
+</ul>
+
+<h2>
+<span id="共通部分-stateをreducer化する" class="fragment"></span><a href="#%E5%85%B1%E9%80%9A%E9%83%A8%E5%88%86-state%E3%82%92reducer%E5%8C%96%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>共通部分: Stateをreducer化する</h2>
+
+<p>ここまでマーカーは配列で処理してきたが、削除のことまで考えるとobjectで暑かったほうが都合が良くなるので<code>useReducer</code>を利用してreducer化する。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">uuid</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">uuid/v4</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">markerReducer</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">ADD</span><span class="dl">"</span><span class="p">:</span>
+      <span class="kd">const</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">()</span> <span class="c1">// 追加するたびにuuidをidとして発行</span>
+      <span class="k">return</span> <span class="p">{</span>
+        <span class="p">...</span><span class="nx">state</span><span class="p">,</span>
+        <span class="p">[</span><span class="nx">id</span><span class="p">]:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span>
+      <span class="p">}</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">REMOVE</span><span class="dl">"</span><span class="p">:</span>
+      <span class="kd">const</span> <span class="p">{</span> <span class="p">[</span><span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">]:</span> <span class="nx">removeItem</span><span class="p">,</span> <span class="p">...</span><span class="nx">rest</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">state</span>
+      <span class="k">return</span> <span class="nx">rest</span>
+    <span class="na">default</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">state</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// 初期データもreducerを通してあげたいので、initializerを作成</span>
+<span class="kd">const</span> <span class="nx">mapReducerInitializer</span> <span class="o">=</span> <span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">initialMarkers</span><span class="p">.</span><span class="nx">reduce</span><span class="p">((</span><span class="nx">state</span><span class="p">,</span> <span class="nx">marker</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">markerReducer</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="p">{</span>
+      <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ADD</span><span class="dl">"</span><span class="p">,</span>
+      <span class="na">payload</span><span class="p">:</span> <span class="nx">marker</span>
+    <span class="p">})</span>
+  <span class="p">},</span> <span class="p">{})</span>
+<span class="p">}</span>
+
+<span class="c1">// markerをstate管理する</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMarkerState</span> <span class="o">=</span> <span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">markers</span><span class="p">,</span> <span class="nx">dispatch</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useReducer</span><span class="p">(</span>
+    <span class="nx">markerReducer</span><span class="p">,</span>
+    <span class="nx">initialMarkers</span><span class="p">,</span>
+    <span class="nx">mapReducerInitializer</span>
+  <span class="p">)</span>
+  <span class="c1">// マーカーの追加・削除のaction関数</span>
+  <span class="c1">// ここも効率化のためにuseCallbackを使っているが必須ではない。</span>
+  <span class="c1">// const addMarker = (position) =&gt; dispatch({ type: "ADD", payload: position }) などでも十分だろう</span>
+  <span class="kd">const</span> <span class="nx">addMarker</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(</span>
+    <span class="p">(</span><span class="nx">position</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ADD</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="nx">position</span> <span class="p">}),</span>
+    <span class="p">[</span><span class="nx">dispatch</span><span class="p">]</span>
+  <span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">removeMarker</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(</span>
+    <span class="p">(</span><span class="nx">removeUuid</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">REMOVE</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="nx">removeUuid</span> <span class="p">}),</span>
+    <span class="p">[</span><span class="nx">dispatch</span><span class="p">]</span>
+  <span class="p">)</span>
+
+  <span class="c1">// 外向けにobjectではなくarrayとして返すためのselector</span>
+  <span class="kd">const</span> <span class="nx">getMarkers</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(</span>
+    <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">entries</span><span class="p">(</span><span class="nx">markers</span><span class="p">).</span><span class="nx">map</span><span class="p">(([</span><span class="nx">id</span><span class="p">,</span> <span class="nx">position</span><span class="p">])</span> <span class="o">=&gt;</span> <span class="p">({</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">position</span> <span class="p">})),</span>
+    <span class="p">[</span><span class="nx">markers</span><span class="p">]</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="c1">// markers // 元のobjectとしてのmarkerは隠蔽する</span>
+    <span class="nx">addMarker</span><span class="p">,</span>
+    <span class="nx">removeMarker</span><span class="p">,</span>
+    <span class="nx">getMarkers</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="4-a-markersを配列として描画する" class="fragment"></span><a href="#4-a-markers%E3%82%92%E9%85%8D%E5%88%97%E3%81%A8%E3%81%97%E3%81%A6%E6%8F%8F%E7%94%BB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>4-A: markersを配列として描画する</h2>
+
+<p>先程までのuseDrawMapMarkersを拡張する形でまずは書いてみる。<br>
+こちらの方が手軽といえば手軽だろう</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">useDrawMapMarkers</span> <span class="o">=</span> <span class="p">({</span>
+  <span class="nx">markers</span><span class="p">,</span>
+  <span class="nx">googleMap</span><span class="p">,</span>
+  <span class="nx">map</span><span class="p">,</span>
+  <span class="nx">onClickMarker</span>
+<span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// マーカーの再描画を防ぐためrefsに保持</span>
+  <span class="kd">const</span> <span class="nx">markerObjectsRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">({})</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">Marker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="nx">markers</span><span class="p">.</span><span class="nx">map</span><span class="p">(({</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">position</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="c1">// すでに描画済みなmarkerだったら描画しない</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span><span class="p">[</span><span class="nx">id</span><span class="p">])</span> <span class="p">{</span>
+        <span class="k">return</span>
+      <span class="p">}</span>
+      <span class="kd">const</span> <span class="nx">markerObj</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Marker</span><span class="p">({</span>
+        <span class="nx">position</span><span class="p">,</span>
+        <span class="nx">map</span><span class="p">,</span>
+        <span class="na">title</span><span class="p">:</span> <span class="dl">"</span><span class="s2">marker!</span><span class="dl">"</span>
+      <span class="p">})</span>
+      <span class="c1">// markerがクリックされた時のイベントを追加する</span>
+      <span class="nx">markerObj</span><span class="p">.</span><span class="nx">addListener</span><span class="p">(</span><span class="dl">"</span><span class="s2">click</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">onClickMarker</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">markerObj</span><span class="p">,</span> <span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span><span class="p">,</span> <span class="nx">e</span><span class="p">)</span>
+      <span class="p">})</span>
+      <span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="nx">markerObj</span>
+    <span class="p">})</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">markers</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">])</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>利用側はこんな感じになる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">useMapMarkerSetup</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// stateとして管理するマーカー</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">addMarker</span><span class="p">,</span> <span class="nx">removeMarker</span><span class="p">,</span> <span class="nx">getMarkers</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useMarkerState</span><span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">markers</span> <span class="o">=</span> <span class="nx">getMarkers</span><span class="p">()</span>
+  <span class="c1">// 描画する</span>
+  <span class="nx">useDrawMapMarkers</span><span class="p">({</span>
+    <span class="nx">markers</span><span class="p">,</span>
+    <span class="nx">googleMap</span><span class="p">,</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="c1">// 削除イベントを追加</span>
+    <span class="na">onClickMarker</span><span class="p">:</span> <span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">markerObj</span><span class="p">,</span> <span class="nx">markerObjectsRef</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">removeMarker</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span>
+      <span class="nx">markerObj</span><span class="p">.</span><span class="nx">setMap</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+      <span class="nx">markerObjectsRef</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">null</span>
+    <span class="p">}</span>
+  <span class="p">})</span>
+  <span class="c1">// クリックイベントを追加</span>
+  <span class="nx">useMapClickEvent</span><span class="p">({</span>
+    <span class="na">onClickMap</span><span class="p">:</span> <span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">addMarker</span><span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span>
+    <span class="p">},</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="nx">googleMap</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">MapMarkers</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">useMapMarkerSetup</span><span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span>
+  <span class="k">return</span> <span class="kc">null</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>なかなか分厚い状態なのと、Markerのオブジェクトを利用側でいじる形になるのは少々気持ちが悪いかもしれない。</p>
+
+<h3>
+<span id="コード" class="fragment"></span><a href="#%E3%82%B3%E3%83%BC%E3%83%89"><i class="fa fa-link"></i></a>コード</h3>
+
+<p><a href="https://gist.github.com/terrierscript/861df9328f80f077ac0b534569f3e8e1" class="autolink" rel="nofollow noopener" target="_blank">https://gist.github.com/terrierscript/861df9328f80f077ac0b534569f3e8e1</a></p>
+
+<h2>
+<span id="4-b-markersを一つずつのコンポーネントとして処理する" class="fragment"></span><a href="#4-b-markers%E3%82%92%E4%B8%80%E3%81%A4%E3%81%9A%E3%81%A4%E3%81%AE%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%81%A8%E3%81%97%E3%81%A6%E5%87%A6%E7%90%86%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>4-B: markersを一つずつのコンポーネントとして処理する</h2>
+
+<p>ということでこれを改修して、「マーカー1つ1つにコンポーネントとフックを対応させる」という方向でやってみる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useDrawMapMarker</span> <span class="o">=</span> <span class="p">({</span>
+  <span class="nx">position</span><span class="p">,</span>
+  <span class="nx">googleMap</span><span class="p">,</span>
+  <span class="nx">map</span><span class="p">,</span>
+  <span class="nx">onClickMarker</span>
+<span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">markerObjectsRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">Marker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="c1">// すでに描画済みなmarkerだったら描画しない</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="nx">markerObj</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Marker</span><span class="p">({</span>
+      <span class="nx">position</span><span class="p">,</span>
+      <span class="nx">map</span><span class="p">,</span>
+      <span class="na">title</span><span class="p">:</span> <span class="dl">"</span><span class="s2">marker!</span><span class="dl">"</span>
+    <span class="p">})</span>
+    <span class="c1">// markerがクリックされた時のイベントを追加する</span>
+    <span class="nx">markerObj</span><span class="p">.</span><span class="nx">addListener</span><span class="p">(</span><span class="dl">"</span><span class="s2">click</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">onClickMarker</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span>
+    <span class="p">})</span>
+    <span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span> <span class="o">=</span> <span class="nx">markerObj</span>
+
+    <span class="c1">// effectの返却の関数として、コンポーネントが消え場合の処理を書けるので、ここでmarkerもmapから消すように仕掛ける。</span>
+    <span class="k">return</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span> <span class="o">===</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span>
+      <span class="p">}</span>
+      <span class="nx">markerObjectsRef</span><span class="p">.</span><span class="nx">current</span><span class="p">.</span><span class="nx">setMap</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">])</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>利用側はこのようになる</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="c1">// marker一つ一つを担当するComponent</span>
+<span class="kd">const</span> <span class="nx">Marker</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">position</span><span class="p">,</span> <span class="nx">onClickMarker</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">useDrawMapMarker</span><span class="p">({</span>
+    <span class="nx">googleMap</span><span class="p">,</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="nx">position</span><span class="p">,</span>
+    <span class="nx">onClickMarker</span>
+  <span class="p">})</span>
+  <span class="k">return</span> <span class="kc">null</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">MapMarkers</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">googleMap</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">addMarker</span><span class="p">,</span> <span class="nx">removeMarker</span><span class="p">,</span> <span class="nx">getMarkers</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useMarkerState</span><span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">markers</span> <span class="o">=</span> <span class="nx">getMarkers</span><span class="p">()</span>
+  <span class="c1">// クリックイベントを追加</span>
+  <span class="nx">useMapClickEvent</span><span class="p">({</span>
+    <span class="na">onClickMap</span><span class="p">:</span> <span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">addMarker</span><span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span>
+    <span class="p">},</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="nx">googleMap</span>
+  <span class="p">})</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;&gt;</span>
+      <span class="si">{</span><span class="nx">markers</span><span class="p">.</span><span class="nx">map</span><span class="p">(({</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">position</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+        <span class="p">&lt;</span><span class="nc">Marker</span>
+          <span class="na">key=</span><span class="si">{</span><span class="nx">id</span><span class="si">}</span> <span class="c1">// hooksがkeyに紐づく。これがないと適切なマーカーが消えなくなる</span>
+          <span class="na">position=</span><span class="si">{</span><span class="nx">position</span><span class="si">}</span>
+          <span class="na">onClickMarker=</span><span class="si">{</span><span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+            <span class="nx">removeMarker</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span>
+          <span class="p">}</span><span class="si">}</span>
+          <span class="na">map=</span><span class="si">{</span><span class="nx">map</span><span class="si">}</span>
+          <span class="na">googleMap=</span><span class="si">{</span><span class="nx">googleMap</span><span class="si">}</span>
+        <span class="p">/&gt;</span>
+      <span class="p">))</span><span class="si">}</span>
+    <span class="p">&lt;/&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>こうなってくると「なんだかhooks以前のReactと手間変わらない気もする・・・」というのもあるのだが、結局はこの方がスマートになる印象だ。</p>
+
+<h3>
+<span id="コード-1" class="fragment"></span><a href="#%E3%82%B3%E3%83%BC%E3%83%89-1"><i class="fa fa-link"></i></a>コード</h3>
+
+<p><a href="https://gist.github.com/terrierscript/f57ace64b776848d68be6b5bc736e2ed" class="autolink" rel="nofollow noopener" target="_blank">https://gist.github.com/terrierscript/f57ace64b776848d68be6b5bc736e2ed</a></p>
+
+<h3>
+<span id="リファクタ-onclickイベントを分離する" class="fragment"></span><a href="#%E3%83%AA%E3%83%95%E3%82%A1%E3%82%AF%E3%82%BF-onclick%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E3%82%92%E5%88%86%E9%9B%A2%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>リファクタ: onClickイベントを分離する・</h3>
+
+<p>先程までの<code>useDrawMapMarker</code>だとイベントが変更しても感知しないものになっていた。<br>
+もう少しこの点きれいに考えると下記のようになるだろう。<br>
+<code>useDrawMapMarker</code>から帰ってくるMarkerオブジェクトを別途effectしてフックするような形になる。</p>
+
+<p>また、これまでhooksの内部でしか使っていなかったため<code>useRef</code>で良かったが、Markerが外部に出すものとなったので<code>useState</code>で書き換えている。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">useDrawMapMarker</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">position</span><span class="p">,</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">markerObject</span><span class="p">,</span> <span class="nx">setMarkerObject</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">Marker</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span>
+    <span class="c1">// すでに描画済みなmarkerだったら描画しない</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">markerObject</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="nx">markerObj</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Marker</span><span class="p">({</span>
+      <span class="nx">position</span><span class="p">,</span>
+      <span class="nx">map</span><span class="p">,</span>
+      <span class="na">title</span><span class="p">:</span> <span class="dl">"</span><span class="s2">marker!</span><span class="dl">"</span>
+    <span class="p">})</span>
+    <span class="nx">setMarkerObject</span><span class="p">(</span><span class="nx">markerObj</span><span class="p">)</span>
+    <span class="c1">// コンポーネントが消えたらmarkerもmapから消すように仕掛ける。これはすっ</span>
+    <span class="k">return</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">markerObj</span> <span class="o">===</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span>
+      <span class="p">}</span>
+      <span class="nx">markerObj</span><span class="p">.</span><span class="nx">setMap</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">])</span> <span class="c1">// markerObjectを更新対象にするとすぐ消えてしまうので、対象にしないようにする。この辺の勘所ちょっと慣れが必要そう</span>
+
+  <span class="k">return</span> <span class="nx">markerObject</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMarkerClickEvent</span> <span class="o">=</span> <span class="p">(</span><span class="nx">marker</span><span class="p">,</span> <span class="nx">onClickMarker</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// イベントが変更される事を考慮する</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">marker</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="nx">listener</span> <span class="o">=</span> <span class="nx">marker</span><span class="p">.</span><span class="nx">addListener</span><span class="p">(</span><span class="dl">"</span><span class="s2">click</span><span class="dl">"</span><span class="p">,</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">onClickMarker</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span>
+    <span class="p">})</span>
+    <span class="k">return</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">listener</span><span class="p">.</span><span class="nx">remove</span><span class="p">()</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">marker</span><span class="p">,</span> <span class="nx">onClickMarker</span><span class="p">])</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Marker</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">position</span><span class="p">,</span> <span class="nx">onClickMarker</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">marker</span> <span class="o">=</span> <span class="nx">useDrawMapMarker</span><span class="p">({</span>
+    <span class="nx">googleMap</span><span class="p">,</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="nx">position</span>
+  <span class="p">})</span>
+  <span class="c1">// イベントの呼び出しはこっちで行う</span>
+  <span class="nx">useMarkerClickEvent</span><span class="p">(</span><span class="nx">marker</span><span class="p">,</span> <span class="nx">onClickMarker</span><span class="p">)</span>
+  <span class="k">return</span> <span class="kc">null</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="もう一つリファクタ-context化する" class="fragment"></span><a href="#%E3%82%82%E3%81%86%E4%B8%80%E3%81%A4%E3%83%AA%E3%83%95%E3%82%A1%E3%82%AF%E3%82%BF-context%E5%8C%96%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>もう一つリファクタ: Context化する。</h2>
+
+<p>ここまでgoogleMapとmapをやたらと引き回してしまった。<br>
+そろそろこの辺をContext化する（正直もうちょっと手前でやっておけば良かった感じがある）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">MapContext</span> <span class="o">=</span> <span class="nx">createContext</span><span class="p">({</span>
+  <span class="na">googleMap</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="na">map</span><span class="p">:</span> <span class="kc">null</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>途中で作成したWaitForMapのタイミングが<code>Provider</code>をするのにちょうどよいだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">WaitForMap</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span><span class="p">,</span> <span class="nx">children</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">googleMap</span> <span class="o">||</span> <span class="o">!</span><span class="nx">map</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="kc">null</span>
+  <span class="p">}</span>
+  <span class="kd">const</span> <span class="nx">value</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">googleMap</span><span class="p">,</span>
+    <span class="nx">map</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nc">MapContext</span><span class="p">.</span><span class="nc">Provider</span> <span class="na">value=</span><span class="si">{</span><span class="nx">value</span><span class="si">}</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">children</span><span class="si">}</span><span class="p">&lt;/</span><span class="nc">MapContext</span><span class="p">.</span><span class="nc">Provider</span><span class="p">&gt;</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>例えば<code>useMapMarkerSetup</code>などは引数が不要になる。<br>
+利用側より親でProviderで囲む事を忘れないようにだけ注意が必要だ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">useMapMarkerSetup</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">googleMap</span><span class="p">,</span> <span class="nx">map</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">MapContext</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">addMarker</span><span class="p">,</span> <span class="nx">removeMarker</span><span class="p">,</span> <span class="nx">getMarkers</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useMarkerState</span><span class="p">(</span><span class="nx">initialMarkers</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">markers</span> <span class="o">=</span> <span class="nx">getMarkers</span><span class="p">()</span>
+  <span class="nx">useMapClickEvent</span><span class="p">({</span>
+    <span class="na">onClickMap</span><span class="p">:</span> <span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">addMarker</span><span class="p">({</span> <span class="nx">lat</span><span class="p">,</span> <span class="nx">lng</span> <span class="p">})</span>
+    <span class="p">},</span>
+    <span class="nx">map</span><span class="p">,</span>
+    <span class="nx">googleMap</span>
+  <span class="p">})</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="nx">markers</span><span class="p">,</span> <span class="nx">removeMarker</span> <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="5-infowindowを出す" class="fragment"></span><a href="#5-infowindow%E3%82%92%E5%87%BA%E3%81%99"><i class="fa fa-link"></i></a>5. InfoWindowを出す</h1>
+
+<p>最後に<a href="https://developers.google.com/maps/documentation/javascript/examples/infowindow-simple" rel="nofollow noopener" target="_blank">InfoWindow</a>を出すところまでやってみる。<br>
+内容物としてDOMNodeかHTMLの文字列を渡さなければならずなかなか苦戦するものだった。</p>
+
+<h2>
+<span id="準備クリックで削除をダブルクリックで削除にする" class="fragment"></span><a href="#%E6%BA%96%E5%82%99%E3%82%AF%E3%83%AA%E3%83%83%E3%82%AF%E3%81%A7%E5%89%8A%E9%99%A4%E3%82%92%E3%83%80%E3%83%96%E3%83%AB%E3%82%AF%E3%83%AA%E3%83%83%E3%82%AF%E3%81%A7%E5%89%8A%E9%99%A4%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>準備：クリックで削除をダブルクリックで削除にする</h2>
+
+<p>クリックの処理をinfoWindowにさせたいので、削除処理はダブルクリックに移動させたい。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// Markerのイベントフックを柔軟にしてどのイベントにも対応できるようにする</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMarkerEvent</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">marker</span><span class="p">,</span> <span class="nx">eventHandler</span><span class="p">,</span> <span class="nx">eventName</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// イベントが変更される事を考慮する</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">marker</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="nx">listener</span> <span class="o">=</span> <span class="nx">marker</span><span class="p">.</span><span class="nx">addListener</span><span class="p">(</span><span class="nx">eventName</span><span class="p">,</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">eventHandler</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span>
+    <span class="p">})</span>
+    <span class="k">return</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">listener</span><span class="p">.</span><span class="nx">remove</span><span class="p">()</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">marker</span><span class="p">,</span> <span class="nx">eventName</span><span class="p">,</span> <span class="nx">eventHandler</span><span class="p">])</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Marker</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">position</span><span class="p">,</span> <span class="nx">onDoubleClickMarker</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="c1">// 先程context化をしたのでgoogleMap/mapについては気にしなくしている</span>
+  <span class="kd">const</span> <span class="nx">marker</span> <span class="o">=</span> <span class="nx">useDrawMapMarker</span><span class="p">({</span><span class="nx">position</span><span class="p">})</span>
+  <span class="c1">// イベントの呼び出しはこっちで行う</span>
+  <span class="nx">useMarkerClickEvent</span><span class="p">({</span><span class="nx">marker</span><span class="p">,</span> <span class="na">eventName</span><span class="p">:</span> <span class="dl">"</span><span class="s2">dblckick</span><span class="dl">"</span><span class="p">,</span> <span class="na">eventHandler</span><span class="p">:</span> <span class="nx">onDoubleClickMarker</span><span class="p">)</span>
+  <span class="k">return</span> <span class="kc">null</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="infowindowを作る" class="fragment"></span><a href="#infowindow%E3%82%92%E4%BD%9C%E3%82%8B"><i class="fa fa-link"></i></a>InfoWindowを作る</h2>
+
+<p>ほとんどこれまでの応用になるので、あとはhooksとコンポーネントを作っていくだけになる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// googleMapのinfoWindowを生成して返す。</span>
+<span class="c1">// contentNodeはDOM要素かstringなので、ここではDOMNodeを想定する</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">useMapInfoWindow</span> <span class="o">=</span> <span class="p">(</span><span class="nx">content</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">infoWindowState</span><span class="p">,</span> <span class="nx">setInfoWindow</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">googleMap</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">MapContext</span><span class="p">)</span>
+
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">content</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="c1">// infoWindowの再描画防止</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">infoWindowState</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span>
+    <span class="p">}</span>
+    <span class="kd">const</span> <span class="nx">infoWindowObj</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">googleMap</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">InfoWindow</span><span class="p">({</span> <span class="nx">content</span> <span class="p">})</span>
+
+    <span class="nx">setInfoWindow</span><span class="p">(</span><span class="nx">infoWindowObj</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="c1">// 消す時はcloseする</span>
+      <span class="nx">infoWindowObj</span><span class="p">.</span><span class="nx">close</span><span class="p">()</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">googleMap</span><span class="p">,</span> <span class="nx">content</span><span class="p">])</span>
+  <span class="k">return</span> <span class="nx">infoWindowState</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="c1">// 表には見せない要素。vueのv-cloakから名前を拝借した</span>
+<span class="kd">const</span> <span class="nx">Cloak</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  display: none;
+`</span>
+
+<span class="c1">// infoWindowを仕掛けるコンポーネント</span>
+<span class="kd">const</span> <span class="nx">MarkerInfoWindow</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">marker</span><span class="p">,</span> <span class="nx">position</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">map</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">MapContext</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">contentRef</span> <span class="o">=</span> <span class="nx">useRef</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span>
+  <span class="c1">// contentRefのDOMNodeを表示要素としたinfoWindowを作る</span>
+  <span class="kd">const</span> <span class="nx">infoWindow</span> <span class="o">=</span> <span class="nx">useMapInfoWindow</span><span class="p">(</span><span class="nx">contentRef</span><span class="p">.</span><span class="nx">current</span><span class="p">)</span>
+
+  <span class="nx">useMarkerEvent</span><span class="p">({</span>
+    <span class="nx">marker</span><span class="p">,</span>
+    <span class="na">eventName</span><span class="p">:</span> <span class="dl">"</span><span class="s2">click</span><span class="dl">"</span><span class="p">,</span>
+    <span class="c1">// クリックしたら開く</span>
+    <span class="na">eventHandler</span><span class="p">:</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">infoWindow</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="nx">map</span><span class="p">,</span> <span class="nx">marker</span><span class="p">)</span>
+  <span class="p">})</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">Cloak</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">ref=</span><span class="si">{</span><span class="nx">contentRef</span><span class="si">}</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">b</span><span class="p">&gt;</span>hello<span class="p">&lt;/</span><span class="nt">b</span><span class="p">&gt;</span>, <span class="si">{</span><span class="nx">position</span><span class="p">.</span><span class="nx">lat</span><span class="si">}</span>, <span class="si">{</span><span class="nx">position</span><span class="p">.</span><span class="nx">lng</span><span class="si">}</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nc">Cloak</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">Marker</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">position</span><span class="p">,</span> <span class="nx">onDoubleClick</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">marker</span> <span class="o">=</span> <span class="nx">useDrawMapMarker</span><span class="p">({</span>
+    <span class="nx">position</span>
+  <span class="p">})</span>
+  <span class="c1">// ダブルクリックしたら消す</span>
+  <span class="nx">useMarkerEvent</span><span class="p">({</span> <span class="nx">marker</span><span class="p">,</span> <span class="na">eventName</span><span class="p">:</span> <span class="dl">"</span><span class="s2">dblclick</span><span class="dl">"</span><span class="p">,</span> <span class="na">eventHandler</span><span class="p">:</span> <span class="nx">onDoubleClick</span> <span class="p">})</span>
+  <span class="c1">// markerは先程nullにしていたが、InfoWindowを表示する役割が出来た</span>
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nc">MarkerInfoWindow</span> <span class="na">marker=</span><span class="si">{</span><span class="nx">marker</span><span class="si">}</span> <span class="na">position=</span><span class="si">{</span><span class="nx">position</span><span class="si">}</span> <span class="p">/&gt;</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="demo-1" class="fragment"></span><a href="#demo-1"><i class="fa fa-link"></i></a>DEMO</h3>
+
+<p>ここだけCodesandboxのDEMOで。hooksファイルが肥大化してしまったので分割したバージョンにしている<br>
+<a href="https://codesandbox.io/s/wnk87oykzw" class="autolink" rel="nofollow noopener" target="_blank">https://codesandbox.io/s/wnk87oykzw</a></p>
+
+<h1>
+<span id="感想など" class="fragment"></span><a href="#%E6%84%9F%E6%83%B3%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>感想など</h1>
+
+<ul>
+<li>Hooksは単純なものをすごくライトに書けるようになるのはものすごく効果を感じた
+
+<ul>
+<li>ちょっとreducerとaction書くだけであればすごく楽だし、reduxやvuexの頃の知識はほぼそのまま使える</li>
+<li>地味に<code>selector</code>に相当する関数もhooksから返せるのはアリかもしれない</li>
+</ul>
+</li>
+<li>やはりそこそこ複雑度のあるコードにはそれなりの複雑度になってくると感じた（それでもだいぶ楽ではある）
+
+<ul>
+<li>曲線が変わった印象があり、複雑度が低い時が部分の難易度ぐぐっと下がって、複雑度が上がってくると徐々に変わらなくなってくる印象</li>
+<li>hooksはhooksでハマるタイミングがある</li>
+<li>（それでもやっぱりhooksのほうが楽なのは違いない）</li>
+</ul>
+</li>
+<li>誤解を恐れずにいうと「React先生がずーっと無限ループしててその途中でFunctional Componentが呼ばれていてその中でhooksの関数だけがその無限ループの外側で管理されてる」みたいな世界観を脳みそに宿しながら触っていると「あー、そういうことか」となる気がした（あっているかは微妙）</li>
+<li>地味に4-Aで見せたような「少しReactらしくないコード」でも割となんとかなってしまうというのは結構利点に感じている。</li>
+<li>
+<code>useEffect</code>は今回のような外部のコード連携はとでも相性がよいし、返却の関数でclean upできるのも非常に良いと感じた。
+
+<ul>
+<li>ただ更新対象とする値をうっかり間違えると躓くことがしばしばあった</li>
+<li>
+<code>useState</code>とかの値と組み合わせると無限レンダリングが走ったりするのをやってたりするので、そこらへんは注意点</li>
+</ul>
+</li>
+<li>
+<code>useState</code>はimmutableな分、mutableに扱える部分で<code>useRef</code>`に頼りたくなってしまうが、再レンダリングされず結構ハマるので注意したほうが良さそう
+
+<ul>
+<li>特に外部に出す変数は<code>useRef</code>はやめたほうが良さそう。ハマる。</li>
+</ul>
+</li>
+<li>「hooksはトップレベルでしか使ってはいけません」というルールを迂回したくなるとヘンなコードを書いてしまいそうになるなーという感じがする。
+
+<ul>
+<li>今回もhooks使うだけで何もしないコンポーネントというのをやったりしてしまったが「ちょっと微妙かも・・・」という気持ちは出てくる</li>
+<li>このへんは今後ちょこちょこプラクティスが出てくる予感がするかもしれない</li>
+</ul>
+</li>
+</ul>

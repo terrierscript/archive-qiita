@@ -1,0 +1,139 @@
+<p>某イカのゲームっぽいsyntax作れそうな気がしてatomに作ったのでざっくりメモ。</p>
+
+<p>基本的なドキュメントはこのへん。<br>
+<a href="https://atom.io/docs/v0.60.0/creating-a-theme" class="autolink" rel="nofollow noopener" target="_blank">https://atom.io/docs/v0.60.0/creating-a-theme</a><br>
+<a href="https://atom.io/docs/v1.0.2/hacking-atom-creating-a-theme" class="autolink" rel="nofollow noopener" target="_blank">https://atom.io/docs/v1.0.2/hacking-atom-creating-a-theme</a></p>
+
+<h1>
+<span id="初期化編" class="fragment"></span><a href="#%E5%88%9D%E6%9C%9F%E5%8C%96%E7%B7%A8"><i class="fa fa-link"></i></a>初期化編</h1>
+
+<h2>
+<span id="普通なやり方" class="fragment"></span><a href="#%E6%99%AE%E9%80%9A%E3%81%AA%E3%82%84%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>普通なやり方</h2>
+
+<p>apmというのがあるので、npmと一緒で<code>apm init</code>みたいなことすると良いかなーと思ったけどもうちょっといいやり方あった。</p>
+
+<p><code>cmd-shift-P</code>でコマンドパネル開いて<code>Package Generator: Generate Syntax Theme</code>を選ぶ<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F893bdacf-7a73-74f1-62ea-93bcc9668f3c.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=33c22bcf91a65cf27942437297344e5f" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F893bdacf-7a73-74f1-62ea-93bcc9668f3c.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=33c22bcf91a65cf27942437297344e5f" alt="font_scss_-__Users_inuscript_github_example-iconfont-scss_-_Atom.png" title="font_scss_-__Users_inuscript_github_example-iconfont-scss_-_Atom.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/893bdacf-7a73-74f1-62ea-93bcc9668f3c.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F893bdacf-7a73-74f1-62ea-93bcc9668f3c.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=f2a70d8a21a7ff7930ee7f7ed96a3c9c 1x" loading="lazy"></a></p>
+
+<p>これで選択した所にテンプレートができてる。</p>
+
+<p><code>atom-template</code>というのがgithubに公式っぽくあがっているが、微妙にそっちは古そうだった</p>
+
+<h2>
+<span id="既存テーマをベースにするときのやり方" class="fragment"></span><a href="#%E6%97%A2%E5%AD%98%E3%83%86%E3%83%BC%E3%83%9E%E3%82%92%E3%83%99%E3%83%BC%E3%82%B9%E3%81%AB%E3%81%99%E3%82%8B%E3%81%A8%E3%81%8D%E3%81%AE%E3%82%84%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>既存テーマをベースにするときのやり方</h2>
+
+<p>「このテーマ、ここだけなんとかしたい」とか「このテーマをベースにしたい」<br>
+という時は、もうちょっと違うやり方がある。<br>
+その時はざっくりこんな感じ</p>
+
+<ol>
+<li>githubでベースとなるやつをcloneする</li>
+<li>cloneしたリポジトリの名前を変えておく</li>
+<li>ローカルにcheckoutする</li>
+<li>
+<code>package.json</code>の<code>name</code>を変えておく
+
+<ul>
+<li>同じ名前では多分登録できないか、上書きされてしまう気がする</li>
+</ul>
+</li>
+<li>
+<code>$apm link</code>を実行
+
+<ul>
+<li>
+<code>$npm link</code>とにたようなやつ。</li>
+<li>
+<code>~/.atom/packages/</code>にシンボリックリンクする</li>
+</ul>
+</li>
+</ol>
+
+<h1>
+<span id="起動編" class="fragment"></span><a href="#%E8%B5%B7%E5%8B%95%E7%B7%A8"><i class="fa fa-link"></i></a>起動編</h1>
+
+<p><code>atom --dev .</code> で開く。<br>
+既に先ほど作ったsyntaxがインストール済みになっているはずなので、設定からそのsyntaxを選ぶ<br>
+（これがわからず最初詰まった）</p>
+
+<p>あとはlessファイルをいじるだけ！</p>
+
+<h2>
+<span id="lessいじるときの細かいテクニックとか" class="fragment"></span><a href="#less%E3%81%84%E3%81%98%E3%82%8B%E3%81%A8%E3%81%8D%E3%81%AE%E7%B4%B0%E3%81%8B%E3%81%84%E3%83%86%E3%82%AF%E3%83%8B%E3%83%83%E3%82%AF%E3%81%A8%E3%81%8B"><i class="fa fa-link"></i></a>lessいじるときの細かいテクニックとか</h2>
+
+<h3>
+<span id="pigmentsプラグインは入れるべき" class="fragment"></span><a href="#pigments%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%81%AF%E5%85%A5%E3%82%8C%E3%82%8B%E3%81%B9%E3%81%8D"><i class="fa fa-link"></i></a><a href="https://atom.io/packages/pigments" rel="nofollow noopener" target="_blank">Pigments</a>プラグインは入れるべき</h3>
+
+<p>色を背景に入れてくれるpluginはこれまでにもあったが<br>
+こいつはlessの変数までしっかり読み込んでくれる。<br>
+マジ便利。</p>
+
+<h3>
+<span id="lessのcolor-functionは積極的に使う" class="fragment"></span><a href="#less%E3%81%AEcolor-function%E3%81%AF%E7%A9%8D%E6%A5%B5%E7%9A%84%E3%81%AB%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>lessのcolor functionは積極的に使う</h3>
+
+<p><a href="http://lesscss.org/functions/#color-operations" rel="nofollow noopener" target="_blank">このあたり</a>の関数とか特に使える</p>
+
+<h3>
+<span id="atom---devだと簡単にelementをinspectできる" class="fragment"></span><a href="#atom---dev%E3%81%A0%E3%81%A8%E7%B0%A1%E5%8D%98%E3%81%ABelement%E3%82%92inspect%E3%81%A7%E3%81%8D%E3%82%8B"><i class="fa fa-link"></i></a><code>atom --dev</code>だと簡単にelementをinspectできる</h3>
+
+<p>「あれ、ここの色どういうセレクタで調整するんだ？」ってなったら右クリックすると「Inspect Element」というのが増えている<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fad729e2a-81ea-5a5d-36a6-b16b6a1b2367.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=0b7181eaf61415b2b200e57963fab583" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fad729e2a-81ea-5a5d-36a6-b16b6a1b2367.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=0b7181eaf61415b2b200e57963fab583" alt="font-awesome_css_-__Users_inuscript_github_-_Atom.png" title="font-awesome_css_-__Users_inuscript_github_-_Atom.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/ad729e2a-81ea-5a5d-36a6-b16b6a1b2367.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fad729e2a-81ea-5a5d-36a6-b16b6a1b2367.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=c6b82b9b1192a9da22ccfe2292e63329 1x" loading="lazy"></a></p>
+
+<p>chromeみたいにInspectorが開くので、どんなセレクタが有効になっているのかとかわかる。</p>
+
+<h3>
+<span id="欄外他のthemeをベースにする時のtips" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96%E4%BB%96%E3%81%AEtheme%E3%82%92%E3%83%99%E3%83%BC%E3%82%B9%E3%81%AB%E3%81%99%E3%82%8B%E6%99%82%E3%81%AEtips"><i class="fa fa-link"></i></a>【欄外】他のthemeをベースにする時のtips</h3>
+
+<p>割りとニッチな話。</p>
+
+<p>今回、<a href="https://github.com/kevinsawicki/monokai" rel="nofollow noopener" target="_blank">monokai</a>をベースにいじった。ベースがしっかりしているのだが、色名が変数化されてないという難点があるので、下記のどっちかをする必要があった。</p>
+
+<ul>
+<li>
+<a href="https://github.com/kevinsawicki/monokai/pull/49/files" rel="nofollow noopener" target="_blank">このpull req</a>を取り込む</li>
+<li>がんばって置換する</li>
+</ul>
+
+<p>今回は後者を選んだ。「どの色をどれにあてはめる」かを後で入れ替えたかったりしたため、<code>@pink</code>などの変数名だと都合が悪かった。なので全部<code>@color1</code> <code>@color2</code>などと変数化してあとで置き換える事にした。</p>
+
+<p>atomのPackage Generatorでは、<code>@red</code>,<code>@green</code>などの色が最初から定数化されている。<br>
+最初はこちらを使ったが、入れ替えの調整しているうちに<code>@red</code>に青色が入ったりしていってわけがわからなくなってしまった。<br>
+結果として最初の開発時には番号化してしまうほうがいっそ楽だった。</p>
+
+<h1>
+<span id="登録編" class="fragment"></span><a href="#%E7%99%BB%E9%8C%B2%E7%B7%A8"><i class="fa fa-link"></i></a>登録編</h1>
+
+<p>だいたいnpmと一緒。</p>
+
+<ol>
+<li>
+<code>$apm login</code>する
+
+<ul>
+<li>「APIキーを貼ってね」的なことを言われるので、貼る。</li>
+</ul>
+</li>
+<li>
+<code>package.json</code>のtagにあわせて<code>$git tag</code>登録する
+
+<ul>
+<li><del><code>npm tag</code>みたいなのはなさそうだった。</del></li>
+<li>↑<code>$apm publish patch</code>みたいなのだけでよかった</li>
+</ul>
+</li>
+<li>
+<code>$apm publish</code>する
+
+<ul>
+<li>
+<code>repository</code>フィールドのurlが間違ってたり、tagが編だったりすると怒られる。</li>
+</ul>
+</li>
+<li>atom上で確認する</li>
+</ol>
+
+<h1>
+<span id="結果" class="fragment"></span><a href="#%E7%B5%90%E6%9E%9C"><i class="fa fa-link"></i></a>結果</h1>
+
+<p><a href="https://atom.io/themes/ika-ink-syntax" rel="nofollow noopener" target="_blank">できました</a><br>
+青がやたら使いづらくて困っています。</p>

@@ -1,0 +1,189 @@
+
+<h1>
+<span id="とりあえずとっかかり編" class="fragment"></span><a href="#%E3%81%A8%E3%82%8A%E3%81%82%E3%81%88%E3%81%9A%E3%81%A8%E3%81%A3%E3%81%8B%E3%81%8B%E3%82%8A%E7%B7%A8"><i class="fa fa-link"></i></a>とりあえずとっかかり編</h1>
+
+<ul>
+<li>「WASM全くわからない」の状態から「とりあえずWASMが動くとはどういうことか？」ぐらいまでを知るところまでやる</li>
+<li>AssemblyScriptが気になってたのでAssemblyScript使う</li>
+<li>ブラウザで動かす話があんまり見つからなかったので、ちょっとまとめてみる。</li>
+</ul>
+
+<h2>
+<span id="chromeで動かす" class="fragment"></span><a href="#chrome%E3%81%A7%E5%8B%95%E3%81%8B%E3%81%99"><i class="fa fa-link"></i></a>chromeで動かす</h2>
+
+<h3>
+<span id="1セットアップ" class="fragment"></span><a href="#1%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97"><i class="fa fa-link"></i></a>1.セットアップ</h3>
+
+<p>WASMをchromeで動かそうとすると、ローカルファイルのfetchがCORSで弾かれてしまうので、サーバーを立てて動かす必要がある。<br>
+（firefoxは57.0.1で確認したところローカルで動くようなので、firefoxで試す場合は不要）</p>
+
+<p>htmlとWASMファイルをpublicのlocalhostでアクセスできれば良いので、<code>poi</code>とか<code>parcel</code>でも<code>budo</code>でも<code>webpack-dev-server</code>でもなんでも良いが、今回は<code>create-react-app</code>を使って進める<br>
+（若干トイレットペーパーで鼻をかむのと似た気持ちの悪さがあるが、create-react-appはsandboxとしてはなんだかんだ使いやすくて困る・・・）</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npx create-react-app wasm-sample
+</pre></div></div>
+
+<h3>
+<span id="2-assemblyscript--wasmの設定" class="fragment"></span><a href="#2-assemblyscript--wasm%E3%81%AE%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>2. AssemblyScript + wasmの設定</h3>
+
+<p>今回はWASMの生成として、<a href="https://github.com/AssemblyScript/assemblyscript/" rel="nofollow noopener" target="_blank">AssemblyScript</a>を使う。</p>
+
+<p><a href="https://github.com/AssemblyScript/assemblyscript/wiki" rel="nofollow noopener" target="_blank">wiki</a>はだいたい情報が古くなってしまっていたので色々ひっかかりどころがあった。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add -D assemblyscript
+</pre></div></div>
+
+<h3>
+<span id="3-tsconfigjson" class="fragment"></span><a href="#3-tsconfigjson"><i class="fa fa-link"></i></a>3. tsconfig.json</h3>
+
+<p>tsconfig.jsonをこんな感じで設定</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"extends"</span><span class="p">:</span><span class="w"> </span><span class="s2">"./node_modules/assemblyscript/tsconfig.assembly.json"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"include"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="s2">"./**/*.ts"</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<p>extendsのファイルはwikiでは<code>./node_modules/assemblyscript/std/assembly.json"</code>になっているが、正しくは上記だった。</p>
+
+<h3>
+<span id="4-scripts設定" class="fragment"></span><a href="#4-scripts%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>4. scripts設定</h3>
+
+<p><code>yarn start</code>前にビルドしたいので、<code>package.json</code>をこんな感じにした</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="w">  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"start"</span><span class="p">:</span><span class="w"> </span><span class="s2">"react-scripts start"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"prestart"</span><span class="p">:</span><span class="w"> </span><span class="s2">"asc wasm/bin.ts -b &gt; public/bin.wasm"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<p><code>asc</code>についてはwikiのオプション情報が古くなっているので、<code>asc --help</code>するのが良い</p>
+
+<h3>
+<span id="5-assemblyscriptを書く" class="fragment"></span><a href="#5-assemblyscript%E3%82%92%E6%9B%B8%E3%81%8F"><i class="fa fa-link"></i></a>5. AssemblyScriptを書く</h3>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// wasm/bin.ts</span>
+
+<span class="c1">// 値を返すだけのスクリプト</span>
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">echo</span><span class="p">(</span><span class="nx">val</span><span class="p">:</span> <span class="nx">f64</span><span class="p">):</span> <span class="nx">f64</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">val</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="6-html置き換え" class="fragment"></span><a href="#6-html%E7%BD%AE%E3%81%8D%E6%8F%9B%E3%81%88"><i class="fa fa-link"></i></a>6. html置き換え</h3>
+
+<p>html側のロード。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!-- public/index.html --&gt;</span>
+<span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="nt">&lt;html</span> <span class="na">lang=</span><span class="s">"en"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;script&gt;</span>
+      <span class="nx">fetch</span><span class="p">(</span><span class="dl">'</span><span class="s1">./bin.wasm</span><span class="dl">'</span><span class="p">).</span><span class="nx">then</span><span class="p">(</span><span class="nx">response</span> <span class="o">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">arrayBuffer</span><span class="p">()</span>
+      <span class="p">).</span><span class="nx">then</span><span class="p">(</span><span class="nx">bytes</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">WebAssembly</span><span class="p">.</span><span class="nx">instantiate</span><span class="p">(</span><span class="nx">bytes</span><span class="p">,</span> <span class="p">{})</span>
+      <span class="p">}).</span><span class="nx">then</span><span class="p">(</span> <span class="nx">r</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="kd">const</span> <span class="nx">ex</span> <span class="o">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">instance</span><span class="p">.</span><span class="nx">exports</span>
+        <span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">ex</span><span class="p">.</span><span class="nx">echo</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#root</span><span class="dl">"</span><span class="p">).</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="nx">result</span>
+      <span class="p">})</span>
+    <span class="nt">&lt;/script&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"root"</span><span class="nt">&gt;&lt;/div&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div></div>
+
+<p><code>fetch</code>で持ってきてbufferを<code>WebAssembly.instantiate</code>でインスタンス化すると、値が返ってくることが確認できる。</p>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F02c074db-31e5-b454-8ab4-c500f6cbab8f.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=50cc19e3378706b4f96cd82485e2edd0" target="_blank" rel="nofollow noopener"><img width="182" alt="localhost_3000.png" src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F02c074db-31e5-b454-8ab4-c500f6cbab8f.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=50cc19e3378706b4f96cd82485e2edd0" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/02c074db-31e5-b454-8ab4-c500f6cbab8f.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F02c074db-31e5-b454-8ab4-c500f6cbab8f.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=7418984feb2e5f00ab290752be25f2c0 1x" loading="lazy"></a></p>
+
+<p>これがWASMか！</p>
+
+<h2>
+<span id="nodeでも動かす" class="fragment"></span><a href="#node%E3%81%A7%E3%82%82%E5%8B%95%E3%81%8B%E3%81%99"><i class="fa fa-link"></i></a>nodeでも動かす。</h2>
+
+<p>同じwasmをnodeでも動かしてみる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// src/node.js</span>
+<span class="kd">const</span> <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">fs</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">wasm</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">./public/bin.wasm</span><span class="dl">"</span>
+<span class="kd">const</span> <span class="nx">buffer</span> <span class="o">=</span> <span class="nx">fs</span><span class="p">.</span><span class="nx">readFileSync</span><span class="p">(</span><span class="nx">wasm</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">w</span> <span class="o">=</span> <span class="nx">WebAssembly</span><span class="p">.</span><span class="nx">compile</span><span class="p">(</span><span class="nx">buffer</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">then</span><span class="p">(</span> <span class="nx">module</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">instance</span> <span class="o">=</span> <span class="nx">WebAssembly</span><span class="p">.</span><span class="nx">Instance</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">instance</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">echo</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+  <span class="p">})</span>
+
+</pre></div></div>
+
+<p><code>fs</code>でbuffer化してそれをcompileする。</p>
+
+<p>node でもちゃんと動いた！</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% node src/node.js
+3
+</pre></div></div>
+
+<h1>
+<span id="assemblyscript-loaderでもうちょっとかんばる編" class="fragment"></span><a href="#assemblyscript-loader%E3%81%A7%E3%82%82%E3%81%86%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E3%81%8B%E3%82%93%E3%81%B0%E3%82%8B%E7%B7%A8"><i class="fa fa-link"></i></a><code>assemblyscript-loader</code>でもうちょっとかんばる編</h1>
+
+<p>ここまで、メモリ設定やらlib設定やら色々すっ飛ばしてきた。<br>
+このへん自前でやるとめんどくさいが、<a href="https://github.com/AssemblyScript/loader" rel="nofollow noopener" target="_blank">assemblyscript-loader</a> というのが提供されているのでこれを使ったパターンもやってみる。</p>
+
+<h2>
+<span id="chromeで動かす-1" class="fragment"></span><a href="#chrome%E3%81%A7%E5%8B%95%E3%81%8B%E3%81%99-1"><i class="fa fa-link"></i></a>chromeで動かす</h2>
+
+<p><code>require</code>使いたいのでhtmlに直接書くのをここからはやめて、コンパイルされる方に書く</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// src/index.js</span>
+
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">load</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">assemblyscript-loader</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">fetch</span><span class="p">(</span><span class="dl">'</span><span class="s1">./bin.wasm</span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">result</span> <span class="o">=&gt;</span> <span class="nx">result</span><span class="p">.</span><span class="nx">arrayBuffer</span><span class="p">())</span>
+  <span class="p">.</span><span class="nx">then</span><span class="p">(</span> <span class="nx">buf</span> <span class="o">=&gt;</span> <span class="nx">load</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span> <span class="p">)</span>
+  <span class="p">.</span><span class="nx">then</span><span class="p">(</span> <span class="nx">module</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">ex</span> <span class="o">=</span> <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span>
+    <span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">ex</span><span class="p">.</span><span class="nx">echo</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">body</span><span class="dl">"</span><span class="p">).</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="nx">result</span>
+  <span class="p">})</span>
+</pre></div></div>
+
+<p>本当は <code>load('./bin.wasm')</code>でいけるはずなのだが、どうも正しく動いてないので通常のfetch関数を取得するようにした。<br>
+（軽く見た感じ、assemblyscript-loaderの<code>xfetch</code>にバグがあるのかも？）</p>
+
+<h2>
+<span id="nodeで動かす" class="fragment"></span><a href="#node%E3%81%A7%E5%8B%95%E3%81%8B%E3%81%99"><i class="fa fa-link"></i></a>nodeで動かす</h2>
+
+<p>nodeの方はめちゃくちゃシンプルになる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// node.js</span>
+<span class="kd">const</span> <span class="p">{</span> <span class="nx">load</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">assemblyscript-loader</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">load</span><span class="p">(</span><span class="dl">"</span><span class="s2">./public/bin.wasm</span><span class="dl">"</span><span class="p">).</span><span class="nx">then</span><span class="p">(</span> <span class="nx">module</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">echo</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>wasmについて、「なんかバイナリ動くんでしょ」というぼんやりしたイメージのものだったが、やってみることでちょっとだけ理解が進む。</li>
+<li>AssemblyScriptまだまだお試し版で実用に耐えうるかというと微妙なステージ
+
+<ul>
+<li>再帰関数などもまだ処理できてないっぽい？</li>
+</ul>
+</li>
+<li>とはいえnpm/yarnだけで物事が完結してくれるのでとっかかりとしてすごく良かった。
+
+<ul>
+<li>AssemblyScript頑張って欲しい！</li>
+</ul>
+</li>
+</ul>

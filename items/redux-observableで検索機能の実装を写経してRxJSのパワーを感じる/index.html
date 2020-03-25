@@ -1,0 +1,492 @@
+
+<h1>
+<span id="まえがき" class="fragment"></span><a href="#%E3%81%BE%E3%81%88%E3%81%8C%E3%81%8D"><i class="fa fa-link"></i></a>まえがき</h1>
+
+<p><a href="http://blog.thoughtram.io/angular/2016/01/06/taking-advantage-of-observables-in-angular2.html" rel="nofollow noopener" target="_blank">TAKING ADVANTAGE OF OBSERVABLES IN ANGULAR</a><br>
+という記事が自分Rxへの理解を深めそうだったので、こちらをベース理解を深めたい(以下上記記事を元記事と呼ぶ）</p>
+
+<p>今回は元記事をreact + redux + redux-observable で実装してにrxjsと仲良くなることを目的とする</p>
+
+<h2>
+<span id="redux-observableとrxjsに対する個人的なステータス" class="fragment"></span><a href="#redux-observable%E3%81%A8rxjs%E3%81%AB%E5%AF%BE%E3%81%99%E3%82%8B%E5%80%8B%E4%BA%BA%E7%9A%84%E3%81%AA%E3%82%B9%E3%83%86%E3%83%BC%E3%82%BF%E3%82%B9"><i class="fa fa-link"></i></a>redux-observableとRxJSに対する個人的なステータス</h2>
+
+<ul>
+<li>reduxでの非同期処理ミドルウェアとして<a href="http://redux-observable.js.org" rel="nofollow noopener" target="_blank">redux-obsevable</a>の良さわかってきた
+
+<ul>
+<li>APIが非常にシンプル。actionCreatorがすっきりする
+
+<ul>
+<li>1つのaction発火時に複数のことやったり、複数種のactionに共通の処理やったりするのがすっきりする</li>
+</ul>
+</li>
+<li>1度発火したactionは書き換えさせないという思想は結構扱いやすくて良い</li>
+</ul>
+</li>
+<li>でもRxわからないマン
+
+<ul>
+<li>redux-observableのために非同期を解決するぐらいのためのRxは使える</li>
+<li>ああ、「<a href="http://slides.com/robwormald/everything-is-a-stream#/" rel="nofollow noopener" target="_blank">Everyting is Stream</a>」ってジャックラッセルテリアが言ってるやつね。知ってる知ってる みたいな状態。
+
+<ul>
+<li>RxがどうReduxの単方向なデータ構造でどう恩恵をもたらすのかがしっくり来てない</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="元記事の要約" class="fragment"></span><a href="#%E5%85%83%E8%A8%98%E4%BA%8B%E3%81%AE%E8%A6%81%E7%B4%84"><i class="fa fa-link"></i></a>元記事の要約</h2>
+
+<ul>
+<li><a href="http://blog.thoughtram.io/angular/2016/01/06/taking-advantage-of-observables-in-angular2.html" rel="nofollow noopener" target="_blank">TAKING ADVANTAGE OF OBSERVABLES IN ANGULAR</a></li>
+<li>Inputに入力すると、即時に検索して表示するものを作る場合を考える</li>
+<li>この時、大きく以下３つの問題に当たる
+
+<ul>
+<li>1: キーストローク毎にリクエストするのはよろしくない</li>
+<li>2: 同じリクエストで済むのに無意味にリクエスト飛ばすのはよろしくない
+
+<ul>
+<li>foo -&gt; fooo -&gt; foo -&gt; fooo -&gt; foo みたいな入力をした場合に不必要にデータ飛んでしまう可能性</li>
+</ul>
+</li>
+<li>3: 複数リクエストを発火した場合の処理
+
+<ul>
+<li>A -&gt; Bの順番にリクエストしたら B -&gt; Aの順で返ってきちゃって表示がおかしくなる場合</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Anglar を扱ったサンプルの記事</li>
+</ul>
+
+<h1>
+<span id="実装" class="fragment"></span><a href="#%E5%AE%9F%E8%A3%85"><i class="fa fa-link"></i></a>実装</h1>
+
+<h2>
+<span id="前準備" class="fragment"></span><a href="#%E5%89%8D%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>前準備</h2>
+
+<h3>
+<span id="apijs" class="fragment"></span><a href="#apijs"><i class="fa fa-link"></i></a>api.js</h3>
+
+<p>元記事でwikipediaのopensearchを利用しているので、同じような感じで実装。<br>
+API層は独立させてpromise返すようにしておく。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">fetchJsonp</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">fetch-jsonp</span><span class="dl">'</span>
+<span class="k">import</span> <span class="nx">qs</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">querystring</span><span class="dl">'</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">searchApi</span> <span class="o">=</span> <span class="p">(</span><span class="nx">word</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">baseURL</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">https://ja.wikipedia.org/w/api.php</span><span class="dl">"</span>
+  <span class="kd">const</span> <span class="nx">params</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">action</span><span class="p">:</span> <span class="dl">"</span><span class="s2">opensearch</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">format</span><span class="p">:</span> <span class="dl">"</span><span class="s2">json</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">search</span><span class="p">:</span> <span class="nx">word</span>
+  <span class="p">}</span>
+  <span class="kd">const</span> <span class="nx">url</span> <span class="o">=</span> <span class="s2">`</span><span class="p">${</span><span class="nx">baseURL</span><span class="p">}</span><span class="s2">?</span><span class="p">${</span><span class="nx">qs</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">params</span><span class="p">)}</span><span class="s2">`</span>
+  <span class="k">return</span> <span class="nx">fetchJsonp</span><span class="p">(</span><span class="nx">url</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span> <span class="nx">response</span> <span class="o">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">json</span><span class="p">()</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span> <span class="nx">json</span> <span class="o">=&gt;</span> <span class="nx">json</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="action--reducer" class="fragment"></span><a href="#action--reducer"><i class="fa fa-link"></i></a>action / reducer</h3>
+
+<p>reduxの共通部分は素直に作る。changeInputとloadResultという２つのactionがあるだけ。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// action.js</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">CHANGE_INPUT</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">CHANGE_INPUT</span><span class="dl">"</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">LOAD_RESULT</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">LOAD_RESULT</span><span class="dl">"</span>
+
+<span class="c1">// キー入力変更時</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">changeInput</span> <span class="o">=</span> <span class="p">(</span><span class="nx">input</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+  <span class="na">type</span><span class="p">:</span> <span class="nx">CHANGE_INPUT</span><span class="p">,</span>
+  <span class="na">payload</span><span class="p">:</span> <span class="nx">input</span>
+<span class="p">})</span>
+
+<span class="c1">// API結果取得時</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">loadResult</span> <span class="o">=</span> <span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+  <span class="na">type</span><span class="p">:</span> <span class="nx">LOAD_RESULT</span><span class="p">,</span>
+  <span class="na">payload</span><span class="p">:</span> <span class="nx">result</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// reducer.js</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">LOAD_RESULT</span><span class="p">,</span> <span class="nx">CHANGE_INPUT</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./actions</span><span class="dl">'</span>
+<span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="p">[],</span> <span class="nx">action</span> <span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">){</span>
+  <span class="k">case</span> <span class="na">LOAD_RESULT</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span>
+  <span class="na">default</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nx">state</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">word</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="dl">""</span><span class="p">,</span> <span class="nx">action</span> <span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">){</span>
+  <span class="k">case</span> <span class="na">CHANGE_INPUT</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span>
+  <span class="na">default</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nx">state</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">reducers</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">result</span><span class="p">,</span> <span class="nx">word</span> <span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="component--container" class="fragment"></span><a href="#component--container"><i class="fa fa-link"></i></a>component / container</h3>
+
+<p>こちらも普通に表示 &amp; イベントフックするだけ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Provider</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-redux</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">connect</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-redux</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">configureStore</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./store</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">changeInput</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./actions</span><span class="dl">'</span>
+
+<span class="kd">const</span> <span class="nx">SearchPedia</span> <span class="o">=</span> <span class="p">(</span> <span class="p">{</span> <span class="nx">word</span><span class="p">,</span> <span class="nx">result</span><span class="p">,</span> <span class="nx">changeInput</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">input</span> <span class="nx">value</span><span class="o">=</span><span class="p">{</span> <span class="nx">word</span> <span class="p">}</span> <span class="nx">onChange</span><span class="o">=</span><span class="p">{</span> <span class="nx">e</span> <span class="o">=&gt;</span> <span class="nx">changeInput</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">)}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">h3</span><span class="o">&gt;</span><span class="nx">Result</span><span class="o">&lt;</span><span class="sr">/h3</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">ul</span><span class="o">&gt;</span>
+      <span class="p">{</span><span class="nx">result</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">(</span><span class="nx">r</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">li</span> <span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">i</span><span class="p">}</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">r</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/li&gt;</span><span class="se">)</span><span class="err">}
+</span>    <span class="o">&lt;</span><span class="sr">/ul</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="c1">// Container</span>
+<span class="kd">const</span> <span class="nx">SearchPediaContainer</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span>
+  <span class="nx">state</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">,</span> 
+  <span class="p">{</span> <span class="nx">changeInput</span> <span class="p">}</span>
+<span class="p">)(</span><span class="nx">SearchPedia</span><span class="p">)</span>
+
+<span class="c1">// Provider</span>
+<span class="k">export</span> <span class="k">default</span> <span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="p">{</span>
+  <span class="kd">constructor</span><span class="p">(){</span>
+    <span class="k">super</span><span class="p">()</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">store</span> <span class="o">=</span> <span class="nx">configureStore</span><span class="p">()</span>
+  <span class="p">}</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">Provider</span> <span class="nx">store</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">store</span><span class="p">}</span> <span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">SearchPediaContainer</span> <span class="o">/&gt;</span>
+      <span class="o">&lt;</span><span class="sr">/Provider</span><span class="err">&gt;
+</span>    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="その1-middlewareでpromiseベースな実装" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE1-middleware%E3%81%A7promise%E3%83%99%E3%83%BC%E3%82%B9%E3%81%AA%E5%AE%9F%E8%A3%85"><i class="fa fa-link"></i></a>その1. middlewareでpromiseベースな実装</h2>
+
+<p>まずrxjs / redux-observable使わない場合をやってみる。<br>
+observableの対比のため、今回はthunkやpromise使わず素middlewareでやっている。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// middleware.js</span>
+
+<span class="k">import</span> <span class="p">{</span> <span class="nx">CHANGE_INPUT</span><span class="p">,</span> <span class="nx">loadResult</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./actions</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">searchApi</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./api</span><span class="dl">'</span>
+
+<span class="c1">// 普通はあまりmiddlewareに直接実装を書く事はしないが、今回は説明用ということでこうする</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">searchMiddleware</span> <span class="o">=</span> <span class="nx">store</span> <span class="o">=&gt;</span> <span class="nx">next</span> <span class="o">=&gt;</span> <span class="nx">action</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="nx">CHANGE_INPUT</span><span class="p">){</span> 
+    <span class="c1">// `CHANGE_INPUT`のときだけ別途検索処理を発火させる</span>
+    <span class="nx">searchApi</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">)</span>
+      <span class="p">.</span><span class="nx">then</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="nx">store</span><span class="p">.</span><span class="nx">dispatch</span><span class="p">(</span><span class="nx">loadResult</span><span class="p">(</span><span class="nx">result</span><span class="p">))</span>
+      <span class="p">})</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">next</span><span class="p">(</span><span class="nx">action</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// store.js</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">createStore</span><span class="p">,</span> <span class="nx">combineReducers</span><span class="p">,</span> <span class="nx">applyMiddleware</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">reducers</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./reducers</span><span class="dl">'</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">configureStore</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">createStore</span><span class="p">(</span>
+    <span class="nx">combineReducers</span><span class="p">(</span><span class="nx">reducers</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="nx">applyMiddleware</span><span class="p">(</span><span class="nx">searchMiddleware</span><span class="p">)</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="完成品" class="fragment"></span><a href="#%E5%AE%8C%E6%88%90%E5%93%81"><i class="fa fa-link"></i></a>完成品</h3>
+
+<p><a href="https://inuscript.github.io/example-redux-observable-search/#/middleware" rel="nofollow noopener" target="_blank">DEMO</a></p>
+
+<blockquote>
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Ffe880898-24a0-90e9-512f-cf9299533157.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=c7240ec921ac817627fa68f1b46caf17" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Ffe880898-24a0-90e9-512f-cf9299533157.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=c7240ec921ac817627fa68f1b46caf17" alt="12月-29-2016 13-01-17.gif" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/fe880898-24a0-90e9-512f-cf9299533157.gif" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Ffe880898-24a0-90e9-512f-cf9299533157.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=a8780bcee0329eac2952a066055b1baf 1x" loading="lazy"></a></p>
+</blockquote>
+
+<p>入力毎に通信されているような形になっているのがわかる。元記事で上げられている3つの問題を解決するとなると、なかなか大変そうだ。</p>
+
+<h2>
+<span id="その2-redux-observableで実装" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE2-redux-observable%E3%81%A7%E5%AE%9F%E8%A3%85"><i class="fa fa-link"></i></a>その2. redux-observableで実装</h2>
+
+<p>やっとこさ本題。</p>
+
+<p>redux-observableのmiddlewareセットアップをする</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// store.js</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">createStore</span><span class="p">,</span> <span class="nx">combineReducers</span><span class="p">,</span> <span class="nx">applyMiddleware</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">createEpicMiddleware</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux-observable</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">reducers</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./reducers</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">epics</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./epic</span><span class="dl">'</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">configureStore</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">createStore</span><span class="p">(</span>
+    <span class="nx">combineReducers</span><span class="p">(</span><span class="nx">reducers</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="nx">applyMiddleware</span><span class="p">(</span><span class="nx">createEpicMiddleware</span><span class="p">(</span><span class="nx">epics</span><span class="p">))</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// epic.js</span>
+<span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs</span><span class="dl">'</span>
+
+<span class="k">import</span> <span class="p">{</span> <span class="nx">CHANGE_INPUT</span><span class="p">,</span> <span class="nx">loadResult</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./actions</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">combineEpics</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux-observable</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">searchApi</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./api</span><span class="dl">'</span>
+
+<span class="c1">// とりあえず元となるepicを作る。(action$) =&gt; action$ と返すと無限ループ化するので</span>
+<span class="c1">// ignoreElementsで何もしないようにする</span>
+<span class="kd">const</span> <span class="nx">searchEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="nx">CHANGE_INPUT</span><span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+    <span class="p">.</span><span class="nx">ignoreElements</span><span class="p">()</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">epics</span> <span class="o">=</span> <span class="nx">combineEpics</span><span class="p">(</span> <span class="nx">searchEpic</span><span class="p">)</span>
+</pre></div></div>
+
+<p><code>do</code>と<code>ignoreElements</code>のデバッグは<a href="http://stackoverflow.com/questions/40408041/redux-observable-epic-that-doesnt-send-any-new-actions" rel="nofollow noopener" target="_blank">このStackoverflow</a>あたりを参考にした</p>
+
+<p>ここからepicのobservableを除々に拡張させていくようにする</p>
+
+<h4>
+<span id="phase1-change_inputが来たらダミーデータ返すepicを作る" class="fragment"></span><a href="#phase1-change_input%E3%81%8C%E6%9D%A5%E3%81%9F%E3%82%89%E3%83%80%E3%83%9F%E3%83%BC%E3%83%87%E3%83%BC%E3%82%BF%E8%BF%94%E3%81%99epic%E3%82%92%E4%BD%9C%E3%82%8B"><i class="fa fa-link"></i></a>Phase1: CHANGE_INPUTが来たらダミーデータ返すepicを作る</h4>
+
+<p>とりあえず何かmock返す感じのやつを作る。debug用に<code>do</code>オペレータでconsole.logしている</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">searchEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="nx">CHANGE_INPUT</span><span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+    <span class="p">.</span><span class="nx">mapTo</span><span class="p">(</span><span class="nx">loadResult</span><span class="p">([</span> <span class="dl">"</span><span class="s2">DUMMY</span><span class="dl">"</span><span class="p">,</span>  <span class="dl">"</span><span class="s2">DUMMY</span><span class="dl">"</span><span class="p">,</span>  <span class="dl">"</span><span class="s2">DUMMY</span><span class="dl">"</span><span class="p">]))</span> <span class="c1">// mapToは入力に関係なく値を返す</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>こうすると、こんな感じでactionが流れてくる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Object {type: "CHANGE_INPUT", payload: "a"}
+Object {type: "LOAD_RESULT", payload: Array[3]}
+Object {type: "CHANGE_INPUT", payload: "ab"}
+Object {type: "LOAD_RESULT", payload: Array[3]}
+Object {type: "CHANGE_INPUT", payload: "abc"}
+Object {type: "LOAD_RESULT", payload: Array[3]}
+</pre></div></div>
+
+<h4>
+<span id="phase2-mergemap-旧flatmapを利用してpromiseを解決" class="fragment"></span><a href="#phase2-mergemap-%E6%97%A7flatmap%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%A6promise%E3%82%92%E8%A7%A3%E6%B1%BA"><i class="fa fa-link"></i></a>Phase2: mergeMap (旧flatMap)を利用してPromiseを解決</h4>
+
+<p><code>mergeMap</code>でpromiseを返す事で、promiseを処理した結果を取得出来るようにする。<br>
+ここまででMiddlewareの場合と同等に通信出来るようになった。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">searchEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="nx">CHANGE_INPUT</span><span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">({</span><span class="nx">payload</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="nx">payload</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">mergeMap</span><span class="p">(</span> <span class="p">(</span><span class="nx">word</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">searchApi</span><span class="p">(</span><span class="nx">word</span><span class="p">)</span> <span class="p">)</span> <span class="c1">// Promiseを解決</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="nx">loadResult</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">)</span> <span class="c1">// 結果を返す</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+</pre></div></div>
+
+<p>キー入力する度にリクエストが発行されている様子が見て取れる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Object {type: "CHANGE_INPUT", payload: "a"}
+"CALL API" "a"
+Object {type: "LOAD_RESULT", payload: Array[10]}
+Object {type: "CHANGE_INPUT", payload: "ab"}
+"CALL API" "ab"
+Object {type: "LOAD_RESULT", payload: Array[10]}
+Object {type: "CHANGE_INPUT", payload: "abc"}
+"CALL API" "abc"
+Object {type: "LOAD_RESULT", payload: Array[10]}
+</pre></div></div>
+
+<h4>
+<span id="phase3-debouncetimeで連続した入力をまとめる-元記事taming-the-user-input-" class="fragment"></span><a href="#phase3-debouncetime%E3%81%A7%E9%80%A3%E7%B6%9A%E3%81%97%E3%81%9F%E5%85%A5%E5%8A%9B%E3%82%92%E3%81%BE%E3%81%A8%E3%82%81%E3%82%8B-%E5%85%83%E8%A8%98%E4%BA%8Btaming-the-user-input-"><i class="fa fa-link"></i></a>Phase3: <code>debounceTime</code>で連続した入力をまとめる (元記事：Taming the user input )</h4>
+
+<p><code>a</code>, <code>ab</code>, <code>abc</code>と連続入力して毎度APIが走るのを<code>debounceTime</code>を利用して防ぐ。<br>
+rxjsっぽくなってきた。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">searchEpic3</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="nx">CHANGE_INPUT</span><span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">({</span><span class="nx">payload</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="nx">payload</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">debounceTime</span><span class="p">(</span><span class="mi">400</span><span class="p">)</span> <span class="c1">// 400ms以内での入力を間引き</span>
+    <span class="p">.</span><span class="nx">mergeMap</span><span class="p">(</span> <span class="p">(</span><span class="nx">payload</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">searchApi</span><span class="p">(</span><span class="nx">payload</span><span class="p">)</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="nx">loadResult</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>動かしてみると先ほどと違ってAPIコールが <strong>キー入力を止めたタイミング</strong> でだけ起きているのがわかる。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Object {type: "CHANGE_INPUT", payload: "a"}
+Object {type: "CHANGE_INPUT", payload: "ab"}
+Object {type: "CHANGE_INPUT", payload: "abc"}
+"CALL API" "abc"
+Object {type: "LOAD_RESULT", payload: Array[10]}
+</pre></div></div>
+
+<h4>
+<span id="phase4-distinctuntilchangedで値が変わった時だけ通信する-元記事dont-hit-me-twice" class="fragment"></span><a href="#phase4-distinctuntilchanged%E3%81%A7%E5%80%A4%E3%81%8C%E5%A4%89%E3%82%8F%E3%81%A3%E3%81%9F%E6%99%82%E3%81%A0%E3%81%91%E9%80%9A%E4%BF%A1%E3%81%99%E3%82%8B-%E5%85%83%E8%A8%98%E4%BA%8Bdont-hit-me-twice"><i class="fa fa-link"></i></a>Phase4: <code>distinctUntilChanged</code>で値が変わった時だけ通信する (元記事：Don’t hit me twice)</h4>
+
+<p>同じ値での不必要なリクエストを制御する。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">searchEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="nx">CHANGE_INPUT</span><span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">({</span><span class="nx">payload</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="nx">payload</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">debounceTime</span><span class="p">(</span><span class="mi">400</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">distinctUntilChanged</span><span class="p">()</span> <span class="c1">// 値が変更された時だけ処理させる。</span>
+    <span class="p">.</span><span class="nx">mergeMap</span><span class="p">(</span> <span class="p">(</span><span class="nx">payload</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">searchApi</span><span class="p">(</span><span class="nx">payload</span><span class="p">)</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="nx">loadResult</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>このようにして、「a -&gt; ab -&gt; abc (ここで待つ) -&gt; ab -&gt; abc」と入力してみると<br>
+APIが一度だけ走るのがわかる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Object {type: "CHANGE_INPUT", payload: "a"}
+Object {type: "CHANGE_INPUT", payload: "ab"}
+Object {type: "CHANGE_INPUT", payload: "abc"}
+"CALL API" "abc"
+Object {type: "LOAD_RESULT", payload: Array[10]}
+Object {type: "CHANGE_INPUT", payload: "ab"}
+Object {type: "CHANGE_INPUT", payload: "abc"}
+// ここでAPI発行されない
+</pre></div></div>
+
+<p>ちなみに、<code>distinctUntilChanged</code>での値比較をしているので、下記のようにactionをそのまま渡していると、うまく動かない</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">searchEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="nx">CHANGE_INPUT</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">distinctUntilChanged</span><span class="p">()</span> <span class="c1">// currentAction === previewActionの比較がうまくいかない</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>今回のサンプルでは、予め<code>map( ({payload}) =&gt; payload)</code>として文字列比較にした。<br>
+どうしてもactionで比較したい場合があれば、<a href="https://www.npmjs.com/package/deep-equal" rel="nofollow noopener" target="_blank">deep-equal</a>などを使えば良さそうに思える</p>
+
+<h4>
+<span id="phase5-mergemap---switchmap-元記事-dealing-with-out-of-order-responses" class="fragment"></span><a href="#phase5-mergemap---switchmap-%E5%85%83%E8%A8%98%E4%BA%8B-dealing-with-out-of-order-responses"><i class="fa fa-link"></i></a>Phase5: <code>mergeMap</code> -&gt; <code>switchMap</code> (元記事: Dealing with out-of-order responses)</h4>
+
+<p><code>mergeMap</code>だったのを<code>switchMap</code>にすることで、「新しい値が来たタイミングで、前のsubscriptioをunsbscribeする」らしい。<br>
+この機能を使うと、２つ連続で発行したAPIリクエストの後に来た方を優先して処理を進めるようになるようだ。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">searchEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="nx">CHANGE_INPUT</span><span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">({</span><span class="nx">payload</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="nx">payload</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">debounceTime</span><span class="p">(</span><span class="mi">400</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">distinctUntilChanged</span><span class="p">()</span> 
+    <span class="p">.</span><span class="nx">switchMap</span><span class="p">(</span> <span class="p">(</span><span class="nx">payload</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">searchApi</span><span class="p">(</span><span class="nx">payload</span><span class="p">)</span> <span class="p">)</span> <span class="c1">// switchMapにする</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="nx">loadResult</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">)</span>
+    <span class="p">.</span><span class="k">do</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">action</span><span class="p">))</span> <span class="c1">// debug用</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>正直このあたりはまだ理解が浅いと感じているが、<a href="http://reactivex.io/rxjs/class/es6/Observable.js%7EObservable.html#instance-method-mergeMap" rel="nofollow noopener" target="_blank">mergeMap</a> と <a href="http://reactivex.io/rxjs/class/es6/Observable.js%7EObservable.html#instance-method-switchMap" rel="nofollow noopener" target="_blank">switchMap</a> のそれぞれのマーブル記法を見てもそういうことで良いのだろう、という風に理解している。</p>
+
+<p>下記も参考になるかもしれない</p>
+
+<ul>
+<li>
+<a href="https://www.learnrxjs.io/" rel="nofollow noopener" target="_blank">learn-rxjs</a>
+
+<ul>
+<li><a href="https://www.learnrxjs.io/operators/transformation/mergemap.html" rel="nofollow noopener" target="_blank">mergeMap</a></li>
+<li><a href="https://www.learnrxjs.io/operators/transformation/switchmap.html" rel="nofollow noopener" target="_blank">switchMap</a></li>
+</ul>
+</li>
+<li><a href="http://stackoverflow.com/questions/38496604/switchmap-vs-mergemap-in-the-ngrx-example" rel="nofollow noopener" target="_blank">SwitchMap vs MergeMap in the #ngrx example</a></li>
+<li>
+<a href="http://qiita.com/yshrsmz@github/items/1d206a4fc9bc2329bbed" id="reference-a302736b40a58450b4ea">RxJavaのflatMap, switchMap, concatMapを理解する</a>
+
+<ul>
+<li>個人的に非常にわかりやすかった比喩</li>
+<li>rxjsでなくRxJavaだったり、mergeMapでなくflatMapだったりするが、置き換えて読める</li>
+</ul>
+</li>
+<li><a href="http://stackoverflow.com/questions/28175702/what-is-the-difference-between-flatmap-and-switchmap-in-rxjava" rel="nofollow noopener" target="_blank">What is the difference between flatmap and switchmap in RxJava?</a></li>
+</ul>
+
+<h3>
+<span id="完成品--最終形" class="fragment"></span><a href="#%E5%AE%8C%E6%88%90%E5%93%81--%E6%9C%80%E7%B5%82%E5%BD%A2"><i class="fa fa-link"></i></a>完成品 &amp; 最終形</h3>
+
+<p>最終的にepicはこんな感じになった（途中まで書いてた<code>do</code>でのデバッグは消している）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// epic.js</span>
+
+<span class="k">import</span> <span class="dl">'</span><span class="s1">rxjs</span><span class="dl">'</span>
+
+<span class="k">import</span> <span class="p">{</span> <span class="nx">CHANGE_INPUT</span><span class="p">,</span> <span class="nx">loadResult</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./actions</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">combineEpics</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux-observable</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">searchApi</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./api</span><span class="dl">'</span>
+
+<span class="kd">const</span> <span class="nx">searchEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">ofType</span><span class="p">(</span><span class="nx">CHANGE_INPUT</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="p">({</span><span class="nx">payload</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="nx">payload</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">debounceTime</span><span class="p">(</span><span class="mi">400</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">distinctUntilChanged</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">switchMap</span><span class="p">(</span> <span class="p">(</span><span class="nx">payload</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">searchApi</span><span class="p">(</span><span class="nx">payload</span><span class="p">)</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">result</span> <span class="o">=&gt;</span> <span class="nx">loadResult</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">epics</span> <span class="o">=</span> <span class="nx">combineEpics</span><span class="p">(</span>
+  <span class="nx">searchEpic</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p><a href="https://inuscript.github.io/example-redux-observable-search/#/observable" rel="nofollow noopener" target="_blank">DEMO</a></p>
+
+<blockquote>
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F893ac4c2-63f3-36a1-579d-f99a0ca49aad.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=fe82ad4526e200ae0d9a1b1e6fe6c448" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F893ac4c2-63f3-36a1-579d-f99a0ca49aad.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=fe82ad4526e200ae0d9a1b1e6fe6c448" alt="12月-29-2016 13-09-17.gif" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/893ac4c2-63f3-36a1-579d-f99a0ca49aad.gif" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F893ac4c2-63f3-36a1-579d-f99a0ca49aad.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=de2443e98a89f84e8e203e5f376acb84 1x" loading="lazy"></a></p>
+</blockquote>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>わりとRxJSの心がわかった気がする。
+
+<ul>
+<li>なんとなくマーブル記法の意図するところが読めるようになってきた</li>
+</ul>
+</li>
+<li>単に非同期処理のためにredux-observableを使っているだけだとなかなか理解しづらいが、やはり色々手を動かすと理解しやすいと感じた。
+
+<ul>
+<li>「これ何が嬉しいんだ？」というオペレータを無理矢理使ってみると色々覚えられそう</li>
+</ul>
+</li>
+<li>ReduxでのRxの活かし方がちょっとわかった
+
+<ul>
+<li>今回の例で言えば、Rxが無かった場合はreduxのstoreに色々変数持たせるか、コンポーネントのlocal stateで一時的に貯めたりする必要がありそう</li>
+<li>「Reduxのデータとしてstoreしたくない」みたいな場合にデータ処理を解決させる手段の一つと考えられる</li>
+<li>Reduxの世界を基準に考えると、ある意味「Rxの内部で独立したstateがある」という大雑把な考え方をすると理解に繋がりそう</li>
+</ul>
+</li>
+<li>地味にデバッグ時の<code>do</code>と<code>ignoreElements</code>便利。これを知れたのが個人的に収穫だった。</li>
+<li>Angularの情報でもRxJavaの情報でもあまり齟齬無く活かせるのすごい。Rx軍団つよい。</li>
+</ul>

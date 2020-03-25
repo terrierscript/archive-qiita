@@ -1,0 +1,7 @@
+<p>個人的にgeneratorは知見が少ないので、あまり参考にならないかもですが、やはりそのあたりの変換自体は<a href="http://babeljs.io/docs/plugins/transform-runtime/" rel="nofollow noopener" target="_blank"><code>babel-plugin-transform-runtime</code></a>を入れて<code>{ "plugins": ["transform-runtime"] }</code>を追加して解決するというのが本筋な気がしております。</p>
+
+<p>上記ドキュメント見ると、<code>You should also install babel-runtime itself</code>ともあるので、この２つがペアになるのは「まあそんなものなのかなあ」という感覚でした。</p>
+
+<p>また、考えられる手として<code>peerDependency</code>として<code>babel-runtime</code>を依存させるような手もあるのかなとも思いましたが、これはこれでたまに辛いことを引き起こしそうな気がすることを考えると、やはりおとなしく<code>npm i -S babel-runtime</code>してしまうのが一番いいんじゃないかなと思っています。</p>
+
+<p>ちなみに、babel-runtimeに依存すること自体もそこまで辛いと感じていなかったのですが、どのあたりが辛いと感じるポイントなのでしょう？</p>

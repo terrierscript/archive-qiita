@@ -1,0 +1,35 @@
+<p>scssのテストというと、<a href="https://github.com/thejameskyle/bootcamp" rel="nofollow noopener" target="_blank">bootcamp</a>とかみたいにfunctionのテストなんかはよくあるみたい。<br>
+が、mixinのテストとなるとなかなかなさそうだった。</p>
+
+<p>なんか良い手はないかなーと思い返すとgruntプラグインのテストなんかであれば変換前の元ソースと処理後のソースを比較するテストとかはよくやるなあと思ったのでそんなアプローチでこんな感じでテストをした。</p>
+
+<div class="code-frame" data-lang="ruby"><div class="highlight"><pre><span class="no">RSpec</span><span class="p">.</span><span class="nf">describe</span> <span class="s2">"style"</span> <span class="p">,</span><span class="ss">type: :feature</span> <span class="k">do</span>
+  <span class="k">def</span> <span class="nf">parse_css</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">visit</span> <span class="n">url</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="no">CssParser</span><span class="o">::</span><span class="no">Parser</span><span class="p">.</span><span class="nf">new</span>
+    <span class="n">parser</span><span class="p">.</span><span class="nf">add_block!</span> <span class="n">page</span><span class="p">.</span><span class="nf">source</span>
+    <span class="n">parser</span>
+  <span class="k">end</span>
+
+  <span class="n">it</span> <span class="s1">'variant'</span> <span class="k">do</span>
+    <span class="n">expect</span> <span class="o">=</span> <span class="n">parse_css</span> <span class="s1">'/assets/specs/some_mixin_expect.css'</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">parse_css</span> <span class="s1">'/assets/specs/some_mixin_spec.css'</span>
+    <span class="n">expect</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="nf">to_s</span><span class="p">).</span><span class="nf">to</span> <span class="kp">include</span> <span class="n">expect</span><span class="p">.</span><span class="nf">to_s</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div></div>
+
+<ul>
+<li>基本実際のassetsへアクセスすること実現している。</li>
+<li>
+<code>/assets/</code>下にspec用のファイルを置くのはかっこ悪いなあと思いつつもscssのコンパイルオプションの変更とかも検出しやすいので一旦このやり方にしといた。</li>
+<li>改行による差異とかが出たりしないように<code>parse_css</code>というsupport関数を使って一度パースしなおしている。
+
+<ul>
+<li>このへんは<a href="https://github.com/thoughtbot/neat/blob/master/spec/support/parser_support.rb" rel="nofollow noopener" target="_blank">bourbon neat</a>のテストを参考にした。</li>
+<li>コメントも除去される。</li>
+</ul>
+</li>
+</ul>
+
+<p>ちょっと複雑なmixinがほしかったのでやってはみたけど、そんなに気軽にやりたくはない感じかも</p>

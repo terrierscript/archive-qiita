@@ -1,0 +1,359 @@
+<p>ReduxのFAQを読み直したら「アレ？結構初期と変わってる！」とか「あ、やっぱそうだったんだ」みたいな事などがあったので自分の中で知識差分アップデートしたメモ。</p>
+
+<p>順序は気になった項目順。<br>
+QとAはそれぞれFAQからのざっくりな意訳。</p>
+
+<h1>
+<span id="react-redux" class="fragment"></span><a href="#react-redux"><i class="fa fa-link"></i></a><a href="http://redux.js.org/faq/react-redux" rel="nofollow noopener" target="_blank">React Redux</a>
+</h1>
+
+<h2>
+<span id="q--react-reduxでtopコンポーネントだけをconnectすべきですか" class="fragment"></span><a href="#q--react-redux%E3%81%A7top%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%81%A0%E3%81%91%E3%82%92connect%E3%81%99%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8B"><i class="fa fa-link"></i></a>Q.  React-Reduxで、Topコンポーネントだけをconnectすべきですか？</h2>
+
+<p><a href="http://redux.js.org/faq/react-redux#should-i-only-connect-my-top-component-or-can-i-connect-multiple-components-in-my-tree" rel="nofollow noopener" target="_blank">Should I only connect my top component, or can I connect multiple components in my tree?</a></p>
+
+<h3>
+<span id="a-初期の頃はそう言ってましたが最近はそうでもないです適切にconnectしましょう" class="fragment"></span><a href="#a-%E5%88%9D%E6%9C%9F%E3%81%AE%E9%A0%83%E3%81%AF%E3%81%9D%E3%81%86%E8%A8%80%E3%81%A3%E3%81%A6%E3%81%BE%E3%81%97%E3%81%9F%E3%81%8C%E6%9C%80%E8%BF%91%E3%81%AF%E3%81%9D%E3%81%86%E3%81%A7%E3%82%82%E3%81%AA%E3%81%84%E3%81%A7%E3%81%99%E9%81%A9%E5%88%87%E3%81%ABconnect%E3%81%97%E3%81%BE%E3%81%97%E3%82%87%E3%81%86"><i class="fa fa-link"></i></a>A. 初期の頃はそう言ってましたが、最近はそうでもないです。適切にconnectしましょう</h3>
+
+<ul>
+<li>初期のreduxドキュメントにおいて、「トップに近い最小限のコンポーネントだけをconnectすべきと推奨していた」</li>
+<li>しかし、昨今、一般的な要求としてはこれだと、コンテナそれぞれの必要とするデータが多くなりすぎることがわかってきた</li>
+<li>現在のベストプラクティスとしては下記のような感じ
+
+<ul>
+<li>
+<code>Presentational</code>(Connectしない)と<code>Container</code>(Connectする)のコンポーネントは明確に分類する</li>
+<li>利便性に応じてContainerを作成・接続する</li>
+<li>同一種類のデータを受け取る子要素のために親Componentの記述が重複しているなら、Containerを外出しすると良い</li>
+<li>親が子要素の個別具体なデータやactionについて多く知りすぎていると感じた場合は、そこがコンテナを抽出するタイミングといえる</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="その他の所感補足" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E6%89%80%E6%84%9F%E8%A3%9C%E8%B6%B3"><i class="fa fa-link"></i></a>その他の所感・補足</h3>
+
+<ul>
+<li>Containerが肥大化するのを感じたり、reselectorを利用した部分がやたらと複雑になってしまうパターンは、個人的によく出くわしたので、「あ、カジュアル目に切ってもいいんだな」とわかった。</li>
+<li>肌感だが、Containerが扱うPropertyが3個ぐらい上限が適切な範囲で、5個とかを超えてくると、分離するタイミングだと思っている。</li>
+<li>ただし、当然Containerは再利用性が低いので、再利用性の高いPresentationalなコンポーネントを意識して作るべきというところは意識すべきと思われる
+
+<ul>
+<li>Containerから書いてしまうと全部Containerになっていくので、Presentaionalなコンポーネントを先に書いて、あとでContainerを書く方がうまくいくイメージ</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="code-structure" class="fragment"></span><a href="#code-structure"><i class="fa fa-link"></i></a><a href="http://redux.js.org/faq/code-structure" rel="nofollow noopener" target="_blank">Code Structure</a>
+</h1>
+
+<h2>
+<span id="q-どんなファイル構成がありますかどのようにaction-creatorとreducerをグルーピングすべきですかどこにselectorsを置くべきですか" class="fragment"></span><a href="#q-%E3%81%A9%E3%82%93%E3%81%AA%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%A7%8B%E6%88%90%E3%81%8C%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99%E3%81%8B%E3%81%A9%E3%81%AE%E3%82%88%E3%81%86%E3%81%ABaction-creator%E3%81%A8reducer%E3%82%92%E3%82%B0%E3%83%AB%E3%83%BC%E3%83%94%E3%83%B3%E3%82%B0%E3%81%99%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8B%E3%81%A9%E3%81%93%E3%81%ABselectors%E3%82%92%E7%BD%AE%E3%81%8F%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8B"><i class="fa fa-link"></i></a>Q. どんなファイル構成がありますか？どのようにaction creatorとreducerをグルーピングすべきですか？どこにselectorsを置くべきですか？</h2>
+
+<p><a href="http://redux.js.org/faq/code-structure#what-should-my-file-structure-look-like-how-should-i-group-my-action-creators-and-reducers-in-my-project-where-should-my-selectors-go" rel="nofollow noopener" target="_blank">What should my file structure look like? How should I group my action creators and reducers in my project? Where should my selectors go?</a></p>
+
+<h3>
+<span id="a-reduxはデータライブラリなので特に決めはありません" class="fragment"></span><a href="#a-redux%E3%81%AF%E3%83%87%E3%83%BC%E3%82%BF%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E3%81%AA%E3%81%AE%E3%81%A7%E7%89%B9%E3%81%AB%E6%B1%BA%E3%82%81%E3%81%AF%E3%81%82%E3%82%8A%E3%81%BE%E3%81%9B%E3%82%93"><i class="fa fa-link"></i></a>A. Reduxはデータライブラリなので、特に決めはありません</h3>
+
+<p>プロジェクトとしての直接的な意見はないが、下記の傾向がある</p>
+
+<ul>
+<li>Rails-style
+
+<ul>
+<li>actions | constants | reducers | containers | components みたいな分け方</li>
+</ul>
+</li>
+<li>Domain-style
+
+<ul>
+<li>ドメイン・機能単位でディレクトリを分割する。</li>
+<li>ファイルタイプに応じてサブディレクトリを作ることもできる </li>
+</ul>
+</li>
+<li>"Ducks"
+
+<ul>
+<li>Domain-styleと近い。ただし、<code>action</code>と<code>reducer</code>を <strong>同じ</strong> ファイルに記載するやり方。</li>
+<li>参考：<a href="https://medium.com/@scbarrus/the-ducks-file-structure-for-redux-d63c41b7035c#.lkekioku5" class="autolink" rel="nofollow noopener" target="_blank">https://medium.com/@scbarrus/the-ducks-file-structure-for-redux-d63c41b7035c#.lkekioku5</a>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="その他の所感補足-1" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E6%89%80%E6%84%9F%E8%A3%9C%E8%B6%B3-1"><i class="fa fa-link"></i></a>その他の所感・補足</h3>
+
+<ul>
+<li>序盤はRails-styleが前提だった気がしていたが、公式として「そこはそんなに決めはない」ということらしい
+
+<ul>
+<li>Rails-styleだといまいちコード量がばらついてイマイチだなーという部分もあったので、色々検討して良いというのは嬉しいかもしれない。 </li>
+<li>まだ微妙にどれもしっくり来てないのでもっと色々知りたい</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="q-ビジネスロジックをどこに書くべきですかreducerとactionでどう分割すべきですか" class="fragment"></span><a href="#q-%E3%83%93%E3%82%B8%E3%83%8D%E3%82%B9%E3%83%AD%E3%82%B8%E3%83%83%E3%82%AF%E3%82%92%E3%81%A9%E3%81%93%E3%81%AB%E6%9B%B8%E3%81%8F%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8Breducer%E3%81%A8action%E3%81%A7%E3%81%A9%E3%81%86%E5%88%86%E5%89%B2%E3%81%99%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8B"><i class="fa fa-link"></i></a>Q. ビジネスロジックをどこに書くべきですか？reducerとactionでどう分割すべきですか？</h2>
+
+<p><a href="http://redux.js.org/faq/code-structure#how-should-i-split-my-logic-between-reducers-and-action-creators-where-should-my-business-logic-go" rel="nofollow noopener" target="_blank">How should I split my logic between reducers and action creators? Where should my “business logic” go?</a></p>
+
+<h3>
+<span id="a-明確な回答はありません" class="fragment"></span><a href="#a-%E6%98%8E%E7%A2%BA%E3%81%AA%E5%9B%9E%E7%AD%94%E3%81%AF%E3%81%82%E3%82%8A%E3%81%BE%E3%81%9B%E3%82%93"><i class="fa fa-link"></i></a>A. 明確な回答はありません。</h3>
+
+<ul>
+<li>ユーザーによって様々
+
+<ul>
+<li>ファットなAction creatorと、来たデータをmergeするだけの薄いシンプルなreducerもいる</li>
+<li>逆に、Actionを極力小さくし、<code>getState</code>の利用を少なくするユーザーもいる</li>
+<li>この質問においては、sagaやobservableなど非同期アプローチは、Action Creator側として扱う</li>
+</ul>
+</li>
+<li>これら２つのバランスが取れた時、あなたはReduxをマスターしているでしょう</li>
+</ul>
+
+<h3>
+<span id="その他の所感補足-2" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E6%89%80%E6%84%9F%E8%A3%9C%E8%B6%B3-2"><i class="fa fa-link"></i></a>その他の所感・補足</h3>
+
+<ul>
+<li>「決めてない」っていうの多くない！？と思いつつ、そこらへんはまだ伸び代のあるところな気がする</li>
+<li>色々Middlewareの話が出てくるとぐっとややこしい話になるのも事実</li>
+<li>個人的な肌感だと、reducerは太らせない方が良さそうかなという感覚がある</li>
+<li>Reducerにロジックをまとめる系の話しは、下記にも少し記載されている
+
+<ul>
+<li><a href="http://redux.js.org/docs/recipes/StructuringReducers.html" rel="nofollow noopener" target="_blank">Structuring Reducers</a></li>
+<li><a href="http://redux.js.org/docs/recipes/reducers/ReusingReducerLogic.html" rel="nofollow noopener" target="_blank">Reusing Reducer Logic</a></li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="reducer" class="fragment"></span><a href="#reducer"><i class="fa fa-link"></i></a><a href="http://redux.js.org/faq/Reducers.html" rel="nofollow noopener" target="_blank">Reducer</a>
+</h1>
+
+<h2>
+<span id="q-2つのreducerのデータを共有したいのはどうすればいいですか" class="fragment"></span><a href="#q-2%E3%81%A4%E3%81%AEreducer%E3%81%AE%E3%83%87%E3%83%BC%E3%82%BF%E3%82%92%E5%85%B1%E6%9C%89%E3%81%97%E3%81%9F%E3%81%84%E3%81%AE%E3%81%AF%E3%81%A9%E3%81%86%E3%81%99%E3%82%8C%E3%81%B0%E3%81%84%E3%81%84%E3%81%A7%E3%81%99%E3%81%8B"><i class="fa fa-link"></i></a>Q. 2つのreducerのデータを共有したいのはどうすればいいですか？</h2>
+
+<p><a href="http://redux.js.org/faq/Reducers.html#how-do-i-share-state-between-two-reducers-do-i-have-to-use-combinereducers" rel="nofollow noopener" target="_blank">How do I share state between two reducers? Do I have to use combineReducers?</a></p>
+
+<h3>
+<span id="a-combinereducerでは許可してませんが考えられる手立てがいくつかあります" class="fragment"></span><a href="#a-combinereducer%E3%81%A7%E3%81%AF%E8%A8%B1%E5%8F%AF%E3%81%97%E3%81%A6%E3%81%BE%E3%81%9B%E3%82%93%E3%81%8C%E8%80%83%E3%81%88%E3%82%89%E3%82%8C%E3%82%8B%E6%89%8B%E7%AB%8B%E3%81%A6%E3%81%8C%E3%81%84%E3%81%8F%E3%81%A4%E3%81%8B%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99"><i class="fa fa-link"></i></a>A. <code>combineReducer</code>では許可してませんが、考えられる手立てがいくつかあります</h3>
+
+<ul>
+<li>基本として、reducerはstoreを薄切り(slice)分割してる場合と、ドメインレベルで分割している場合がある
+
+<ul>
+<li>薄切り(slice)の分割というのはドメイン的には同一だが、一部のデータだけ取り出して扱っている場合を言っていると思われる</li>
+</ul>
+</li>
+<li>多くのユーザーが2つのreducer間でのデータ共有をしようとするが、<code>combineReducer</code>はこれを許可していない。これを行うには幾つかのアプローチがある
+
+<ul>
+<li>A1. Reducerのツリー構造を見直す：reducerが別のsliceのデータを知る必要がある場合は、単一のreducerが管理する対象を増やすように、tree構造を再構成する</li>
+<li>A2. Actionの幾つかを処理するcustom関数を作り、<code>combineReducer</code>の代わりにそれを利用する
+
+<ul>
+<li>
+<a href="https://github.com/acdlite/reduce-reducers" rel="nofollow noopener" target="_blank">reduce-reducer</a>などを利用して、<code>combineReducers</code>を使いつつ、特殊なreducerを実行させるということも考えられる</li>
+</ul>
+</li>
+<li>A3. <code>redux-thunk</code>など非同期Actionを扱う場合、<code>getState</code>でstate全体を取得できる。ここからactionに対してデータを入れる</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="その他の所感補足-3" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E6%89%80%E6%84%9F%E8%A3%9C%E8%B6%B3-3"><i class="fa fa-link"></i></a>その他の所感・補足</h3>
+
+<ul>
+<li>
+<code>reducer</code>の構成を見直して解決出来るパターンというのが一番解決方法としてはすっきりしそう</li>
+<li>
+<code>reduce-reducer</code>や、<code>redux-thunk</code>などのmiddlewareに頼るのは、割りと奥の手っぽく見えた。</li>
+<li>自分が同類の悩みにぶつかった場合も、<code>reducer</code>の見直しが長期的には一番うまくいく感じがした</li>
+<li>view絡みでこの辺の問題にぶち当たる場合は、<code>reselector</code>などの<code>Computed Data</code>として扱えば解決することも多かった
+
+<ul>
+<li>参考: <a href="http://redux.js.org/docs/recipes/ComputingDerivedData.html" rel="nofollow noopener" target="_blank">Computing Deriverd Data</a>
+</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="organizing-state" class="fragment"></span><a href="#organizing-state"><i class="fa fa-link"></i></a><a href="http://redux.js.org/faq/organizing-state" rel="nofollow noopener" target="_blank">Organizing State</a>
+</h1>
+
+<h2>
+<span id="q-全てのstateをreduxに入れるべきですかsetstateを使うべきですか" class="fragment"></span><a href="#q-%E5%85%A8%E3%81%A6%E3%81%AEstate%E3%82%92redux%E3%81%AB%E5%85%A5%E3%82%8C%E3%82%8B%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8Bsetstate%E3%82%92%E4%BD%BF%E3%81%86%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8B"><i class="fa fa-link"></i></a>Q. 全てのstateをreduxに入れるべきですか？<code>setState</code>を使うべきですか？</h2>
+
+<p><a href="http://redux.js.org/faq/organizing-state#do-i-have-to-put-all-my-state-into-redux-should-i-ever-use-reacts-setstate" rel="nofollow noopener" target="_blank">Do I have to put all my state into Redux? Should I ever use React's setState()?</a></p>
+
+<h3>
+<span id="a-local-componentの状態を使用すること自体は問題ありません" class="fragment"></span><a href="#a-local-component%E3%81%AE%E7%8A%B6%E6%85%8B%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%99%E3%82%8B%E3%81%93%E3%81%A8%E8%87%AA%E4%BD%93%E3%81%AF%E5%95%8F%E9%A1%8C%E3%81%82%E3%82%8A%E3%81%BE%E3%81%9B%E3%82%93"><i class="fa fa-link"></i></a>A. local componentの状態を使用すること自体は問題ありません</h3>
+
+<ul>
+<li>"正しい" 答えはない。全データをreduxに入れたがるユーザーもいるし、ドロップダウンの開け閉めなどUIに関するcriticalでないデータをコンポーネントのstateにするのを好むユーザーも居る</li>
+<li>一般的な経験則としては、下記に基づいてReduxに入れるかを考えると良い
+
+<ul>
+<li>アプリケーションの他の部分がそのdataを扱うことがあるか？</li>
+<li>そのデータから派生して、別なdataを作成する必要があるか？</li>
+<li>複数のcomponentを動かすのに同一のdataが利用されているか？</li>
+<li>その値を特定の状態に戻すことに価値があるか？（Time Travel Debugなどをしたいか？０</li>
+<li>データをcacheしたいか？（データを再要求せず、現在のデータを扱いたいか？）</li>
+</ul>
+</li>
+<li>componentレベルのstateをstoreする実装系もいくつかある
+
+<ul>
+<li>
+<a href="https://github.com/tonyhb/redux-ui" rel="nofollow noopener" target="_blank">redux-ui</a>, <a href="https://github.com/threepointone/redux-react-local" rel="nofollow noopener" target="_blank">redux-react-local</a>, <a href="https://github.com/tomchentw-deprecated/redux-component" rel="nofollow noopener" target="_blank">redux-component</a>など</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="その他の所感補足-4" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E6%89%80%E6%84%9F%E8%A3%9C%E8%B6%B3-4"><i class="fa fa-link"></i></a>その他の所感・補足</h3>
+
+<ul>
+<li>何でもかんでもstoreにぶっこんでいるのは結構面倒なので、UI関連をlocal stateにする場面は結構多い</li>
+<li>上記判断基準は、どこまでがlocal stateとしてOK？というのを考えるのに有益そう</li>
+</ul>
+
+<h1>
+<span id="store-setup" class="fragment"></span><a href="#store-setup"><i class="fa fa-link"></i></a><a href="http://redux.js.org/faq/store-setup" rel="nofollow noopener" target="_blank">Store Setup</a>
+</h1>
+
+<h2>
+<span id="q-複数のstoreを作成して使う事べきですかできますかcomponentが直接storeを使うことができますか" class="fragment"></span><a href="#q-%E8%A4%87%E6%95%B0%E3%81%AEstore%E3%82%92%E4%BD%9C%E6%88%90%E3%81%97%E3%81%A6%E4%BD%BF%E3%81%86%E4%BA%8B%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8B%E3%81%A7%E3%81%8D%E3%81%BE%E3%81%99%E3%81%8Bcomponent%E3%81%8C%E7%9B%B4%E6%8E%A5store%E3%82%92%E4%BD%BF%E3%81%86%E3%81%93%E3%81%A8%E3%81%8C%E3%81%A7%E3%81%8D%E3%81%BE%E3%81%99%E3%81%8B"><i class="fa fa-link"></i></a>Q. 複数のStoreを作成して使う事べきですか？できますか？componentが直接storeを使うことができますか？</h2>
+
+<p><a href="http://redux.js.org/faq/store-setup#can-or-should-i-create-multiple-stores-can-i-import-my-store-directly-and-use-it-in-components-myself" rel="nofollow noopener" target="_blank">Can or should I create multiple stores? Can I import my store directly, and use it in components myself?</a></p>
+
+<h3>
+<span id="a-基本的にreduxで複数のstoreは不要です一部複数storeを利用する場合が正当になることも一部あります" class="fragment"></span><a href="#a-%E5%9F%BA%E6%9C%AC%E7%9A%84%E3%81%ABredux%E3%81%A7%E8%A4%87%E6%95%B0%E3%81%AEstore%E3%81%AF%E4%B8%8D%E8%A6%81%E3%81%A7%E3%81%99%E4%B8%80%E9%83%A8%E8%A4%87%E6%95%B0store%E3%82%92%E5%88%A9%E7%94%A8%E3%81%99%E3%82%8B%E5%A0%B4%E5%90%88%E3%81%8C%E6%AD%A3%E5%BD%93%E3%81%AB%E3%81%AA%E3%82%8B%E3%81%93%E3%81%A8%E3%82%82%E4%B8%80%E9%83%A8%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99"><i class="fa fa-link"></i></a>A. 基本的にreduxで複数のstoreは不要です。一部、複数storeを利用する場合が正当になることも一部あります</h3>
+
+<ul>
+<li>原典となるfluxは、複数のstoreを扱い、Domainのデータを保持していた。
+
+<ul>
+<li>
+<code>waitFor</code>で他のstoreを待つ必要があるなど問題が出がちだった</li>
+<li>reduxは、これが不要になっている</li>
+<li>なので複数store</li>
+</ul>
+</li>
+<li>片一方、複数のstoreが単一のページ中に出て来ることはありえる（ただし、あくまでstoreはそれぞれ単一で保持される場合に限る）
+
+<ul>
+<li>パターン1. 一部のupdateが頻繁なことが計測され、分割によってパフォーマンスの問題が解決する場合</li>
+<li>パターン2. 巨大なReduxアプリケーションを独立させ、root ComponentのインスタンスごとにStoreを作成する場合</li>
+</ul>
+</li>
+<li>storeのsingletonなinstanceを直接importして利用するのも推奨されない
+
+<ul>
+<li>Reduxアプリケーションを、更に巨大なアプリケーションの一部から独立的に切り離すのが難しくなる</li>
+<li>サーバー上でreques毎にstore instanceを作ってしまうため、サーバーサイドレンダリングも難しくなる</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="その他の所感補足-5" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E6%89%80%E6%84%9F%E8%A3%9C%E8%B6%B3-5"><i class="fa fa-link"></i></a>その他の所感・補足</h3>
+
+<ul>
+<li>巨大なアプリケーションの分割・インスタンスごとにstoreを持つ例に関しては、<a href="http://redux.js.org/docs/recipes/IsolatingSubapps.html" rel="nofollow noopener" target="_blank">IsolatingSubapps</a>が役立つ</li>
+</ul>
+
+<h1>
+<span id="actions" class="fragment"></span><a href="#actions"><i class="fa fa-link"></i></a><a href="http://redux.js.org/faq/actions" rel="nofollow noopener" target="_blank">Actions</a>
+</h1>
+
+<ul>
+<li>actionについて</li>
+</ul>
+
+<h2>
+<span id="q-なぜaction-typeはstringやserializeできる値である必要がありますか" class="fragment"></span><a href="#q-%E3%81%AA%E3%81%9Caction-type%E3%81%AFstring%E3%82%84serialize%E3%81%A7%E3%81%8D%E3%82%8B%E5%80%A4%E3%81%A7%E3%81%82%E3%82%8B%E5%BF%85%E8%A6%81%E3%81%8C%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99%E3%81%8B"><i class="fa fa-link"></i></a>Q. なぜAction typeはstringやserializeできる値である必要がありますか？</h2>
+
+<p><a href="http://redux.js.org/faq/actions#why-should-type-be-a-string-or-at-least-serializable-why-should-my-action-types-be-constants" rel="nofollow noopener" target="_blank">Why should type be a string, or at least serializable? Why should my action types be constants?</a></p>
+
+<h3>
+<span id="a-シリアライズ可能だとデバッグなどで役立ちます" class="fragment"></span><a href="#a-%E3%82%B7%E3%83%AA%E3%82%A2%E3%83%A9%E3%82%A4%E3%82%BA%E5%8F%AF%E8%83%BD%E3%81%A0%E3%81%A8%E3%83%87%E3%83%90%E3%83%83%E3%82%B0%E3%81%AA%E3%81%A9%E3%81%A7%E5%BD%B9%E7%AB%8B%E3%81%A1%E3%81%BE%E3%81%99"><i class="fa fa-link"></i></a>A. シリアライズ可能だと、デバッグなどで役立ちます</h3>
+
+<ul>
+<li>Actionがserializableだと、state同様タイムトラベルデバッグが有効になったりする</li>
+<li>symbolを利用したりすると、これが破壊される</li>
+<li>middlewareでの利用を意図して、Symbolやpromiseをactionに利用することは可能
+
+<ul>
+<li>ただし、Actionがstoreとreducerに到達するまでには、serializableである必要がある</li>
+</ul>
+</li>
+<li>パフォーマンス上の理由からreduxがチェックしているのは、actionが素のobjectであること、<code>type</code>が定義されていること、という部分のみである
+*なので、シリアライズじゃない値を渡すこと自体は可能だが、シリアライズ可能なほうがデバッグに役立つ</li>
+</ul>
+
+<h3>
+<span id="その他の所感補足-6" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E6%89%80%E6%84%9F%E8%A3%9C%E8%B6%B3-6"><i class="fa fa-link"></i></a>その他の所感・補足</h3>
+
+<ul>
+<li>Storeの値についても、同様の回答がされいる
+
+<ul>
+<li><a href="http://redux.js.org/faq/organizing-state#can-i-put-functions-promises-or-other-non-serializable-items-in-my-store-state" rel="nofollow noopener" target="_blank">http://redux.js.org/faq/organizing-state#can-i-put-functions-promises-or-other-non-serializable-items-in-my-store-state</a></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="q-actionとreducerは11でマッピングすべきですか" class="fragment"></span><a href="#q-action%E3%81%A8reducer%E3%81%AF11%E3%81%A7%E3%83%9E%E3%83%83%E3%83%94%E3%83%B3%E3%82%B0%E3%81%99%E3%81%B9%E3%81%8D%E3%81%A7%E3%81%99%E3%81%8B"><i class="fa fa-link"></i></a>Q. ActionとReducerは1:1でマッピングすべきですか？</h2>
+
+<p><a href="http://redux.js.org/faq/actions#is-there-always-a-one-to-one-mapping-between-reducers-and-actions" rel="nofollow noopener" target="_blank">Is there always a one-to-one mapping between reducers and actions?</a></p>
+
+<h3>
+<span id="a-そうでもないです1つのactionが複数のreducerを変更しても良いです" class="fragment"></span><a href="#a-%E3%81%9D%E3%81%86%E3%81%A7%E3%82%82%E3%81%AA%E3%81%84%E3%81%A7%E3%81%991%E3%81%A4%E3%81%AEaction%E3%81%8C%E8%A4%87%E6%95%B0%E3%81%AEreducer%E3%82%92%E5%A4%89%E6%9B%B4%E3%81%97%E3%81%A6%E3%82%82%E8%89%AF%E3%81%84%E3%81%A7%E3%81%99"><i class="fa fa-link"></i></a>A. そうでもないです。1つのactionが複数のreducerを変更しても良いです</h3>
+
+<ul>
+<li>そんなことはない
+
+<ul>
+<li>reducer関数は、特定のstateのupdateに責務を持つ小さく独立した関数にすることを推奨する</li>
+<li>これを、<code>reducer composition</code>パターンと呼ぶ</li>
+</ul>
+</li>
+<li>Actionは、stateの全部、または一部を操作できる。
+
+<ul>
+<li>これによりコンポーネントと実際のデータの変更を切り離されたままになる。</li>
+<li>1つのActionがstate treeの様々な部分に影響を与える可能性がある</li>
+<li>Componentはこれらを知る必要が無い</li>
+</ul>
+</li>
+<li>ducksの構成など、密接に結びつけるユーザーもいる。
+
+<ul>
+<li>デフォルトでは、actionとreducerの1:1マッピングは全く無い</li>
+<li>1つのactionで、複数のreducerをハンドリングしたい場合は、そのパラダイムから脱却する時</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="その他の所感補足-7" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E6%89%80%E6%84%9F%E8%A3%9C%E8%B6%B3-7"><i class="fa fa-link"></i></a>その他の所感・補足</h3>
+
+<ul>
+<li>例えば<code>CLEAR</code>みたいなactionが来たら全部のデータを消す、みたいなパターンで、1:1対応しない事はあるので、このへんは柔軟に活用するのがよさそう
+
+<ul>
+<li>
+<code>CLEAR_FOO_DATA</code>, <code>CLEAR_BAZ_DATA</code>みたいに分ける必要は無いよね、ということだと思われる</li>
+</ul>
+</li>
+<li>片一方、あんまりカジュアルにやりすぎると、偶然Action名が重複して事故るとかもありえそう。</li>
+</ul>

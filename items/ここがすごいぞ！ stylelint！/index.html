@@ -1,0 +1,206 @@
+
+<h1>
+<span id="tldr" class="fragment"></span><a href="#tldr"><i class="fa fa-link"></i></a>tl;dr</h1>
+
+<ul>
+<li>
+<a href="http://eslint.org/" rel="nofollow noopener" target="_blank">ESLint</a>っぽいCSS用のLint</li>
+<li>
+<a href="https://github.com/postcss/postcss" rel="nofollow noopener" target="_blank">PostCSS</a>プラグインとして動作するので色々嬉しい</li>
+<li>SCSSもだいたい使える</li>
+</ul>
+
+<h1>
+<span id="stylelint" class="fragment"></span><a href="#stylelint"><i class="fa fa-link"></i></a>stylelint</h1>
+
+<p>ESLintのようなconfigでPostCSSプラグインとして動く<a href="http://stylelint.io/" rel="nofollow noopener" target="_blank">stylelint</a>。<br>
+唐揚げチャーハンのような「美味いものと美味いもの組み合わせたら絶対おいしいじゃん！」みたいなプロダクトが実際とても良かったので色々利点を記載。</p>
+
+<p>導入についての手順などはすでに記事があったので、そちらへリンクしたい</p>
+
+<ul>
+<li><a href="http://qiita.com/makotot/items/c266ed11ada1423cb96e" id="reference-7de2e3810cc505716425">CSSのLintをstylelintにする
+</a></li>
+</ul>
+
+<h2>
+<span id="eslintっぽくて良い所" class="fragment"></span><a href="#eslint%E3%81%A3%E3%81%BD%E3%81%8F%E3%81%A6%E8%89%AF%E3%81%84%E6%89%80"><i class="fa fa-link"></i></a>ESLintっぽくて良い所</h2>
+
+<p>javascriptのLinterとしてスタンダードになってきたESLintに非常に良く似て作られているので、一度そちらを導入していればstylelintの導入はおそらくすんなり出来る。</p>
+
+<p>また、ESLintの持っていた良い所をそのまま持ってきたような良さがある。</p>
+
+<h3>
+<span id="config周りがeslintにすごく近いので覚えることが少なめ" class="fragment"></span><a href="#config%E5%91%A8%E3%82%8A%E3%81%8Ceslint%E3%81%AB%E3%81%99%E3%81%94%E3%81%8F%E8%BF%91%E3%81%84%E3%81%AE%E3%81%A7%E8%A6%9A%E3%81%88%E3%82%8B%E3%81%93%E3%81%A8%E3%81%8C%E5%B0%91%E3%81%AA%E3%82%81"><i class="fa fa-link"></i></a>config周りがESLintにすごく近いので覚えることが少なめ</h3>
+
+<p>肝となる<a href="http://stylelint.io/user-guide/configuration/" rel="nofollow noopener" target="_blank">stylelintのconfig</a>は、だいたいこんな感じで、ESLintにかなり近く作られているので、先にESLintを導入していれば覚えることは少ないはず。</p>
+
+<div class="code-frame" data-lang="stylelintrc"><div class="highlight"><pre>{
+  "plugins": [
+    "../some-rule-set.js"
+  ],
+  "rules": {
+    "block-no-empty": null,
+    "color-no-invalid-hex": true,
+  },
+}
+</pre></div></div>
+
+<p>config関連は、下記のような部分もESLintと同様に扱える</p>
+
+<ul>
+<li>設定は<code>package.json</code>,<code>.stylelintrc</code>でも設定可能。<code>stylelint.config.js</code>とすればJavaScript Objectとして設定を書ける</li>
+<li>無視対象のファイルを<code>.stylelintignore</code>などで設定できる</li>
+<li>
+<a href="http://stylelint.io/user-guide/plugins/" rel="nofollow noopener" target="_blank">plugin</a>, <a href="http://stylelint.io/user-guide/configuration/#extends" rel="nofollow noopener" target="_blank">extend</a>の機能がある（後述）</li>
+</ul>
+
+<h3>
+<span id="デフォルトでルールが設定されてないので既存プロジェクトに導入しやすい" class="fragment"></span><a href="#%E3%83%87%E3%83%95%E3%82%A9%E3%83%AB%E3%83%88%E3%81%A7%E3%83%AB%E3%83%BC%E3%83%AB%E3%81%8C%E8%A8%AD%E5%AE%9A%E3%81%95%E3%82%8C%E3%81%A6%E3%81%AA%E3%81%84%E3%81%AE%E3%81%A7%E6%97%A2%E5%AD%98%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E3%81%AB%E5%B0%8E%E5%85%A5%E3%81%97%E3%82%84%E3%81%99%E3%81%84"><i class="fa fa-link"></i></a>デフォルトでルールが設定されてないので既存プロジェクトに導入しやすい</h3>
+
+<p>同様のツールである <a href="https://github.com/CSSLint/csslint/" rel="nofollow noopener" target="_blank">CSSLint</a> など、デフォルトでルールがたくさん設定されているLinterの場合、既存プロジェクトに導入するのは逐一ルールをdisableにするか、大量に吐き出されるであろうlintを潰さないとまともに使えない状況で困難だった（そしてだいたい途中で辛くなって挫折する）</p>
+
+<p>stylelintはESLint同様、<a href="http://stylelint.io/user-guide/configuration/#rules" rel="nofollow noopener" target="_blank">デフォルトでは何のルールも設定されてない</a>。<br>
+この事に良し悪しはあれど、既存プロジェクトへの導入では上記のような苦悩が無く、無理なく適用可能なルールから導入していける。</p>
+
+<h3>
+<span id="extendsの機能があるので新規プロジェクト向けにはstylelint-config-standardが使える" class="fragment"></span><a href="#extends%E3%81%AE%E6%A9%9F%E8%83%BD%E3%81%8C%E3%81%82%E3%82%8B%E3%81%AE%E3%81%A7%E6%96%B0%E8%A6%8F%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E5%90%91%E3%81%91%E3%81%AB%E3%81%AFstylelint-config-standard%E3%81%8C%E4%BD%BF%E3%81%88%E3%82%8B"><i class="fa fa-link"></i></a>extendsの機能があるので、新規プロジェクト向けには<a href="https://github.com/stylelint/stylelint-config-standard" rel="nofollow noopener" target="_blank">stylelint-config-standard</a>が使える</h3>
+
+<p>ルールが何もないのは新規プロジェクトでは全く無意味。<br>
+「推奨ルールがあってくれないと何を入れたらいいかわからない」という人にも安心。ESLintでは<code>eslint:recommended</code>があるように、<a href="https://github.com/stylelint/stylelint-config-standard" rel="nofollow noopener" target="_blank">stylelint-config-standard</a>が用意されている。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm install stylelint stylelint-config-standard -D
+</pre></div></div>
+
+<div class="code-frame" data-lang="stylelintrc"><div class="highlight"><pre>{
+  "extends": "stylelint-config-standard"
+}
+</pre></div></div>
+
+<p>これでオススメルールが追加された状態になる。</p>
+
+<p>もしもっと他のextendsを探したければ<a href="https://www.npmjs.com/browse/keyword/stylelint-config" rel="nofollow noopener" target="_blank">stylelint-config</a>のタグから探せる。</p>
+
+<h2>
+<span id="postcssを利用している恩恵の良い所" class="fragment"></span><a href="#postcss%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E6%81%A9%E6%81%B5%E3%81%AE%E8%89%AF%E3%81%84%E6%89%80"><i class="fa fa-link"></i></a>PostCSSを利用している恩恵の良い所</h2>
+
+<p>stylelintはパーサーとしてPostCSSを利用しているので、その恩恵にあやかれる。</p>
+
+<h3>
+<span id="gulpなどでpostcssを利用しているなら追加するだけで良い" class="fragment"></span><a href="#gulp%E3%81%AA%E3%81%A9%E3%81%A7postcss%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E3%81%AA%E3%82%89%E8%BF%BD%E5%8A%A0%E3%81%99%E3%82%8B%E3%81%A0%E3%81%91%E3%81%A7%E8%89%AF%E3%81%84"><i class="fa fa-link"></i></a>gulpなどでPostCSSを利用しているなら追加するだけで良い</h3>
+
+<p><a href="https://github.com/postcss/autoprefixer" rel="nofollow noopener" target="_blank">autoprefixer</a>など、PostCSSを既に導入しているプロジェクトも少なく無いだろう。そんなプロダクトにとってstylelintを導入するのはとても簡単。<br>
+既存のpostcssのpluginに<code>stylelint</code>と<code>postcssReporter</code>を追加するだけで良い</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">Gulpfile.js</span></div>
+<div class="highlight"><pre>  <span class="p">:</span>
+<span class="kd">var</span> <span class="nx">stylelint</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">stylelint</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">postcssReporter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">postcss-reporter</span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">:</span>
+<span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">postcss</span><span class="dl">'</span><span class="p">,</span>  <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="nx">gulp</span><span class="p">.</span><span class="nx">src</span><span class="p">(</span><span class="dl">"</span><span class="s2">path/to/css</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">postcss</span><span class="p">([</span>
+      <span class="nx">autoprefixer</span><span class="p">(</span><span class="nx">autoprefixerOpts</span><span class="p">),</span> 
+      <span class="nx">postcssOpacity</span><span class="p">,</span>
+      <span class="nx">stylelint</span><span class="p">(),</span> <span class="c1">// これを追加</span>
+      <span class="nx">postcssReporter</span><span class="p">({</span><span class="na">clearMessages</span><span class="p">:</span> <span class="kc">true</span><span class="p">}),</span> <span class="c1">// こっちも必要</span>
+    <span class="p">]))</span>
+    <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">gulp</span><span class="p">.</span><span class="nx">dest</span><span class="p">(</span><span class="dl">'</span><span class="s1">./web/css</span><span class="dl">'</span><span class="p">));</span>
+<span class="p">});</span>
+
+</pre></div>
+</div>
+
+<p><a href="http://stylelint.io/user-guide/postcss-plugin/#example-a" rel="nofollow noopener" target="_blank">gruntのexample</a>や<a href="http://stylelint.io/user-guide/postcss-plugin/#example-c" rel="nofollow noopener" target="_blank">postcssを直接扱うexample</a>がほしければ公式にある。</p>
+
+<p>当然、<a href="http://stylelint.io/user-guide/cli/" rel="nofollow noopener" target="_blank">Command Line</a>から直接叩くことも出来る。なので、gulpやらを使いたくない人はこちらを使うと良いだろう。</p>
+
+<h3>
+<span id="scsssugerssなどにも対応" class="fragment"></span><a href="#scsssugerss%E3%81%AA%E3%81%A9%E3%81%AB%E3%82%82%E5%AF%BE%E5%BF%9C"><i class="fa fa-link"></i></a>Scss、SugerSSなどにも対応</h3>
+
+<p>PostCSSがCSS-likeな言語をサポートしているScss, <a href="https://github.com/postcss/sugarss" rel="nofollow noopener" target="_blank">SugerSS</a>などを、stylelintでもそのまま使える（LessはExperimentalの模様）</p>
+
+<p>gulpで使いたければこんな感じになる</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">Gulpfile.js</span></div>
+<div class="highlight"><pre>  <span class="p">:</span>
+<span class="kd">var</span> <span class="nx">postcssScss</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">postcss-scss</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">stylelint</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">stylelint</span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">:</span>
+<span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">scss-lint</span><span class="dl">'</span><span class="p">,</span>  <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="nx">gulp</span><span class="p">.</span><span class="nx">src</span><span class="p">(</span><span class="dl">"</span><span class="s2">path/to/scss</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">postcss</span><span class="p">([</span>
+      <span class="nx">stylelint</span><span class="p">(),</span> <span class="c1">// これを追加</span>
+      <span class="nx">postcssReporter</span><span class="p">({</span><span class="na">clearMessages</span><span class="p">:</span> <span class="kc">true</span><span class="p">}),</span> <span class="c1">// こっちも必要</span>
+    <span class="p">],</span> <span class="p">{</span><span class="na">syntax</span><span class="p">:</span> <span class="nx">postcssScss</span><span class="p">}))</span>
+    <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">gulp</span><span class="p">.</span><span class="nx">dest</span><span class="p">(</span><span class="dl">'</span><span class="s1">./web/css</span><span class="dl">'</span><span class="p">));</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+
+<p>ただし、残念ながら<a href="http://stylelint.io/user-guide/rules/no-browser-hacks/" rel="nofollow noopener" target="_blank">no-browser-hacks</a>など、一部のルールはうまく扱えない<sup id="fnref1"><a href="#fn1" rel="footnote" title="軽くコードを追ってみたが、どうもこれはPostCSSの仕様によるものらしい。">1</a></sup></p>
+
+<h3>
+<span id="postcssと同じapiを利用してrulesが作れる" class="fragment"></span><a href="#postcss%E3%81%A8%E5%90%8C%E3%81%98api%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%A6rules%E3%81%8C%E4%BD%9C%E3%82%8C%E3%82%8B"><i class="fa fa-link"></i></a>PostCSSと同じAPIを利用してrulesが作れる</h3>
+
+<p>恩恵としては地味だが、独自Ruleを作る際に<a href="https://github.com/postcss/postcss/blob/master/docs/api.md#root-node" rel="nofollow noopener" target="_blank">PostCSSのAPI</a>を扱えるのは利点がある。</p>
+
+<p>PostCSSのpluginを書いたことがある人ならば（そんな人がどの程度いるのかは不明）すぐ書けるし、ルールをpluginに移植したくなったり、既存のpluginをルール化したい時もそんなに難しくない<sup id="fnref2"><a href="#fn2" rel="footnote" title="実際、no-browser-hacksなどは、stylehacksという別なPostCSSプラグインを使って作られている。">2</a></sup>。</p>
+
+<p>例えばカスタムルールはこんな具合で書ける</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">custom-plugin.js</span></div>
+<div class="highlight"><pre><span class="c1">// ruleはpluginの一部として記載する</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">stylelint</span><span class="p">.</span><span class="nx">createPlugin</span><span class="p">(</span><span class="nx">ruleName</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">expectationKeyword</span><span class="p">,</span> <span class="nx">optionsObject</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kd">function</span><span class="p">(</span><span class="nx">root</span><span class="p">,</span> <span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+     <span class="c1">// PostCSSのRoot Nodeが取得されるので、これを利用してruleを書いていく</span>
+  <span class="p">}</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="その他良い所" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E8%89%AF%E3%81%84%E6%89%80"><i class="fa fa-link"></i></a>その他良い所</h2>
+
+<h3>
+<span id="ルール違反時のメッセージをカスタマイズ出来る" class="fragment"></span><a href="#%E3%83%AB%E3%83%BC%E3%83%AB%E9%81%95%E5%8F%8D%E6%99%82%E3%81%AE%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E3%82%92%E3%82%AB%E3%82%B9%E3%82%BF%E3%83%9E%E3%82%A4%E3%82%BA%E5%87%BA%E6%9D%A5%E3%82%8B"><i class="fa fa-link"></i></a>ルール違反時のメッセージをカスタマイズ出来る</h3>
+
+<p>多分ESLintなどには無い（と思う）が、表示するメッセージをカスタマイズすることが出来る。これはデザイナなど非エンジニアにもフレンドリーだろう。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">stylelint.config.js</span></div>
+<div class="highlight"><pre><span class="p">{</span>
+  <span class="dl">"</span><span class="s2">color-hex-case</span><span class="dl">"</span><span class="p">:</span> <span class="p">[</span> <span class="dl">"</span><span class="s2">lower</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">message</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">色はhexで統一しましょう</span><span class="dl">"</span>
+  <span class="p">}</span> <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="atom周り充実" class="fragment"></span><a href="#atom%E5%91%A8%E3%82%8A%E5%85%85%E5%AE%9F"><i class="fa fa-link"></i></a>Atom周り充実</h3>
+
+<p><a href="https://github.com/AtomLinter/linter-stylelint" rel="nofollow noopener" target="_blank">linter-stylelint</a>や<code>.stylelintrc</code>のアイコンなど、Atomプラグインが一通り対応されている。</p>
+
+<h3>
+<span id="stylefmtと組み合わせて自動修正" class="fragment"></span><a href="#stylefmt%E3%81%A8%E7%B5%84%E3%81%BF%E5%90%88%E3%82%8F%E3%81%9B%E3%81%A6%E8%87%AA%E5%8B%95%E4%BF%AE%E6%AD%A3"><i class="fa fa-link"></i></a><a href="https://github.com/morishitter/stylefmt" rel="nofollow noopener" target="_blank">stylefmt</a>と組み合わせて自動修正</h3>
+
+<p><code>eslint --fix</code>的な自動修正として、stylefmtというプラグインとの組み合わせが言及されている。実はまだここまで手をつけれていないが、組み合わせればかなり便利そう。</p>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>軽くコードを追ってみたが、どうもこれはPostCSSの仕様によるものらしい。 <a href="#fnref1">↩</a></p>
+</li>
+
+<li id="fn2">
+<p>実際、no-browser-hacksなどは、<a href="https://github.com/ben-eb/stylehacks" rel="nofollow noopener" target="_blank">stylehacks</a>という別なPostCSSプラグインを使って作られている。 <a href="#fnref2">↩</a></p>
+</li>
+
+</ol>
+</div>

@@ -1,0 +1,132 @@
+<p>coroutineでタイムアウトを取り扱うようなテストをしようとした時に詰まったのでメモ</p>
+
+<h1>
+<span id="準備" class="fragment"></span><a href="#%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>準備</h1>
+
+<p>今回はざっくりこんなコードがあった場合を考える</p>
+
+<div class="code-frame" data-lang="kotlin"><div class="highlight"><pre><span class="kd">class</span> <span class="nc">Sample</span> <span class="p">{</span>
+    <span class="c1">// テストしたいコード</span>
+    <span class="k">suspend</span> <span class="k">fun</span> <span class="nf">methodWithTimeout</span><span class="p">(</span><span class="n">suspendItem</span><span class="p">:</span> <span class="nc">SuspendItem</span><span class="p">):</span> <span class="nc">Int</span><span class="p">?{</span>
+        <span class="k">return</span> <span class="nf">withTimeoutOrNull</span><span class="p">(</span><span class="m">100L</span><span class="p">){</span>
+            <span class="n">suspendItem</span><span class="p">.</span><span class="nf">someAsync</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nc">SuspendItem</span> <span class="p">{</span>
+    <span class="c1">// ランダムにdelayして値を返すような関数を考える。テスト時はこちらをmockすることを考える</span>
+    <span class="k">suspend</span> <span class="k">fun</span> <span class="nf">someAsync</span><span class="p">():</span> <span class="nc">Int</span> <span class="p">{</span>
+        <span class="nf">delay</span><span class="p">(</span><span class="nc">Random</span><span class="p">.</span><span class="nf">nextLong</span><span class="p">(</span><span class="m">10000L</span><span class="p">))</span>
+        <span class="k">return</span> <span class="m">10</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="テストを書く" class="fragment"></span><a href="#%E3%83%86%E3%82%B9%E3%83%88%E3%82%92%E6%9B%B8%E3%81%8F"><i class="fa fa-link"></i></a>テストを書く</h1>
+
+<p>mockには今回<code>mockito-kotlin</code>を利用している。<br>
+正常系を考える場合は下記のように特に考えずにmockすれば良い</p>
+
+<div class="code-frame" data-lang="kotlin"><div class="highlight"><pre><span class="nd">@Test</span>
+<span class="k">fun</span> <span class="nf">methodWithMock</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">val</span> <span class="py">s</span> <span class="p">=</span> <span class="n">mock</span><span class="p">&lt;</span><span class="nc">SuspendItem</span><span class="p">&gt;{</span>
+        <span class="nf">onBlocking</span> <span class="p">{</span>
+            <span class="nf">someAsync</span><span class="p">()</span>
+        <span class="p">}</span> <span class="n">doReturn</span> <span class="m">10</span>
+    <span class="p">}</span>
+    <span class="nf">runBlocking</span> <span class="p">{</span>
+        <span class="kd">val</span> <span class="py">result</span> <span class="p">=</span> <span class="nc">Sample</span><span class="p">().</span><span class="nf">methodWithTimeout</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="nf">assertEquals</span><span class="p">(</span><span class="m">10</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>そしてタイムアウトを考える場合、<code>Thread.sleep</code>などを考えたくなるがこれはうまくいかない</p>
+
+<div class="code-frame" data-lang="kotlin"><div class="highlight"><pre><span class="c1">// 駄目なケース</span>
+<span class="nd">@Test</span>
+<span class="k">fun</span> <span class="nf">methodWithMock_invalid</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">val</span> <span class="py">s</span> <span class="p">=</span> <span class="n">mock</span><span class="p">&lt;</span><span class="nc">SuspendItem</span><span class="p">&gt;{</span>
+        <span class="nf">onBlocking</span> <span class="p">{</span>
+            <span class="nf">someAsync</span><span class="p">()</span>
+        <span class="p">}</span> <span class="nf">doAnswer</span> <span class="p">{</span>
+            <span class="nc">Thread</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="m">10000</span><span class="p">)</span>
+            <span class="m">10</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nf">runBlocking</span> <span class="p">{</span>
+        <span class="kd">val</span> <span class="py">result</span> <span class="p">=</span> <span class="nc">Sample</span><span class="p">().</span><span class="nf">methodWithTimeout</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="nf">assertEquals</span><span class="p">(</span><span class="k">null</span><span class="p">,</span><span class="n">result</span><span class="p">)</span> <span class="c1">// 通らない！</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="解法testcoroutinecontextを利用する" class="fragment"></span><a href="#%E8%A7%A3%E6%B3%95testcoroutinecontext%E3%82%92%E5%88%A9%E7%94%A8%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>解法：TestCoroutineContextを利用する</h2>
+
+<p>どうすれば良いのか色々調べると<code>TestCoroutineContext</code>を利用すれば良いと判明した</p>
+
+<ul>
+<li><a href="https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.test/-test-coroutine-context/" rel="nofollow noopener" target="_blank">test-coroutine-context</a></li>
+<li><a href="https://github.com/nhaarman/mockito-kotlin/issues/311#issuecomment-459265712" rel="nofollow noopener" target="_blank">mockito-kotlin#311</a></li>
+</ul>
+
+<p>こんな感じになる</p>
+
+<div class="code-frame" data-lang="kotlin"><div class="highlight"><pre><span class="nd">@Test</span>
+<span class="k">fun</span> <span class="nf">methodWithMock_withTestCoroutineContext</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">val</span> <span class="py">context</span> <span class="p">=</span> <span class="nc">TestCoroutineContext</span><span class="p">()</span>
+    <span class="nf">runBlocking</span><span class="p">(</span><span class="n">context</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">val</span> <span class="py">job</span> <span class="p">=</span> <span class="nc">GlobalScope</span><span class="p">.</span><span class="nf">launch</span><span class="p">(</span><span class="n">context</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">val</span> <span class="py">s</span> <span class="p">=</span> <span class="n">mock</span><span class="p">&lt;</span><span class="nc">SuspendItem</span><span class="p">&gt;</span> <span class="p">{</span>
+                <span class="nf">onBlocking</span> <span class="p">{</span>
+                    <span class="nf">someAsync</span><span class="p">()</span>
+                <span class="p">}</span> <span class="nf">doAnswer</span> <span class="p">{</span>
+                    <span class="n">context</span><span class="p">.</span><span class="nf">advanceTimeBy</span><span class="p">(</span><span class="m">10L</span><span class="p">)</span> <span class="c1">// 時間を進める</span>
+                    <span class="m">10</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="kd">val</span> <span class="py">result</span> <span class="p">=</span> <span class="nc">Sample</span><span class="p">().</span><span class="nf">methodWithTimeout</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="nf">assertEquals</span><span class="p">(</span><span class="m">10</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">job</span><span class="p">.</span><span class="nf">join</span><span class="p">()</span>
+        <span class="nf">assertEquals</span><span class="p">(</span><span class="k">true</span><span class="p">,</span> <span class="n">job</span><span class="p">.</span><span class="n">isCompleted</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="kotlin"><div class="highlight"><pre><span class="nd">@Test</span>
+<span class="k">fun</span> <span class="nf">methodWithMock_withTestCoroutineContext_timeout</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">val</span> <span class="py">context</span> <span class="p">=</span> <span class="nc">TestCoroutineContext</span><span class="p">()</span>
+    <span class="nf">runBlocking</span><span class="p">(</span><span class="n">context</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">val</span> <span class="py">job</span> <span class="p">=</span> <span class="nc">GlobalScope</span><span class="p">.</span><span class="nf">launch</span><span class="p">(</span><span class="n">context</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">val</span> <span class="py">s</span> <span class="p">=</span> <span class="n">mock</span><span class="p">&lt;</span><span class="nc">SuspendItem</span><span class="p">&gt;</span> <span class="p">{</span>
+                <span class="nf">onBlocking</span> <span class="p">{</span>
+                    <span class="nf">someAsync</span><span class="p">()</span>
+                <span class="p">}</span> <span class="nf">doAnswer</span> <span class="p">{</span>
+                    <span class="n">context</span><span class="p">.</span><span class="nf">advanceTimeBy</span><span class="p">(</span><span class="m">20000000L</span><span class="p">)</span> <span class="c1">// タイムアウトするぐらい時間を進める</span>
+                    <span class="m">10</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="kd">val</span> <span class="py">result</span> <span class="p">=</span> <span class="nc">Sample</span><span class="p">().</span><span class="nf">methodWithTimeout</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="nf">assertEquals</span><span class="p">(</span><span class="k">null</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span> <span class="c1">// Timeoutしてnullが返ってきた！</span>
+        <span class="p">}</span>
+        <span class="n">job</span><span class="p">.</span><span class="nf">join</span><span class="p">()</span> <span class="c1">// joinを忘れるとテストが走らずにpassしてしまうことに注意</span>
+        <span class="nf">assertEquals</span><span class="p">(</span><span class="k">true</span><span class="p">,</span> <span class="n">job</span><span class="p">.</span><span class="n">isCompleted</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>ひとまずこれで十分に動いたが、下記などは理解が浅いので未解決な箇所として残っている。</p>
+
+<ul>
+<li>
+<code>GlobalScope.launch</code>以外のscopeなどでは上手く動かすことができなかった。</li>
+<li>
+<code>runBlocking</code>に<code>context</code>を渡さないとデッドロックが起きる？のかうまく動かなかった</li>
+</ul>
+
+<p>おそらくもう少しシンプルに書く手法がありそうだが、今回は切り上げた。</p>

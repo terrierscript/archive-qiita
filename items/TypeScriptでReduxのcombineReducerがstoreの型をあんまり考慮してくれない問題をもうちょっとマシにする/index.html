@@ -1,0 +1,114 @@
+
+<h1>
+<span id="tl-dr" class="fragment"></span><a href="#tl-dr"><i class="fa fa-link"></i></a>TL, DR</h1>
+
+<ul>
+<li>combineReducerの型がanyになっていて、正しくないものが許容されている。</li>
+<li>なのでここに補助的な自前の型を作ることでなんとかしようという試み</li>
+<li>次期バージョン(redux 4〜)で公式にサポートされるので、待てるならば待って良い</li>
+</ul>
+
+<h1>
+<span id="詳細combinereducerの現状の型の問題点" class="fragment"></span><a href="#%E8%A9%B3%E7%B4%B0combinereducer%E3%81%AE%E7%8F%BE%E7%8A%B6%E3%81%AE%E5%9E%8B%E3%81%AE%E5%95%8F%E9%A1%8C%E7%82%B9"><i class="fa fa-link"></i></a>詳細：combineReducerの現状の型の問題点</h1>
+
+<p><code>combineReducer</code>は、下記のように定義されている。<br>
+<a href="https://github.com/reactjs/redux/blob/master/index.d.ts" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/reactjs/redux/blob/master/index.d.ts</a></p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="kr">interface</span> <span class="nx">ReducersMapObject</span> <span class="p">{</span> <span class="p">[</span><span class="nx">key</span><span class="p">:</span> <span class="nx">string</span><span class="p">]:</span> <span class="nx">Reducer</span><span class="o">&lt;</span><span class="nx">any</span><span class="o">&gt;</span> <span class="p">}</span>
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">combineReducers</span><span class="o">&lt;</span><span class="nx">S</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">reducers</span><span class="p">:</span> <span class="nx">ReducersMapObject</span><span class="p">):</span> <span class="nx">Reducer</span><span class="o">&lt;</span><span class="nx">S</span><span class="o">&gt;</span><span class="p">;</span>
+</pre></div></div>
+
+<p>返り値となるState型<code>&lt;S&gt;</code>を指定できるものの、<code>ReducersMapObject</code>が<code>Reducer&lt;any&gt;</code>とされているため、stateと違うredcerを入れてもエラーになってくれない</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">fooReducer</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">number</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">bazReducer</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kr">interface</span> <span class="nx">CombinedState</span> <span class="p">{</span>
+  <span class="nl">foo</span><span class="p">:</span> <span class="nx">number</span><span class="p">,</span>
+  <span class="nx">baz</span><span class="p">:</span> <span class="nx">string</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1">// こんな感じになっていてもエラーにならない</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">rootReducer</span> <span class="o">=</span> <span class="nx">combineReducers</span><span class="o">&lt;</span><span class="nx">CombinedState</span><span class="o">&gt;</span><span class="p">({</span>
+  <span class="na">foo</span><span class="p">:</span> <span class="nx">bazReducer</span><span class="p">,</span>
+  <span class="na">baz</span><span class="p">:</span> <span class="nx">fooReducer</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>なので、自前で型を作って対応する必要がある。</p>
+
+<h2>
+<span id="combinereducerとstateを整合する型" class="fragment"></span><a href="#combinereducer%E3%81%A8state%E3%82%92%E6%95%B4%E5%90%88%E3%81%99%E3%82%8B%E5%9E%8B"><i class="fa fa-link"></i></a>combineReducerとstateを整合する型</h2>
+
+<p>適当にこんな感じで作った。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre>
+<span class="k">export</span> <span class="nx">type</span> <span class="nx">CombineReducerMap</span><span class="o">&lt;</span><span class="nx">S</span> <span class="kd">extends</span> <span class="p">{}</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="nx">K</span> <span class="k">in</span> <span class="nx">keyof</span> <span class="nx">S</span><span class="p">]:</span> <span class="nx">Reducer</span><span class="o">&lt;</span><span class="nx">S</span><span class="p">[</span><span class="nx">K</span><span class="p">]</span><span class="o">&gt;</span> <span class="p">}</span>
+</pre></div></div>
+
+<p>こんな感じで使う</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="kr">interface</span> <span class="nx">CombinedState</span> <span class="p">{</span>
+  <span class="nl">foo</span><span class="p">:</span> <span class="nx">number</span><span class="p">,</span>
+  <span class="nx">baz</span><span class="p">:</span> <span class="nx">string</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1">// おかしなreducerの場合はこの変数がエラーとなる</span>
+<span class="kd">const</span> <span class="nx">reducerMap</span> <span class="p">:</span> <span class="nx">CombineReducerMap</span><span class="o">&lt;</span><span class="nx">CombinedState</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">foo</span><span class="p">:</span> <span class="nx">fooReducer</span><span class="p">,</span>
+  <span class="na">baz</span><span class="p">:</span> <span class="nx">bazReducer</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">someReducer</span> <span class="o">=</span> <span class="nx">combineReducers</span><span class="o">&lt;</span><span class="nx">CombinedState</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">reducerMap</span><span class="p">)</span>
+
+</pre></div></div>
+
+<p><code>combineReducers</code>自体の型を上書きする方が良さそうだったが、さくっとやれなかったので一旦これで妥協した。</p>
+
+<h2>
+<span id="補足" class="fragment"></span><a href="#%E8%A3%9C%E8%B6%B3"><i class="fa fa-link"></i></a>補足</h2>
+
+<p>nextブランチでは既にこの問題は修正されているので、一旦我慢しておいてもそのうちなんとかなりそうな見込みである<br>
+<a href="https://github.com/reactjs/redux/pull/1413" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/reactjs/redux/pull/1413</a><br>
+<a href="https://github.com/reactjs/redux/blob/next/index.d.ts" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/reactjs/redux/blob/next/index.d.ts</a></p>
+
+<h1>
+<span id="最終的なサンプル" class="fragment"></span><a href="#%E6%9C%80%E7%B5%82%E7%9A%84%E3%81%AA%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB"><i class="fa fa-link"></i></a>最終的なサンプル</h1>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">Reducer</span><span class="p">,</span> <span class="nx">combineReducers</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+
+
+<span class="k">export</span> <span class="nx">type</span> <span class="nx">CombineReducerMap</span><span class="o">&lt;</span><span class="nx">S</span> <span class="kd">extends</span> <span class="p">{}</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="nx">K</span> <span class="k">in</span> <span class="nx">keyof</span> <span class="nx">S</span><span class="p">]:</span> <span class="nx">Reducer</span><span class="o">&lt;</span><span class="nx">S</span><span class="p">[</span><span class="nx">K</span><span class="p">]</span><span class="o">&gt;</span> <span class="p">}</span>
+
+
+<span class="kd">const</span> <span class="nx">fooReducer</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">number</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">bazReducer</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">:</span> <span class="nx">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kr">interface</span> <span class="nx">CombinedState</span> <span class="p">{</span>
+  <span class="nl">foo</span><span class="p">:</span> <span class="nx">number</span><span class="p">,</span>
+  <span class="nx">baz</span><span class="p">:</span> <span class="nx">string</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">reducerMap</span> <span class="p">:</span> <span class="nx">CombineReducerMap</span><span class="o">&lt;</span><span class="nx">CombinedState</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">foo</span><span class="p">:</span> <span class="nx">fooReducer</span><span class="p">,</span>
+  <span class="na">baz</span><span class="p">:</span> <span class="nx">bazReducer</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">rootReducer</span> <span class="o">=</span> <span class="nx">combineReducers</span><span class="o">&lt;</span><span class="nx">CombinedState</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">reducerMap</span><span class="p">)</span>
+
+
+<span class="c1">// 下記はエラーになる</span>
+<span class="kd">const</span> <span class="nx">invalidReducerMap</span> <span class="p">:</span> <span class="nx">CombineReducerMap</span><span class="o">&lt;</span><span class="nx">CombinedState</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">foo</span><span class="p">:</span> <span class="nx">bazReducer</span><span class="p">,</span>
+  <span class="na">baz</span><span class="p">:</span> <span class="nx">fooReducer</span>
+<span class="p">}</span>
+
+</pre></div></div>

@@ -1,0 +1,2 @@
+<p><code>babel-plugin-transform-runtime</code> を使用して <code>babel-runtime</code> を <code>import</code> するコードに変換した場合も、<code>babel-runtime</code> が <code>babel-polyfill</code> と同様に <code>core-js</code> を使う前提になっているため、ネイティブで使える函数についてはそちらが優先されて使われます。<br>
+実行に必要な函数しかロードされなかったり、グローバルを polyfill で汚染しなかったりする点を考えると、やむを得ない事情がある場合を除いては <code>babel-plugin-transform-runtime</code> を使用される方がいいかと思います。</p>

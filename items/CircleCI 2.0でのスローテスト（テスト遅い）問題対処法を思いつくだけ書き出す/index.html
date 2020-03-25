@@ -1,0 +1,512 @@
+
+<h1>
+<span id="まえおき" class="fragment"></span><a href="#%E3%81%BE%E3%81%88%E3%81%8A%E3%81%8D"><i class="fa fa-link"></i></a>まえおき</h1>
+
+<p>スローテストの解消に関して、昨今のCIサービスを考慮した観点で自分なりの手法をまとめてみる。<br>
+CIで出来そうなことは可能な限り網羅したつもりだが、他にもあったらコメントか編集リクエストでご指摘いただきたい。</p>
+
+<h2>
+<span id="とりあつかうこととりあつかわないこと" class="fragment"></span><a href="#%E3%81%A8%E3%82%8A%E3%81%82%E3%81%A4%E3%81%8B%E3%81%86%E3%81%93%E3%81%A8%E3%81%A8%E3%82%8A%E3%81%82%E3%81%A4%E3%81%8B%E3%82%8F%E3%81%AA%E3%81%84%E3%81%93%E3%81%A8"><i class="fa fa-link"></i></a>とりあつかうこと・とりあつかわないこと</h2>
+
+<ul>
+<li>CircleCI 2.0 を前提とする。
+
+<ul>
+<li>1.0はもうすぐ無くなるので対象外</li>
+<li>他のCIサービスは今回対象としてないが、一部似たような機能があるかもしれない。</li>
+</ul>
+</li>
+<li>テストフレームワーク固有の話はなるべく排除している
+
+<ul>
+<li>サンプルコードがnodeだったりrubyだったりで統一取れてないのはご了承いただきたい。</li>
+</ul>
+</li>
+<li>
+<code>docker</code>モードを前提とする。<code>machine: true</code>での実行は検証していない
+
+<ul>
+<li>検証してないだけなので、もしかしたら動くものもあるかもしれない</li>
+</ul>
+</li>
+<li>CIではなくCD（継続デリバリー）に特化した話は除外する
+
+<ul>
+<li>転用できる部分はあるものの、あまりフォーカスしない</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="大まかな分類" class="fragment"></span><a href="#%E5%A4%A7%E3%81%BE%E3%81%8B%E3%81%AA%E5%88%86%E9%A1%9E"><i class="fa fa-link"></i></a>大まかな分類</h2>
+
+<p>大まかな方針の分類は旧来なスローテスト問題の対策と変わらないこの４つになる。<br>
+この記事中でもこの四分類を軸に話を進めていく</p>
+
+<ol>
+<li>テスト実行環境を強くする</li>
+<li>テスト実行を並列化する</li>
+<li>テスト実行する対象を絞り込む</li>
+<li>テスト実行速度を上げる</li>
+</ol>
+
+<h1>
+<span id="1-テスト実行環境を強くする" class="fragment"></span><a href="#1-%E3%83%86%E3%82%B9%E3%83%88%E5%AE%9F%E8%A1%8C%E7%92%B0%E5%A2%83%E3%82%92%E5%BC%B7%E3%81%8F%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>1. テスト実行環境を強くする</h1>
+
+<p>開発者が5人以上いて、資金に余裕があるならばお金で解決するのがなんだかんだでまず早い。<br>
+Jenkinsなど自前サーバーでは増やすのも手間だが、CIはここに関してはすぐ出来る。</p>
+
+<h2>
+<span id="1-1-インスタンス数を増やす" class="fragment"></span><a href="#1-1-%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%83%B3%E3%82%B9%E6%95%B0%E3%82%92%E5%A2%97%E3%82%84%E3%81%99"><i class="fa fa-link"></i></a>1-1. インスタンス数を増やす</h2>
+
+<p>後半に持ってきてしまったが、一番早いやり方。「開発者の人数が多くて詰まっている」というケースであれば有効。</p>
+
+<p>逆にいえば1回のテストの実行時間が減るものではないので、開発者が少なくて詰まってるわけではないが純粋にテストが遅い、という場合効果は薄いだろう。</p>
+
+<p>Plan Settingから増やすことで可能。<br>
+1台分は無料で、2台以降$50ずつ課金される形式となる。</p>
+
+<p>なかなか絶妙なラインではあるものの、他の手法をとった場合の人件費など考えると思い切って増やしてから効率化していくというのがやりやすいと思う。</p>
+
+<h2>
+<span id="1-2-performance-pricing-planに加入する" class="fragment"></span><a href="#1-2-performance-pricing-plan%E3%81%AB%E5%8A%A0%E5%85%A5%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>1-2. Performance Pricing planに加入する。</h2>
+
+<p>Performance Pricing planというちょっと隠しっぽいものがあり、これに入るとマシンのスペックそのものを上げる<code>resource_class</code>という設定を使えるようになったり、dockerのレイヤーキャッシュが使えるようになるらしい。</p>
+
+<ul>
+<li><a href="https://circleci.com/docs/2.0/configuration-reference/#resource_class" rel="nofollow noopener" target="_blank">resource_class</a></li>
+</ul>
+
+<p>自分で使ったことが無いのでわからないが、問い合わせる必要があったり戻せないなどあるらしいので、そのへんは注意</p>
+
+<ul>
+<li><a href="https://qiita.com/ara_tack/items/3386c59b59789f76b1e8" id="reference-bc8ae5a592d589741a2a">CircleCIの新しい有料プラン Performance Pricing plan について</a></li>
+<li><a href="https://tech.gamewith.co.jp/entry/2017/12/25/185239" rel="nofollow noopener" target="_blank">CircleCI 2.0 の resource_class で CPU と RAM のリソースを変更してみる</a></li>
+</ul>
+
+<h1>
+<span id="2-テスト実行を並列化する" class="fragment"></span><a href="#2-%E3%83%86%E3%82%B9%E3%83%88%E5%AE%9F%E8%A1%8C%E3%82%92%E4%B8%A6%E5%88%97%E5%8C%96%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>2. テスト実行を並列化する</h1>
+
+<p>並列化は1台CI環境で行おうとすると、DBを分割したりと結構な面倒くささがあったが、CI環境や、dockerであれば、そもそも環境が独立してるので、少しは楽に出来るようになっている</p>
+
+<h2>
+<span id="2-1-独立した処理をjobとして別に分ける-workflow" class="fragment"></span><a href="#2-1-%E7%8B%AC%E7%AB%8B%E3%81%97%E3%81%9F%E5%87%A6%E7%90%86%E3%82%92job%E3%81%A8%E3%81%97%E3%81%A6%E5%88%A5%E3%81%AB%E5%88%86%E3%81%91%E3%82%8B-workflow"><i class="fa fa-link"></i></a>2-1. 独立した処理をjobとして別に分ける (workflow)</h2>
+
+<p>多くの場合、testとlintなど独立して処理出来る事がある。<br>
+あとはサーバー用とクライアント用のテストなども独立しうる。これらはworkflowの機能で独立させることが出来る。</p>
+
+<p>workflowは、複数の処理を独立させ、並列や直列に並べるものとなる。<br>
+<a href="https://circleci.com/docs/2.0/workflows/" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/workflows/</a><br>
+独立されたjobはそれぞれ別なコンテナで動作する。</p>
+
+<p>最初は若干とっつきづらいが、読み方がわかればそこまで難解なものでもないだろう。</p>
+
+<p>例えばサーバーとフロントで分離するならこんな具合</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre><span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">fornt-test</span><span class="pi">:</span>
+    <span class="na">docker</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">image</span><span class="pi">:</span> <span class="s">circleci/node</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">yarn install</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">yarn test</span>
+  <span class="na">server-test</span><span class="pi">:</span>
+    <span class="na">docker</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">image</span><span class="pi">:</span> <span class="s">circleci/ruby</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">bundle install</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">bundle exec db:create test</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">bundle exec rspec</span>
+<span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">jobs</span><span class="pi">:</span> 
+      <span class="pi">-</span> <span class="s">front-test</span>
+      <span class="pi">-</span> <span class="s">server-test</span>
+</pre></div></div>
+
+<p>単純に独立させるだけなので、比較的簡易に導入できるだろう。</p>
+
+<p>当然その分、1つでも重い処理があれば１つのPRに対するテスト時間は縮まらないなどの弱点もある。<br>
+とはいえ複数台コンテナを契約していれば、使い終わったら順次開放されるため全体的にはサイクルのスピードが上がるだろう。</p>
+
+<h2>
+<span id="2-2-parallerismで同じタスクを並列化する" class="fragment"></span><a href="#2-2-parallerism%E3%81%A7%E5%90%8C%E3%81%98%E3%82%BF%E3%82%B9%E3%82%AF%E3%82%92%E4%B8%A6%E5%88%97%E5%8C%96%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>2-2. parallerismで同じタスクを並列化する</h2>
+
+<p>いわゆるほんとの並列化。<br>
+効果は高いが難易度も他の手段に比べると多少高いため、後回しにしてもよいだろう</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre><span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">docker</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">image</span><span class="pi">:</span> <span class="s">some-image</span>
+    <span class="na">parallelism</span><span class="pi">:</span> <span class="m">3</span>
+</pre></div></div>
+
+<p>parallelismの値を指定すれば、単純にマシンが並列化される。</p>
+
+<p>当然そのままだと無駄に同じ処理が走るだけなので、各マシンでテストするファイルを分散するようにしないといけない</p>
+
+<p><a href="https://circleci.com/docs/2.0/parallelism-faster-jobs/" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/parallelism-faster-jobs/</a></p>
+
+<p>例えばrspecの場合はこんな具合になる。</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre>      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="c1"># DBのセットアップ。parallerismを使った場合、それぞれのdockerでDBを分離出来るので、普通に実行して良い</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">db:setup</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">bundle exec rails db:setup test</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="c1"># testするファイルを特定して、rspecに渡している</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">rspec</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">bundle exec rspec -- $(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=filesize)</span>
+</pre></div></div>
+
+<p>実行するファイルを分離するための<code>circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=filesize</code></p>
+
+<p>というコマンドが少々奇妙で壁になるかもしれない。<br>
+<code>circleci</code>というCLIコマンドが自動で挿入されるので使える（らしい。細かいところは未検証）</p>
+
+<p><a href="https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros</a></p>
+
+<p>これは単なるutilなコマンドで、<code>circleci tests glob</code>は単純にglobしており、それをpipe(<code>|</code>)で<code>circleci tests split</code>というコマンドに渡して分離している。</p>
+
+<p>あくまでutilなので、ファイルを適切に分割できれば何でも良い</p>
+
+<p>「いやいやそんなのわけわからんので分割したノード番号がほしい」という場合は、<code>CIRCLE_NODE_INDEX</code>, <code>CIRCLE_NODE_TOTAL</code>という環境変数で取得が出来る。</p>
+
+<h2>
+<span id="2-3-多段化する-workspace" class="fragment"></span><a href="#2-3-%E5%A4%9A%E6%AE%B5%E5%8C%96%E3%81%99%E3%82%8B-workspace"><i class="fa fa-link"></i></a>2-3. 多段化する (workspace)</h2>
+
+<p>CircleCIのworkflowは、それぞれが独立して動くために、リソースを共有出来ない。<br>
+ここで<code>persist_to_workspace</code> , <code>attach_workspace</code>を利用することで共有する事ができる。</p>
+
+<p>例えば「準備段階」と「実行段階」を分け、「準備は並列=1でやって、テスト本体は並列=4でやりたい」みたいな場合に利用できる。</p>
+
+<p>例えばprepareで依存関係だけ解決して、testに流したいときはこんな具合。</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre><span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">prepare</span><span class="pi">:</span>
+    <span class="na">docker</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">image</span><span class="pi">:</span> <span class="s">circleci/node</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">yarn install</span> <span class="c1"># インストール処理</span>
+      <span class="pi">-</span> <span class="na">persist_to_workspace</span><span class="pi">:</span>
+          <span class="na">root</span><span class="pi">:</span> <span class="s">~/project</span> <span class="c1"># デフォルトのworking_directiroy</span>
+          <span class="na">paths</span><span class="pi">:</span> <span class="c1"># 保持したいパスを指定</span>
+            <span class="pi">-</span> <span class="s">./node_modules</span> 
+  <span class="na">test</span><span class="pi">:</span>
+<span class="s">　　　　　　　　# parallelism</span><span class="pi">:</span> <span class="s">2 ← 例えばこちらだけ並列化して使い回すというようなことをする</span>
+    <span class="s">docker</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">image</span><span class="pi">:</span> <span class="s">circleci/node</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">attach_workspace</span><span class="pi">:</span> 
+          <span class="na">at</span><span class="pi">:</span> <span class="s">~/project</span> <span class="c1"># デフォルトのworking_directiroy</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">yarn test</span> <span class="c1"># テストコマンド実行</span>
+<span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">jobs</span><span class="pi">:</span> <span class="c1"># prepare -&gt; testの順に行う</span>
+      <span class="pi">-</span> <span class="s">prepare</span>
+      <span class="pi">-</span> <span class="na">test</span><span class="pi">:</span>
+          <span class="na">requires</span><span class="pi">:</span>
+            <span class="pi">-</span> <span class="s">prepare</span>
+</pre></div></div>
+
+<p><a href="https://github.com/CircleCI-Public/circleci-demo-workflows/blob/workspace-forwarding/.circleci/config.yml" rel="nofollow noopener" target="_blank">railsの場合はこんな具合</a>のようだ。</p>
+
+<p>今回は簡易的な例示としてnpmの依存解決とテスト実行を分けるのに使ったが、公式ドキュメントの使い分けとしてはnpmやgemは<code>save_cache</code>/<code>restore_cache</code>を使うと書いてある。(<a href="https://circleci.com/docs/2.0/configuration-reference/#attach_workspace" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/configuration-reference/#attach_workspace</a>)</p>
+
+<p>キャッシュについてはまた後半に記述しているので、ご参照いただきたい。</p>
+
+<p>本来のpersist_workspaceの使い所としては、例えば<code>[フロントエンドのコードビルド -&gt; rspecのintegraitonテスト]</code>のような流れの場合はわかりやすいだろう。<br>
+アプリケーションに依存するビルドなど外部ライブラリのようにキャッシュしづらい場合だ。</p>
+
+<p>個人的にはcacheのキー管理を考えたり、インストールの方法によってはキャッシュがし辛い場合もあるので、workspaceが楽なケースはありそうと感じる。<br>
+workspaceのprepareの段階でcacheを組み合わせるみたいなのも良いだろう。</p>
+
+<h2>
+<span id="2-4-一部の処理を他のサービスに移譲する" class="fragment"></span><a href="#2-4-%E4%B8%80%E9%83%A8%E3%81%AE%E5%87%A6%E7%90%86%E3%82%92%E4%BB%96%E3%81%AE%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E3%81%AB%E7%A7%BB%E8%AD%B2%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>2-4. 一部の処理を他のサービスに移譲する</h2>
+
+<p>並列化と言って良いかわからないが、考えうる手段の一つとして並べておく。</p>
+
+<p>CirlceCI（に限らずCIツール）は割とコマンドでなんでも出来てしまうが、場合によっては複数のサービスに責務を分割するという手も考えてよいだろう。</p>
+
+<p>当然、料金や手間が逆に増えてしまうパターンはありえるが、CircleCIのymlやツールそのものと格闘したくない場合は検討の余地があるだろう。</p>
+
+<p>観点としては、下記のような部分を他に出したらどうか？など考えるのが良いだろう。</p>
+
+<ul>
+<li>Lint / Format
+
+<ul>
+<li><a href="https://github.com/marketplace/category/code-quality" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/marketplace/category/code-quality</a></li>
+</ul>
+</li>
+<li>Coverage
+
+<ul>
+<li><a href="https://github.com/marketplace/category/code-review" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/marketplace/category/code-review</a></li>
+</ul>
+</li>
+<li>Deploy
+
+<ul>
+<li><a href="https://github.com/marketplace/category/deployment" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/marketplace/category/deployment</a></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="2-5-システムリポジトリを分割する" class="fragment"></span><a href="#2-5-%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%AA%E3%83%9D%E3%82%B8%E3%83%88%E3%83%AA%E3%82%92%E5%88%86%E5%89%B2%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>2-5. システム・リポジトリを分割する</h2>
+
+<p>少しアクロバティックな話になるが、もう一つ考えうる手段として、システム自体の分割についても記載しておく。<br>
+もしすぐにシステムやリポジトリが分割可能なのであれば、早いうちに分割するのが良いだろう。<br>
+システムが肥大化しそうなタイミングで適切に分割を繰り返していければそもそもスローテストが起きづらい環境が出来るはずだ。</p>
+
+<p>モノリシックなシステムは管理はしやすいし、途中からマイクロサービスに分割していくのにエネルギーが必要なケースも多い。<br>
+しかしどこかで分けなければ組織の成長についていけなくる可能性もあるだろう。</p>
+
+<p>仮に今すぐには出来ないとしても、少しず分割を計画していくことでサービス成長の足を引っ張る前には解決出来るかもしれない。</p>
+
+<p>また、チームの形態によってはシステム自体を分けずとも、フロントとバックエンドでリポジトリだけ分割するなども一つ検討の余地があるだろう。</p>
+
+<h1>
+<span id="3-テスト実行を絞り込む" class="fragment"></span><a href="#3-%E3%83%86%E3%82%B9%E3%83%88%E5%AE%9F%E8%A1%8C%E3%82%92%E7%B5%9E%E3%82%8A%E8%BE%BC%E3%82%80"><i class="fa fa-link"></i></a>3. テスト実行を絞り込む</h1>
+
+<p>テストを実行しないということはそれだけ抜けも発生するので十分慎重に考えるべきことではある。<br>
+しかし遅すぎてCIが適切に回らないという場合であれば、一部のテストを実行しない（または任意のタイミングでのみ実行する）ということを検討しても良いだろう。</p>
+
+<h2>
+<span id="3-1-カテゴリ化テストで重いテストにマーキングする" class="fragment"></span><a href="#3-1-%E3%82%AB%E3%83%86%E3%82%B4%E3%83%AA%E5%8C%96%E3%83%86%E3%82%B9%E3%83%88%E3%81%A7%E9%87%8D%E3%81%84%E3%83%86%E3%82%B9%E3%83%88%E3%81%AB%E3%83%9E%E3%83%BC%E3%82%AD%E3%83%B3%E3%82%B0%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>3-1. カテゴリ化テストで重いテストにマーキングする</h2>
+
+<p>JUnitで言うところのカテゴリ化テストというもの。</p>
+
+<div class="code-frame" data-lang="java"><div class="highlight"><pre>    <span class="nd">@Category</span><span class="o">(</span><span class="nc">SlowTests</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+    <span class="nd">@Test</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">someTest</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">slowFunction</span><span class="o">()</span>
+    <span class="o">}</span>
+</pre></div></div>
+
+<p>CIツールの場合、お約束的に環境変数に<code>CI=true</code>という値が入ってくるので、これを使える</p>
+
+<ul>
+<li><a href="https://circleci.com/docs/2.0/env-vars/#built-in-environment-variables" rel="nofollow noopener" target="_blank">CircleCI</a></li>
+<li><a href="https://docs.travis-ci.com/user/environment-variables#Default-Environment-Variables" rel="nofollow noopener" target="_blank">TravisCI</a></li>
+<li><a href="https://documentation.codeship.com/basic/builds-and-configuration/set-environment-variables/#default-environment-variables" rel="nofollow noopener" target="_blank">Codeship</a></li>
+</ul>
+
+<h3>
+<span id="各テストフレームワークでのskip" class="fragment"></span><a href="#%E5%90%84%E3%83%86%E3%82%B9%E3%83%88%E3%83%95%E3%83%AC%E3%83%BC%E3%83%A0%E3%83%AF%E3%83%BC%E3%82%AF%E3%81%A7%E3%81%AEskip"><i class="fa fa-link"></i></a>各テストフレームワークでのskip</h3>
+
+<p>だいたいのテストフレームワークは環境変数を見ることが出来るので、skipする方法が提供されていれば、組み合わせてスキップ処理をかけることが出来るはずだ。</p>
+
+<p>「CIのとき必ず飛ばしたいわけではなく、masterだけ走らせたいんだ」みたいな場合は<code>EXECUTE_SLOW_TEST=1</code>みたいな環境変数を別途設けて、それを利用すると良いだろう</p>
+
+<h4>
+<span id="rspec" class="fragment"></span><a href="#rspec"><i class="fa fa-link"></i></a>rspec</h4>
+
+<p><a href="https://relishapp.com/rspec/rspec-core/docs/pending-and-skipped-examples/skip-examples" class="autolink" rel="nofollow noopener" target="_blank">https://relishapp.com/rspec/rspec-core/docs/pending-and-skipped-examples/skip-examples</a></p>
+
+<div class="code-frame" data-lang="rb"><div class="highlight"><pre><span class="n">describe</span> <span class="no">SomeTest</span> <span class="k">do</span>
+  <span class="n">it</span> <span class="s1">'SomeTest'</span><span class="p">,</span> <span class="ss">:skip</span> <span class="o">=&gt;</span> <span class="no">ENV</span><span class="p">[</span><span class="s2">"CI"</span><span class="p">]</span> <span class="k">do</span>
+    <span class="n">hoge</span><span class="p">.</span><span class="nf">should</span> <span class="n">eq</span><span class="p">(</span><span class="n">fuga</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div></div>
+
+<h4>
+<span id="mocha" class="fragment"></span><a href="#mocha"><i class="fa fa-link"></i></a>mocha</h4>
+
+<p><a href="https://mochajs.org/#inclusive-tests" class="autolink" rel="nofollow noopener" target="_blank">https://mochajs.org/#inclusive-tests</a><br>
+mochaでは<code>this.skip()</code>が使える。（thisを利用するためallow functionでは動かない）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">describe</span><span class="p">(</span><span class="dl">"</span><span class="s2">SomeTest</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">"</span><span class="s2">test</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">CI</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">skip</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">Some test</span><span class="dl">"</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+</pre></div></div>
+
+<p>jestの場合は<code>test.skip</code>などは用意されてるが、内部で状態をみたskipはまだ実装されてなさそう。下記のように泥臭くやるしかなさそう。<br>
+<a href="https://stackoverflow.com/questions/32723167/how-to-programmatically-skip-a-test-in-mocha" class="autolink" rel="nofollow noopener" target="_blank">https://stackoverflow.com/questions/32723167/how-to-programmatically-skip-a-test-in-mocha</a></p>
+
+<h4>
+<span id="phpunit" class="fragment"></span><a href="#phpunit"><i class="fa fa-link"></i></a>phpunit</h4>
+
+<p><a href="https://phpunit.de/manual/6.5/ja/incomplete-and-skipped-tests.html" class="autolink" rel="nofollow noopener" target="_blank">https://phpunit.de/manual/6.5/ja/incomplete-and-skipped-tests.html</a></p>
+
+<div class="code-frame" data-lang="php"><div class="highlight"><pre><span class="k">if</span><span class="p">(</span><span class="nb">getenv</span><span class="p">(</span><span class="s2">"CI"</span><span class="p">)){</span>
+    <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">markTestSkipped</span><span class="p">(</span><span class="s2">"skip test"</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="3-2-絞り込んたテストの実行タイミングを制限する" class="fragment"></span><a href="#3-2-%E7%B5%9E%E3%82%8A%E8%BE%BC%E3%82%93%E3%81%9F%E3%83%86%E3%82%B9%E3%83%88%E3%81%AE%E5%AE%9F%E8%A1%8C%E3%82%BF%E3%82%A4%E3%83%9F%E3%83%B3%E3%82%B0%E3%82%92%E5%88%B6%E9%99%90%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>3-2. 絞り込んたテストの実行タイミングを制限する</h2>
+
+<p>テストの実行タイミングを制御する手法を取り上げる。<br>
+これを上記カテゴリ化テストと組み合わせて「masterのときのみslow testを含める」「深夜だれもいない時間帯に全テストを実行」などいろいろ検討する幅ができるだろう。</p>
+
+<h3>
+<span id="3-2-1-branch名やtag名でfilterする" class="fragment"></span><a href="#3-2-1-branch%E5%90%8D%E3%82%84tag%E5%90%8D%E3%81%A7filter%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>3-2-1. branch名やtag名でfilterする</h3>
+
+<p><a href="https://circleci.com/docs/2.0/workflows/#git-tag-job-execution" rel="nofollow noopener" target="_blank">Git Tag Job Execution</a></p>
+
+<p>CircleCI 2.0 では workflowを作る<br>
+特定の命名規則で</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre><span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">build</span><span class="pi">:</span>
+          <span class="na">filters</span><span class="pi">:</span>
+            <span class="na">branch</span><span class="pi">:</span>
+              <span class="na">ignore</span><span class="pi">:</span> <span class="s">/no-test-.*/</span> <span class="c1"># no-test-から始まったらテストしない</span>
+  <span class="s">build-with-slowtest</span>
+    <span class="s">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">slowtest</span><span class="pi">:</span>
+          <span class="na">filters</span><span class="pi">:</span>
+            <span class="na">branch</span><span class="pi">:</span>
+              <span class="na">only</span><span class="pi">:</span> <span class="c1"># masterとdevelopだけslow test実行</span>
+              <span class="s">　- master</span>
+              <span class="s">　- develop</span>
+</pre></div></div>
+
+<h3>
+<span id="3-2-2-scheduleで実行するタイミングを指定する" class="fragment"></span><a href="#3-2-2-schedule%E3%81%A7%E5%AE%9F%E8%A1%8C%E3%81%99%E3%82%8B%E3%82%BF%E3%82%A4%E3%83%9F%E3%83%B3%E3%82%B0%E3%82%92%E6%8C%87%E5%AE%9A%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>3-2-2. scheduleで実行するタイミングを指定する</h3>
+
+<p><a href="https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow" rel="nofollow noopener" target="_blank">scheduling-a-workflow</a><br>
+cronの書式で、<br>
+カテゴリ化と組み合わせて、「深夜だけslow testを含めて実行」など検討しうる</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre><span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">build</span><span class="pi">:</span> <span class="c1"># 通常のビルド</span>
+    <span class="na">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">test</span>
+      <span class="pi">-</span> <span class="s">deploy</span>
+  <span class="na">nightly</span><span class="pi">:</span> <span class="c1"># 夜だけビルド</span>
+    <span class="na">triggers</span><span class="pi">:</span> <span class="c1"># triggerでタスクを指定 </span>
+      <span class="pi">-</span> <span class="na">schedule</span><span class="pi">:</span> <span class="c1"># scheduleで実行</span>
+        <span class="s">　cron</span><span class="pi">:</span> <span class="s2">"</span><span class="s">0</span><span class="nv"> </span><span class="s">1</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*"</span> <span class="c1"># UTCで記述。この場合は朝10時</span>
+          <span class="na">filters</span><span class="pi">:</span>
+            <span class="na">branches</span><span class="pi">:</span>
+              <span class="na">only</span><span class="pi">:</span>
+                <span class="pi">-</span> <span class="s">master</span> <span class="c1"># masterだけ実行</span>
+</pre></div></div>
+
+<h3>
+<span id="3-2-3-type-approval-でテストの実行を手動にする" class="fragment"></span><a href="#3-2-3-type-approval-%E3%81%A7%E3%83%86%E3%82%B9%E3%83%88%E3%81%AE%E5%AE%9F%E8%A1%8C%E3%82%92%E6%89%8B%E5%8B%95%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>3-2-3. <code>type: approval</code> でテストの実行を手動にする</h3>
+
+<p><a href="https://circleci.com/docs/2.0/workflows/#holding-a-workflow-for-a-manual-approval" rel="nofollow noopener" target="_blank">Holding a Workflow for a Manual Approval</a></p>
+
+<p>例えば、「テストしないわけにはいかないけど、pushするたびにはしたくない、かといって<code>[skip ci]</code>って毎回書くのもめんどうだし。。。」<br>
+みたいな場合はapprovalというのが使えるだろう。</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre><span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">hold</span><span class="pi">:</span>
+          <span class="na">type</span><span class="pi">:</span> <span class="s">approval</span>
+          <span class="na">filters</span><span class="pi">:</span>
+            <span class="na">branch</span><span class="pi">:</span>
+              <span class="na">ignore</span><span class="pi">:</span> <span class="s">/wip-.*/</span> <span class="c1"># wip-から始まったら手動テストにする</span>
+      <span class="pi">-</span> <span class="na">build</span><span class="pi">:</span>
+          <span class="na">requires</span><span class="pi">:</span>
+             <span class="pi">-</span> <span class="s">hold</span>
+</pre></div></div>
+
+<p>ボタンを押すと確認が出る感じになる。</p>
+
+<p><a href="https://circleci.com/docs/assets/img/docs/approval_job_dialog.png" target="_blank" rel="nofollow noopener"><img src="https://circleci.com/docs/assets/img/docs/approval_job_dialog.png" alt="画像" data-canonical-src="https://circleci.com/docs/assets/img/docs/approval_job_dialog.png" loading="lazy"></a></p>
+
+<p>ただ、CircleCI画面まで行ってボタン押さないといけないのは若干厄介かもしれない。</p>
+
+<h1>
+<span id="4-テスト実行速度を上げる" class="fragment"></span><a href="#4-%E3%83%86%E3%82%B9%E3%83%88%E5%AE%9F%E8%A1%8C%E9%80%9F%E5%BA%A6%E3%82%92%E4%B8%8A%E3%81%92%E3%82%8B"><i class="fa fa-link"></i></a>4. テスト実行速度を上げる</h1>
+
+<h2>
+<span id="4-1-依存ライブラリなどをキャッシュする-restore_cache--save_cache" class="fragment"></span><a href="#4-1-%E4%BE%9D%E5%AD%98%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E3%81%AA%E3%81%A9%E3%82%92%E3%82%AD%E3%83%A3%E3%83%83%E3%82%B7%E3%83%A5%E3%81%99%E3%82%8B-restore_cache--save_cache"><i class="fa fa-link"></i></a>4-1. 依存ライブラリなどをキャッシュする (restore_cache / save_cache)</h2>
+
+<p><a href="https://circleci.com/docs/2.0/caching/#writing-to-the-cache-in-workflows" rel="nofollow noopener" target="_blank">Writing to the Cache in Workflows</a></p>
+
+<p><code>restore_cache</code>と<code>save_cache</code>を使うことで、依存関係で持ってきたファイルをキャッシュをすることが可能。gemやnpmのインストールが時間が短くなる。</p>
+
+<p>効率的なのだがすこし記法がややこしいかもしれない。</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre>      <span class="c1"># キャッシュを復元</span>
+      <span class="pi">-</span> <span class="na">restore_cache</span><span class="pi">:</span>
+          <span class="na">keys</span><span class="pi">:</span> <span class="c1"># keyは複数指定できる。上から順になければ下のキーのキャッシュを見に行く</span>
+            <span class="pi">-</span> <span class="s">rails-demo-{{ checksum "Gemfile.lock" }}</span>
+            <span class="pi">-</span> <span class="s">rails-demo-</span>
+      <span class="c1"># bundle install</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">Install dependencies</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="s">bundle install --path=vendor/bundle --jobs 4 --retry </span><span class="m">3</span>
+      <span class="c1"># キャッシュを保存</span>
+      <span class="pi">-</span> <span class="na">save_cache</span><span class="pi">:</span>
+          <span class="na">key</span><span class="pi">:</span> <span class="s">rails-demo-{{ checksum "Gemfile.lock" }}</span>
+          <span class="na">paths</span><span class="pi">:</span>
+            <span class="pi">-</span> <span class="s">vendor/bundle</span>
+</pre></div></div>
+
+<p>先に紹介したworkspaceの機能と組み合わせて、workspaceの準備段階でさらにキャッシュを使う、ということも考えられるだろう。</p>
+
+<h2>
+<span id="4-2-docker-imageを先に作っておく" class="fragment"></span><a href="#4-2-docker-image%E3%82%92%E5%85%88%E3%81%AB%E4%BD%9C%E3%81%A3%E3%81%A6%E3%81%8A%E3%81%8F"><i class="fa fa-link"></i></a>4-2. Docker Imageを先に作っておく</h2>
+
+<p>もしプロダクトが非常に複雑（かつDockerに詳しいメンバーがいる）などであれば、既存で用意されているのと別に、独自のdockerイメージをあらかじめ作っておきpushしておくという手があるだろう。</p>
+
+<ul>
+<li><a href="https://circleci.com/docs/2.0/custom-images/" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/custom-images/</a></li>
+<li><a href="https://circleci.com/docs/2.0/private-images/" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/private-images/</a></li>
+<li><a href="https://circleci.com/docs/2.0/configuration-reference/#docker" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/configuration-reference/#docker</a></li>
+</ul>
+
+<p>以前はECRからのImage取得が難しかったが、今はaws_authを指定すれば取得することが出来る。</p>
+
+<p>ドキュメントで紹介されている<br>
+<a href="https://github.com/circleci-public/dockerfile-wizard" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/circleci-public/dockerfile-wizard</a><br>
+は、「基本はありモノ使いまわしつつちょこちょこいじりたい」という場合に使えそうだ。<br>
+当然docker hubなどを利用する必要はあるが、特段秘匿する必要が無いイメージであればこれでも十分そうだ</p>
+
+<h2>
+<span id="4-3-dbへのインサートを減らすfactorymockを利用する" class="fragment"></span><a href="#4-3-db%E3%81%B8%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B5%E3%83%BC%E3%83%88%E3%82%92%E6%B8%9B%E3%82%89%E3%81%99factorymock%E3%82%92%E5%88%A9%E7%94%A8%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>4-3. DBへのインサートを減らす・Factory・mockを利用する</h2>
+
+<p>これは昔からある一般的な話なので、列挙だけしておく。</p>
+
+<p>テストごとにSeedを流すのをやめたり、FactoryBotでいえば<code>create</code>を<code>build</code>にする、外部通信しているようなテストをmockを利用するなどテストを早くするものはいろいろある。</p>
+
+<p>このへんはアプリケーション固有の話になるので、テスト実行時のログを見ながらボトルネックを探していくことになるだろう。ぐぐるといろいろ出てくるので割愛する</p>
+
+<h2>
+<span id="4-4-circleciの記述をshellにせずymlに書く未確定な情報" class="fragment"></span><a href="#4-4-circleci%E3%81%AE%E8%A8%98%E8%BF%B0%E3%82%92shell%E3%81%AB%E3%81%9B%E3%81%9Ayml%E3%81%AB%E6%9B%B8%E3%81%8F%E6%9C%AA%E7%A2%BA%E5%AE%9A%E3%81%AA%E6%83%85%E5%A0%B1"><i class="fa fa-link"></i></a>4-4. CircleCIの記述をshellにせず、ymlに書く（未確定な情報）</h2>
+
+<p>正直これはなぜなのかわからないが、CircleCIでymlで書いていたものをshell化すると遅くなり、ymlに戻すと一瞬で終わる現象を確認したことがある<br>
+（commandの処理がどこかにキャッシュされている？）</p>
+
+<p>もしかするとバグや考慮漏れに近い可能性もあるので、将来的には変わらなくなる可能性があるものの、shellファイルの実行がやたら時間がかかっている場合、一度ymlにうつしてみるといいかもしれない。<br>
+処理を共通化したい場合はymlのalias記法を使ったりして共通化できる。<br>
+下記のように記述することで、複数のコマンド実行も可能だ。</p>
+
+<div class="code-frame" data-lang="yml"><div class="highlight"><pre><span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="pi">|</span>
+    <span class="s">some command1</span>
+    <span class="s">some command2</span>
+</pre></div></div>
+
+<p>公式ドキュメントには様々なconfigサンプル集があるので、困ったら見てみると良いだろう<br>
+<a href="https://circleci.com/docs/2.0/examples/" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/examples/</a><br>
+個人的には<a href="https://github.com/facebook/react-native/blob/master/.circleci/config.yml" rel="nofollow noopener" target="_blank">facebook/react-native</a>のconfigがいろいろすごくて学びになった</p>

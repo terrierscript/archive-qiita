@@ -1,0 +1,163 @@
+<p>何回か使ううちに微妙な所も見えつつ、とはいえ結局より良いfluxは出てき無いので付き合っている感じのRedux。</p>
+
+<p>毎回最初にどう書くんだったか忘れてしまうのでここらで自分が毎回やっているのをまとめておく。</p>
+
+<p>だいたい下記を入れておいてる前提</p>
+
+<ul>
+<li>react関連
+
+<ul>
+<li>react</li>
+<li>react-dom</li>
+</ul>
+</li>
+<li>
+<p>redux関連</p>
+
+<ul>
+<li>redux</li>
+<li>react-redux</li>
+<li>redux-actions</li>
+<li>redux-thunk</li>
+</ul>
+</li>
+<li>
+<p>babel必要ならこのへんのpreset</p>
+
+<ul>
+<li>babel-preset-react</li>
+<li>babel-preset-es2016</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="main" class="fragment"></span><a href="#main"><i class="fa fa-link"></i></a>main</h1>
+
+<p>エントリポイントになる所。あんまり考えることはない。<br>
+<code>./store</code>、<code>./container</code>は下記で記載する。</p>
+
+<p>あんまり気合いれない時はこのファイルにstoreもcontainerもまとめちゃう。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">ReactDom</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react-dom</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">setupStore</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./store</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">createContainer</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./container</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">function</span> <span class="nx">render</span><span class="p">(){</span>
+  <span class="kd">let</span> <span class="nx">containerEl</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#container</span><span class="dl">"</span><span class="p">)</span>
+  <span class="kd">let</span> <span class="nx">store</span> <span class="o">=</span> <span class="nx">setupStore</span><span class="p">()</span>
+  <span class="nx">ReactDom</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="nx">createContainer</span><span class="p">(</span><span class="nx">store</span><span class="p">),</span> <span class="nx">containerEl</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>必要があれば<code>render(containerEl)</code>みたいに外からcontainerのDOMもらったりする</p>
+
+<h1>
+<span id="store" class="fragment"></span><a href="#store"><i class="fa fa-link"></i></a>store</h1>
+
+<p>initialState + middleware設定とかしとく。<br>
+ちょいちょいいじる必要でるくせにどこでやるんだったかわすれがち</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">reducers</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./reducers</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span><span class="nx">createStore</span><span class="p">,</span> <span class="nx">applyMiddleware</span><span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">thunk</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux-thunk</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">function</span> <span class="nx">setupStore</span><span class="p">(){</span>
+  <span class="kd">const</span> <span class="nx">initialState</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">todo</span><span class="p">:</span> <span class="p">[]</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">createStore</span><span class="p">(</span>
+    <span class="nx">reducers</span><span class="p">,</span> 
+    <span class="nx">initialState</span><span class="p">,</span> 
+    <span class="nx">applyMiddleware</span><span class="p">(</span><span class="nx">thunk</span><span class="p">)</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<h1>
+<span id="container" class="fragment"></span><a href="#container"><i class="fa fa-link"></i></a>container</h1>
+
+<p>reduxとreactつなぐ部分。<br>
+connectするらへん<br>
+一番忘れてて悩む所。<br>
+ここらへんすっきりしてくれると楽なのになー。。。</p>
+
+<p>とりあえず<code>mapStateToProps</code>、<code>mapDispatchToProps</code>どちらも最初に作っておいてしまう派。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">bindActionCreators</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">connect</span><span class="p">,</span> <span class="nx">Provider</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react-redux</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">App</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./Component/App.js</span><span class="dl">"</span>
+
+<span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">actions</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./actions</span><span class="dl">"</span>
+
+<span class="kd">function</span> <span class="nx">mapStateToProps</span><span class="p">(</span><span class="nx">state</span><span class="p">){</span>
+  <span class="c1">// 必要に応じてreselectとかここで使う</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">mapDispatchToProps</span> <span class="p">(</span><span class="nx">dispatch</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// dispatchとかcomponent以下に渡したくないのでここでbindしてしまう。</span>
+  <span class="k">return</span> <span class="nx">bindActionCreators</span><span class="p">(</span><span class="nx">actions</span><span class="p">,</span> <span class="nx">dispatch</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">function</span> <span class="nx">createContainer</span><span class="p">(</span><span class="nx">store</span><span class="p">){</span>
+  <span class="kd">let</span> <span class="nx">ConnectedApp</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">,</span> <span class="nx">mapDispatchToProps</span><span class="p">)(</span><span class="nx">App</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">Provider</span> <span class="nx">store</span><span class="o">=</span><span class="p">{</span><span class="nx">store</span><span class="p">}</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">ConnectedApp</span> <span class="o">/&gt;</span>
+    <span class="o">&lt;</span><span class="sr">/Provider</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p><code>container</code>と<code>store</code>を分離するパターンの時には取り回しよくなるように<code>createContainer(store)</code>としておく。<br>
+mainファイルにまとめてしまう時はあんまりそのへん気にしない</p>
+
+<h1>
+<span id="action" class="fragment"></span><a href="#action"><i class="fa fa-link"></i></a>action</h1>
+
+<p>actionはシンプルだが、<code>redux-actions</code>使うとだいぶ便利で良い。<br>
+ちょっとredux-actもいいなと思っている昨今。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">createAction</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux-actions</span><span class="dl">"</span>
+<span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">types</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./types</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">setTodo</span> <span class="o">=</span> <span class="nx">createAction</span><span class="p">(</span><span class="nx">SET_OBJ</span><span class="p">,</span> <span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">obj</span><span class="p">)</span>
+</pre></div></div>
+
+<h2>
+<span id="types" class="fragment"></span><a href="#types"><i class="fa fa-link"></i></a>types</h2>
+
+<p>単純な定数定義</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">SET_OBJ</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">set_obj</span><span class="dl">"</span>
+</pre></div></div>
+
+<h1>
+<span id="reducer" class="fragment"></span><a href="#reducer"><i class="fa fa-link"></i></a>reducer</h1>
+
+<p>あんまり忘れない部分。<br>
+もうちょっと楽したい気もする。けどredux-actionsが未だに馴染んでないので普通に書いてる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">combineReducers</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux</span><span class="dl">'</span>
+<span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">types</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./types</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">someItem</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{},</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">){</span>
+    <span class="k">case</span> <span class="nx">types</span><span class="p">.</span><span class="na">SET_OBJ</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">assign</span><span class="p">({},</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">)</span>
+    <span class="na">default</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">state</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">rootReducer</span> <span class="o">=</span> <span class="nx">combineReducers</span><span class="p">({</span>
+  <span class="nx">someItem</span>
+<span class="p">})</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">rootReducer</span>
+</pre></div></div>

@@ -1,0 +1,401 @@
+
+<h1>
+<span id="css-in-jsの基礎" class="fragment"></span><a href="#css-in-js%E3%81%AE%E5%9F%BA%E7%A4%8E"><i class="fa fa-link"></i></a>CSS in JSの基礎</h1>
+
+<ul>
+<li>原点は<a href="https://speakerdeck.com/vjeux/react-css-in-js" rel="nofollow noopener" target="_blank">こちらのスライド</a>がよく挙げられる。</li>
+<li>いわゆる「CSSのあらゆる問題をJSで解決する」という感じのもの。</li>
+<li>先行の記事としてはこのような感じ
+
+<ul>
+<li><a href="http://jinjor-labo.hatenablog.com/entry/2016/05/30/165816" rel="nofollow noopener" target="_blank">CSS in JS(Elm)したら想像以上に良かった</a></li>
+<li><a href="http://qiita.com/kimamula/items/2a5e69269e77ca85008e" id="reference-c5a05a1862a3fe0eaac1">Free-Style のススメ ~ CSS Modules は解決策ではない</a></li>
+</ul>
+</li>
+<li>とりあえず今回はReactと一緒に使う前提のことを考える</li>
+</ul>
+
+<h2>
+<span id="css-in-js-ライブラリの実装系統" class="fragment"></span><a href="#css-in-js-%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E3%81%AE%E5%AE%9F%E8%A3%85%E7%B3%BB%E7%B5%B1"><i class="fa fa-link"></i></a>CSS in JS ライブラリの実装系統</h2>
+
+<p>CSS in JSライブラリもかなり色々あるが、だいたい下記の観点で分類できそうだった。</p>
+
+<h3>
+<span id="スタイルの再現に関する実装" class="fragment"></span><a href="#%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB%E3%81%AE%E5%86%8D%E7%8F%BE%E3%81%AB%E9%96%A2%E3%81%99%E3%82%8B%E5%AE%9F%E8%A3%85"><i class="fa fa-link"></i></a>スタイルの再現に関する実装</h3>
+
+<ul>
+<li>
+<code>&lt;style&gt;</code>タグを生成して、<code>&lt;head&gt;</code>にinsertする実装パターン
+
+<ul>
+<li>昨今のスタンダードなライブラリの使っている手法</li>
+<li>CSSの疑似要素や<code>@media</code> queryもだいたい使える</li>
+</ul>
+</li>
+<li>InlineにCSSを展開する実装パターン
+
+<ul>
+<li>わりと絶滅危惧種っぽい（開発止まっていたり）</li>
+<li>そもそも素のreactがこの機能を提供しているので、あんまりライブラリの旨味はない</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="スタイルの記法に関する実装" class="fragment"></span><a href="#%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB%E3%81%AE%E8%A8%98%E6%B3%95%E3%81%AB%E9%96%A2%E3%81%99%E3%82%8B%E5%AE%9F%E8%A3%85"><i class="fa fa-link"></i></a>スタイルの記法に関する実装</h3>
+
+<ul>
+<li>JSに記載
+
+<ul>
+<li>JSのObjectとして記載</li>
+<li>template StringなどでCSSを記載</li>
+<li>transpileを前提にした独自記法</li>
+</ul>
+</li>
+<li>別ファイルに記載
+
+<ul>
+<li>CSSに記載</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="library比較" class="fragment"></span><a href="#library%E6%AF%94%E8%BC%83"><i class="fa fa-link"></i></a>Library比較</h2>
+
+<p>今回は、下記を前提として比較した。</p>
+
+<ul>
+<li>
+<code>:hover</code>など疑似要素利用可能</li>
+<li>
+<code>@media</code>、<code>@fontface</code>、<code>@keyframes</code>利用可能</li>
+<li>クラス名の衝突回避をしてくれるもの</li>
+<li>template stringとしてCSSを書くものは除外
+
+<ul>
+<li>パースエラーの検出など考えると頭痛いため</li>
+</ul>
+</li>
+<li>Reactへの依存性が少ないならなお良し</li>
+<li>参考資料はこのへん。ただし、割りと既に古かったりするので、網羅性だけを見たほうが良さそう
+
+<ul>
+<li><a href="https://github.com/MicheleBertoli/css-in-js" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/MicheleBertoli/css-in-js</a></li>
+<li><a href="https://github.com/FormidableLabs/radium/tree/master/docs/comparison" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/FormidableLabs/radium/tree/master/docs/comparison</a></li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="aphrodite" class="fragment"></span><a href="#aphrodite"><i class="fa fa-link"></i></a>Aphrodite</h3>
+
+<p><code>className</code>に記載してるクラスは、ハッシュ化されたsuffixがつけられ、名前空間が重複しないようになる (参考：<a href="https://output.jsbin.com/qoseye?code=%7B%0A%20%20red%3A%20%7B%0A%20%20%20%20color%3A%20%27red%27%2C%0A%20%20%20%20%27%3Ahover%27%3A%20%7B%0A%20%20%20%20%20%20opacity%3A%200.8%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D" rel="nofollow noopener" target="_blank">Aphrodite Output tool</a> )</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">StyleSheet</span><span class="p">,</span> <span class="nx">css</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">aphrodite</span><span class="dl">'</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">style</span> <span class="o">=</span> <span class="nx">StyleSheet</span><span class="p">.</span><span class="nx">create</span><span class="p">({</span>
+  <span class="na">red</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">color</span><span class="p">:</span> <span class="dl">'</span><span class="s1">red</span><span class="dl">'</span><span class="p">,</span>
+    <span class="dl">'</span><span class="s1">:hover</span><span class="dl">'</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">opacity</span><span class="p">:</span> <span class="mf">0.8</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+<span class="p">})</span>
+<span class="kd">const</span> <span class="nx">Label</span> <span class="o">=</span> <span class="p">({</span><span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="o">&lt;</span><span class="nx">span</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="nx">css</span><span class="p">(</span><span class="nx">styles</span><span class="p">.</span><span class="nx">red</span><span class="p">)}</span><span class="o">&gt;</span>
+    <span class="p">{</span><span class="nx">children</span><span class="p">}</span>
+  <span class="o">&lt;</span><span class="sr">/span</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p><strong>利点</strong></p>
+
+<ul>
+<li>
+<code>&lt;style&gt;</code>の生成関連が、一番気使っている感じがする</li>
+<li>animation周りが一番書きやすい</li>
+<li>Star数が多く、人気高め</li>
+<li>
+<code>!important</code>をつけて、他のCSSの影響を殺す事も出来る
+
+<ul>
+<li>
+<code>aphroidte/no-important</code>を利用すれば、これを無効化することも出来る </li>
+</ul>
+</li>
+<li>autopreifxerを内部で自動的につけてくれる</li>
+<li>開発が個人でなく組織なのでちょっとだけ安心度高い</li>
+<li>hypertermなどで実績あり</li>
+</ul>
+
+<p><strong>欠点</strong></p>
+
+<ul>
+<li>
+<code>className</code>以外へのCSS適応を許さない姿勢なので、resetなどは別途考えないといけない</li>
+<li>子要素のCSSを指定する方法も限定されているので、わりと厳格にCSS in JSに書いていく必要がある </li>
+</ul>
+
+<h3>
+<span id="free-style" class="fragment"></span><a href="#free-style"><i class="fa fa-link"></i></a><a href="https://github.com/blakeembrey/free-style" rel="nofollow noopener" target="_blank">Free-style</a>
+</h3>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">FreeStyle</span> <span class="k">import</span> <span class="dl">'</span><span class="s1">free-style</span><span class="dl">'</span>
+
+<span class="c1">// Create a container instance.</span>
+<span class="kd">const</span> <span class="nx">Style</span> <span class="o">=</span> <span class="nx">FreeStyle</span><span class="p">.</span><span class="nx">create</span><span class="p">()</span>
+
+<span class="kd">const</span> <span class="nx">LABEL_STYLE</span> <span class="o">=</span> <span class="nx">Style</span><span class="p">.</span><span class="nx">registerStyle</span><span class="p">({</span>
+  <span class="na">color</span><span class="p">:</span> <span class="dl">'</span><span class="s1">red</span><span class="dl">'</span><span class="p">,</span>
+  <span class="dl">'</span><span class="s1">&amp;:hover</span><span class="dl">'</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">opacity</span><span class="p">:</span> <span class="mf">0.8</span>
+  <span class="p">}</span>
+<span class="p">})</span>
+<span class="kd">const</span> <span class="nx">Label</span> <span class="o">=</span> <span class="p">({</span><span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="o">&lt;</span><span class="nx">span</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="nx">LABEL_STYLE</span><span class="p">}</span><span class="o">&gt;</span>
+    <span class="p">{</span><span class="nx">children</span><span class="p">}</span>
+  <span class="o">&lt;</span><span class="sr">/span</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p><strong>利点</strong></p>
+
+<ul>
+<li>React非依存</li>
+<li>selectorの指定は、それなりの柔軟さがある</li>
+</ul>
+
+<p><strong>欠点</strong></p>
+
+<ul>
+<li>aphroditeに比べると、手数の多さが気になる</li>
+</ul>
+
+<h3>
+<span id="glamor" class="fragment"></span><a href="#glamor"><i class="fa fa-link"></i></a><a href="https://github.com/threepointone/glamor" rel="nofollow noopener" target="_blank">glamor</a>
+</h3>
+
+<p><code>style</code>や<code>hover</code>などを関数定義して展開させるという独自の記法。なかなか悪くないと感じた。<br>
+<code>aphrodite</code>からの乗り換えは楽に出来るように作られているので、必要になったら乗り換えようかな、という感覚。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">style</span><span class="p">,</span> <span class="nx">hover</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">glamor</span><span class="dl">'</span>
+<span class="kd">const</span> <span class="nx">Label</span> <span class="o">=</span> <span class="p">({</span><span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="o">&lt;</span><span class="nx">span</span>   
+    <span class="p">{...</span><span class="nx">style</span><span class="p">({</span> <span class="na">color</span><span class="p">:</span> <span class="dl">'</span><span class="s1">red</span><span class="dl">'</span> <span class="p">})}</span> 
+    <span class="p">{...</span><span class="nx">hover</span><span class="p">({</span> <span class="na">opacity</span><span class="p">:</span> <span class="mf">0.8</span> <span class="p">})}</span><span class="o">&gt;</span>
+    <span class="p">{</span><span class="nx">children</span><span class="p">}</span>
+  <span class="o">&lt;</span><span class="sr">/span</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p><strong>利点</strong></p>
+
+<ul>
+<li>
+<code>StyleSeet.create</code>的な記法が無いので、手数が少ない</li>
+<li>
+<code>glamor/reset</code>、<code>glamor/aphrodite</code>、<code>glamor/jsxstyle</code>など、他のライブラリに記法を近づけるようなものも提供している</li>
+<li>
+<code>select("ul li")</code>のような関数を使うと、子要素へstyleを適用出来る
+
+<ul>
+<li>このあたりの使い勝手は良さそうだが、注意深く使わないと、CSSの厄介な部分を引き出しそう</li>
+</ul>
+</li>
+</ul>
+
+<p><strong>欠点</strong></p>
+
+<ul>
+<li>べったりstyleに記載</li>
+<li>内部的な実装として、<code>[data-hogehoge]</code>というCSSセレクタに変換するため、パフォーマンス大丈夫だろうか？と心配になる。</li>
+</ul>
+
+<h2>
+<span id="その他の実装や手法見送り" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%AE%E5%AE%9F%E8%A3%85%E3%82%84%E6%89%8B%E6%B3%95%E8%A6%8B%E9%80%81%E3%82%8A"><i class="fa fa-link"></i></a>その他の実装や手法（見送り）</h2>
+
+<h3>
+<span id="ライブラリ無し素react" class="fragment"></span><a href="#%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E7%84%A1%E3%81%97%E7%B4%A0react"><i class="fa fa-link"></i></a>ライブラリ無し(素react)</h3>
+
+<ul>
+<li>
+<code>@media</code>などは我慢できるが、<code>hover</code>まで<code>onHover</code>などで実装しなきゃいけないのは辛すぎるのでボツ</li>
+</ul>
+
+<h3>
+<span id="radium" class="fragment"></span><a href="#radium"><i class="fa fa-link"></i></a><a href="https://github.com/formidablelabs/radium" rel="nofollow noopener" target="_blank">Radium</a>
+</h3>
+
+<ul>
+<li>Star数はかなり多い</li>
+<li>Reactに強依存。React以外で使う事は想定されてなさそう。</li>
+<li>decoratorを利用しているが、decoratorの仕様策定がまだ不安定な情勢なので、かなり怖い</li>
+<li>decoratorを利用しない場合の動作がどうにも不安定（Stateless Functional Componentと相性悪い？）</li>
+</ul>
+
+<h3>
+<span id="cssx" class="fragment"></span><a href="#cssx"><i class="fa fa-link"></i></a><a href="https://github.com/krasimir/cssx/" rel="nofollow noopener" target="_blank">cssx</a>
+</h3>
+
+<ul>
+<li>トランスパイラー前提として、独自記法で書いていく</li>
+<li>さすがに挑戦的すぎたので見送った。</li>
+<li>方向性は面白いが、この方向性だと、流石に開発体制の基盤がほしい</li>
+<li>facebookがまともにこの方向性のものを作るなら、ちょっと興味があるかもしれない。</li>
+</ul>
+
+<h3>
+<span id="jss" class="fragment"></span><a href="#jss"><i class="fa fa-link"></i></a><a href="https://github.com/cssinjs/jss" rel="nofollow noopener" target="_blank">jss</a>
+</h3>
+
+<ul>
+<li>cssinjsというそのものズバリな名前で作成されている</li>
+<li>pluginなどがあって面白い。
+
+<ul>
+<li>短所としては、結構plugin入れないと使い物にならない感じあるかもしれない。</li>
+</ul>
+</li>
+<li>keyframes周りがあまり強くない印象</li>
+</ul>
+
+<h3>
+<span id="css-modules" class="fragment"></span><a href="#css-modules"><i class="fa fa-link"></i></a><a href="https://github.com/css-modules/css-modules" rel="nofollow noopener" target="_blank">CSS Modules</a>
+</h3>
+
+<ul>
+<li>知名度高し。導入敷居は低い。</li>
+<li><p>厳密にはCSS in JSとも言いづらい。広義ならCSS in JSと言えそう。</p></li>
+<li>
+<p>利点</p>
+
+<ul>
+<li>Webpackとは相性が良い</li>
+<li>資料が豊富</li>
+<li>既存のCSSを完全にそのまま使える</li>
+</ul>
+</li>
+<li>
+<p>欠点</p>
+
+<ul>
+<li>Webpackへのロックインが現状だとだいぶきつい
+
+<ul>
+<li>一応Browserifyなどがんばればイケるが・・・</li>
+</ul>
+</li>
+<li>
+<code>import "foo.css"</code>のような形式だと、testツールで辛みが多い
+
+<ul>
+<li>testに関わらず、上記のような記法は避けれるなら避けたい</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>軽く使ってみるとやっぱりテスト周りが主に辛い＆CSS in JSともずれる、というところで見送った。</p></li>
+</ul>
+
+<h3>
+<span id="jsxstyle" class="fragment"></span><a href="#jsxstyle"><i class="fa fa-link"></i></a><a href="https://github.com/petehunt/jsxstyle" rel="nofollow noopener" target="_blank">jsxstyle</a>
+</h3>
+
+<ul>
+<li>
+<code>&lt;Flex&gt;</code>や<code>&lt;Block&gt;</code>などのコンポーネントまで提供している。</li>
+<li>
+<code>curry</code>などの機能は面白そう。</li>
+<li>なんとなく自分が使いたいものとはズレるものと見えたので余り調べてない</li>
+<li>もしかすると組み合わせて使えるのかも？</li>
+</ul>
+
+<h3>
+<span id="reactshadow" class="fragment"></span><a href="#reactshadow"><i class="fa fa-link"></i></a><a href="https://github.com/Wildhoney/ReactShadow" rel="nofollow noopener" target="_blank">ReactShadow</a>
+</h3>
+
+<ul>
+<li>Shadow Domを使う変わり種。</li>
+<li>将来性考えると面白いかもしれない</li>
+</ul>
+
+<h3>
+<span id="react-look" class="fragment"></span><a href="#react-look"><i class="fa fa-link"></i></a><a href="https://github.com/rofrischmann/react-look" rel="nofollow noopener" target="_blank">react-look</a>
+</h3>
+
+<ul>
+<li>React Nativeにも対応しているらへんが魅力</li>
+<li>今回自分の要件からは外れるので見送った</li>
+</ul>
+
+<h1>
+<span id="css-in-jsについての雑感など" class="fragment"></span><a href="#css-in-js%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E3%81%AE%E9%9B%91%E6%84%9F%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>CSS in JSについての雑感など</h1>
+
+<h2>
+<span id="結局どれを使いそうか--aphrodite" class="fragment"></span><a href="#%E7%B5%90%E5%B1%80%E3%81%A9%E3%82%8C%E3%82%92%E4%BD%BF%E3%81%84%E3%81%9D%E3%81%86%E3%81%8B--aphrodite"><i class="fa fa-link"></i></a>結局どれを使いそうか？ → Aphrodite</h2>
+
+<p>個人的には、Aphroditeが一番記法的に手数がそれほど多くなく、必要十分な感じだった。</p>
+
+<p>glamorやFreeStyleにあるような子要素へ影響を及ぼすセレクタを書けない事やresetを別途管理しなければならないことは弱点でもあるが、その分CSSで無理な解決をさせず、コンポーネントが適切に分解されることが期待できそうと感じる。</p>
+
+<p>「やっぱりCSS in JS辛い！CSSに戻す！」となったときも、記法の制限が多い分捨てやすいだろうとも感じるし、逆に「制限がきつすぎる！」という場合だったらglamorに乗り換えるのも容易そうだった。</p>
+
+<h2>
+<span id="css-in-jsはそもそもやるべきか" class="fragment"></span><a href="#css-in-js%E3%81%AF%E3%81%9D%E3%82%82%E3%81%9D%E3%82%82%E3%82%84%E3%82%8B%E3%81%B9%E3%81%8D%E3%81%8B"><i class="fa fa-link"></i></a>CSS in JSはそもそもやるべきか？</h2>
+
+<p>2016年段階で、万人に向けて「是非どうぞ！」と勧めれるような手法ではないだろうと思う。ただ、現実的にトライできるフェーズまでは来ているのかなと感じた。<br>
+個人的にもいくつかの動機付けがあった。<br>
+このあたりが共感出来るなら、トライする価値があるかもしれない。</p>
+
+<ul>
+<li>小規模なSPA的な感じで、CSS in JSは相性は悪くなかった。</li>
+<li>SCSSで分離していたcss部分をJSにまとめれると嬉しい状況があった
+
+<ul>
+<li>webpackでの結合を避けたかった</li>
+</ul>
+</li>
+<li>デザイナーの理解を得ることが出来た <strong>（重要）</strong>
+</li>
+<li>デザイン自体は一旦完成して、それをリプレースする状態だったので、そんなに障壁が高くなかった。</li>
+<li>CSSに対するベストプラクティスがまだ無いので、チャレンジしたかった
+
+<ul>
+<li>BEMやSMACSSの命名規約で縛る設計方法に限界を感じていた。</li>
+<li>ここが満足している場合だったら不要なのかも？</li>
+</ul>
+</li>
+<li>CSSとJSが凝縮された世界というのは Angular2や、Shadow Dom 、Riot.jsのscoped css、vue.jsのモジュール化などちょこちょこ見かけるようになっているので、「そろそろやってみても良いかな」という気分があった。</li>
+</ul>
+
+<h2>
+<span id="書いてみた所感など" class="fragment"></span><a href="#%E6%9B%B8%E3%81%84%E3%81%A6%E3%81%BF%E3%81%9F%E6%89%80%E6%84%9F%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>書いてみた所感など</h2>
+
+<ul>
+<li>書いてみると、キモさや背徳感と、相反して合理性が同居する複雑な気持ち
+
+<ul>
+<li>JSXを初めて触った頃の感じによく似ている気がする</li>
+</ul>
+</li>
+<li>CSSに疎いサーバーエンジニアには概ね好評</li>
+<li>Atomic Designを意識して、Atom（原子）の部分を明確に区切ってCSS in JSでstyle付けして組み立てるのは相性良さそう
+
+<ul>
+<li>
+<code>&lt;Padding&gt;</code>などの調整についてはそれ専用のComponentを作る割り切りが合ったほうが良いかもしれない。</li>
+</ul>
+</li>
+<li>今まで「うーん、このパーツだけで単体ファイル化しても・・・」と思っていた数行のコンポーネントも、styleもまとめると適度な粒度になった。</li>
+<li>デザイナが全体感を捉えるのに向いてないのでは？というのはまだぶつかってないが、課題感も感じている
+
+<ul>
+<li>多分Atomic Designが抱えている問題の感覚と近そう。うまくStorybookなどを使って解決していきたい。</li>
+</ul>
+</li>
+<li>モーダルなど、外からの影響を遮断したいようなコンポーネントだったらすごい相性良さそう。</li>
+<li>React関連のライブラリ提供側で、CSSのimportを要求されるのすごく困るので、そういうライブラリはさっさとCSS in JSに移行してくれたらいいのに、と思った。</li>
+<li>
+<a href="https://github.com/w3c/css-houdini-drafts" rel="nofollow noopener" target="_blank">houdini</a>の話とかあるので、将来的にどうなるかはまだまだ未知の世界</li>
+</ul>

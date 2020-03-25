@@ -1,0 +1,227 @@
+<p>request処理をするときに使い勝手が良くて気にっている<a href="https://github.com/mzabriskie/axios/" rel="nofollow noopener" target="_blank">axios</a>をそこそこ使うようになって溜まった知見。</p>
+
+<hr>
+
+<h1>
+<span id="1-adapterを使って簡易mocking" class="fragment"></span><a href="#1-adapter%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%A6%E7%B0%A1%E6%98%93mocking"><i class="fa fa-link"></i></a>1. <code>adapter</code>を使って簡易mocking</h1>
+
+<p>リクエスト関連は結構テストが辛くなりがち。<br>
+このあたりを解決する方法として、<a href="https://github.com/node-nock/nock" rel="nofollow noopener" target="_blank">nock</a>などリクエスト系をサードパーティ化するのがよくあるが、<br>
+axiosの場合、adapter機能を利用するとmockを簡単につくれる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">axios</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">axios</span><span class="dl">'</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">mockData</span> <span class="o">=</span> <span class="p">[{</span>
+  <span class="na">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="na">title</span><span class="p">:</span> <span class="dl">'</span><span class="s1">Some Article</span><span class="dl">'</span><span class="p">,</span>
+<span class="p">}]</span>
+
+<span class="kd">const</span> <span class="nx">mockAdapter</span> <span class="o">=</span> <span class="p">(</span><span class="nx">config</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">new</span> <span class="nb">Promise</span><span class="p">((</span><span class="nx">resolve</span><span class="p">,</span> <span class="nx">reject</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">resolve</span><span class="p">({</span><span class="na">data</span><span class="p">:</span> <span class="nx">mockData</span><span class="p">,</span> <span class="na">status</span><span class="p">:</span> <span class="mi">200</span> <span class="p">})</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+
+<span class="nx">axios</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/some/url</span><span class="dl">'</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">adapter</span><span class="p">:</span> <span class="nx">mockAdapter</span>
+<span class="p">}).</span><span class="nx">then</span><span class="p">(</span> <span class="nx">response</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">data</span><span class="p">)</span> <span class="c1">// mockData</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">status</span><span class="p">)</span> <span class="c1">// 200</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>自前したくない場合は<a href="https://github.com/mzabriskie/moxios" rel="nofollow noopener" target="_blank">moxios</a>とか<a href="https://github.com/ctimmerm/axios-mock-adapter" rel="nofollow noopener" target="_blank">axios-mock-adapter</a>とかもある。</p>
+
+<h1>
+<span id="2-基本configを固定するやり方--axioscreate-axiosdefaults" class="fragment"></span><a href="#2-%E5%9F%BA%E6%9C%ACconfig%E3%82%92%E5%9B%BA%E5%AE%9A%E3%81%99%E3%82%8B%E3%82%84%E3%82%8A%E6%96%B9--axioscreate-axiosdefaults"><i class="fa fa-link"></i></a>2. 基本configを固定するやり方 ( <code>axios.create()</code>, <code>axios.defaults</code>)</h1>
+
+<p>例えば様々なAPIで同じような設定をしたいことがよくあると思う。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">axios</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/some/url</span><span class="dl">'</span><span class="p">,</span> <span class="p">{</span> 
+  <span class="na">xsrfHeaderName</span><span class="p">:</span> <span class="dl">'</span><span class="s1">X-CSRF-Token</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">withCredentials</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">})</span>
+<span class="nx">axios</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="dl">'</span><span class="s1">/some/other/url</span><span class="dl">'</span><span class="p">,{</span><span class="na">foo</span><span class="p">:</span> <span class="dl">'</span><span class="s1">bar</span><span class="dl">'</span><span class="p">},</span> <span class="p">{</span> 
+  <span class="na">xsrfHeaderName</span><span class="p">:</span> <span class="dl">'</span><span class="s1">X-CSRF-Token</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">withCredentials</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>このような場合には、<a href="https://github.com/mzabriskie/axios#creating-an-instance" rel="nofollow noopener" target="_blank"><code>axios.create()</code></a>を利用して別インスタンスとして生成してしまうのが良い</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">myHttpClient</span> <span class="o">=</span> <span class="nx">axios</span><span class="p">.</span><span class="nx">create</span><span class="p">({</span> 
+  <span class="na">xsrfHeaderName</span><span class="p">:</span> <span class="dl">'</span><span class="s1">X-CSRF-Token</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">withCredentials</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">})</span>
+<span class="nx">myHttpClient</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/some/url</span><span class="dl">'</span><span class="p">)</span> <span class="c1">// 設定が反映されてリクエストがトブ</span>
+</pre></div></div>
+
+<p>また、別な方法として、globalな設定として<a href="https://github.com/mzabriskie/axios#global-axios-defaults" rel="nofollow noopener" target="_blank"><code>defaults</code></a>で設定することも可能だ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">axios</span><span class="p">.</span><span class="nx">defaults</span><span class="p">.</span><span class="nx">withCredentials</span> <span class="o">=</span> <span class="kc">true</span>
+<span class="nx">axios</span><span class="p">.</span><span class="nx">defaults</span><span class="p">.</span><span class="nx">xsrfHeaderName</span> <span class="o">=</span>  <span class="dl">'</span><span class="s1">X-CSRF-Token</span><span class="dl">'</span>
+</pre></div></div>
+
+<p><code>timeout</code>など共通的な設定で十分なものだけで済むなら使って良さそうだろう。</p>
+
+<p>defaults機能はaxiosが影響を受けたangular1の<code>$http</code>に由来するものと思われる。<br>
+angularのようにシステムでひとまとめにするフレームワーク上では都合が良いことが多かったと想像出来るが、<code>axios</code>で利用するシーンはそうではない場合が多いと想像出来るので、個人的には<code>axios.create</code>のほうがおすすめできる</p>
+
+<h1>
+<span id="3-処理差し込み" class="fragment"></span><a href="#3-%E5%87%A6%E7%90%86%E5%B7%AE%E3%81%97%E8%BE%BC%E3%81%BF"><i class="fa fa-link"></i></a>3. 処理差し込み</h1>
+
+<h2>
+<span id="3-1-interceptorsで処理差し込み" class="fragment"></span><a href="#3-1-interceptors%E3%81%A7%E5%87%A6%E7%90%86%E5%B7%AE%E3%81%97%E8%BE%BC%E3%81%BF"><i class="fa fa-link"></i></a>3-1. <code>interceptors</code>で処理差し込み</h2>
+
+<p>例えば<a href="https://github.com/paularmstrong/normalizr" rel="nofollow noopener" target="_blank">normalizr</a>と併用して、API結果を変換した状態にしたいならこんな具合に利用出来る。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// ユーザーデータを変換するAPI</span>
+<span class="kd">const</span> <span class="nx">userApi</span> <span class="o">=</span> <span class="nx">axios</span><span class="p">.</span><span class="nx">create</span><span class="p">()</span>
+
+<span class="nx">userApi</span><span class="p">.</span><span class="nx">interceptors</span><span class="p">.</span><span class="nx">response</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span> <span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">response</span><span class="p">.</span><span class="nx">data</span> <span class="o">=</span> <span class="nx">normalize</span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">data</span><span class="p">,</span> <span class="nx">article</span><span class="p">)</span>
+  <span class="c1">// response.dataを上書きしたくなければ、下記の用にしても良いだろう</span>
+  <span class="c1">// response.normalized = normalize(res.data, article)</span>
+  <span class="k">return</span> <span class="nx">res</span>
+<span class="p">})</span>
+
+<span class="nx">userApi</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/foo</span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">then</span><span class="p">(</span> <span class="nx">r</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">data</span><span class="p">))</span> <span class="c1">// normalizedしたデータが取れる</span>
+</pre></div></div>
+
+<p>interceptorは<code>request</code>,<code>response</code>が用意されている。<br>
+<code>use</code>は複数追加することも出来るので、何か処理をわけたいなら下記のようにも書ける</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// request</span>
+<span class="nx">userApi</span><span class="p">.</span><span class="nx">interceptors</span><span class="p">.</span><span class="nx">request</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span> <span class="p">(</span><span class="nx">config</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// configには送信前のdataやurlとかが入っている</span>
+    <span class="p">:</span>
+  <span class="k">return</span> <span class="nx">config</span>
+<span class="p">})</span>
+
+<span class="c1">// response</span>
+<span class="nx">userApi</span><span class="p">.</span><span class="nx">interceptors</span><span class="p">.</span><span class="nx">response</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span> <span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="cm">/* 処理ひとつめ */</span>
+    <span class="p">:</span>
+  <span class="k">return</span> <span class="nx">response</span>
+<span class="p">})</span>
+<span class="nx">userApi</span><span class="p">.</span><span class="nx">interceptors</span><span class="p">.</span><span class="nx">response</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span> <span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="cm">/* 処理ふたつめ */</span>
+    <span class="p">:</span>
+  <span class="k">return</span> <span class="nx">response</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>また、<code>intercept</code>をejectする機能も用意されている</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">myInterceptor</span> <span class="o">=</span> <span class="nx">axios</span><span class="p">.</span><span class="nx">interceptors</span><span class="p">.</span><span class="nx">request</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span><span class="cm">/*...*/</span><span class="p">});</span>
+<span class="nx">axios</span><span class="p">.</span><span class="nx">interceptors</span><span class="p">.</span><span class="nx">request</span><span class="p">.</span><span class="nx">eject</span><span class="p">(</span><span class="nx">myInterceptor</span><span class="p">);</span>
+</pre></div></div>
+
+<h2>
+<span id="3-2-transformresponse--transformrequestで処理差し込み" class="fragment"></span><a href="#3-2-transformresponse--transformrequest%E3%81%A7%E5%87%A6%E7%90%86%E5%B7%AE%E3%81%97%E8%BE%BC%E3%81%BF"><i class="fa fa-link"></i></a>3-2. <code>transformResponse</code> / <code>transformRequest</code>で処理差し込み</h2>
+
+<p><code>transformResponse</code> / <code>transformRequest</code> はそれぞれinterceptよりもリクエストに近いタイミングで処理される。<br>
+<code>transformRequest</code>は送信の形式json以外の特殊な場合などに利用すると良いだろう。</p>
+
+<p><code>transformResponse</code>は主に文字化け対策などで利用できる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// 文字化け対処の例</span>
+<span class="nx">axios</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">responseType</span><span class="p">:</span> <span class="dl">"</span><span class="s2">arraybuffer</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">transformResponse</span><span class="p">:</span> <span class="p">[</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">iconv</span><span class="p">.</span><span class="nx">convert</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="dl">'</span><span class="s1">EUCJP</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">UTF8</span><span class="dl">'</span><span class="p">).</span><span class="nx">toString</span><span class="p">()</span>
+  <span class="p">}]</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="おまけそれぞれどういう順序で行われるのか検証する" class="fragment"></span><a href="#%E3%81%8A%E3%81%BE%E3%81%91%E3%81%9D%E3%82%8C%E3%81%9E%E3%82%8C%E3%81%A9%E3%81%86%E3%81%84%E3%81%86%E9%A0%86%E5%BA%8F%E3%81%A7%E8%A1%8C%E3%82%8F%E3%82%8C%E3%82%8B%E3%81%AE%E3%81%8B%E6%A4%9C%E8%A8%BC%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>おまけ：それぞれどういう順序で行われるのか検証する</h2>
+
+<p>こんなスクリプトで調べる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">axios</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">axios</span><span class="dl">'</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">api</span> <span class="o">=</span> <span class="nx">axios</span><span class="p">.</span><span class="nx">create</span><span class="p">({</span>
+  <span class="na">adapter</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">config</span><span class="p">){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">adapter</span><span class="dl">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nb">Promise</span><span class="p">((</span><span class="nx">resolve</span><span class="p">,</span> <span class="nx">reject</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">adapter(promise)</span><span class="dl">"</span><span class="p">)</span>
+      <span class="nx">resolve</span><span class="p">({</span><span class="na">data</span><span class="p">:</span> <span class="nx">config</span><span class="p">.</span><span class="nx">data</span><span class="p">})</span>
+    <span class="p">})</span>
+  <span class="p">},</span>
+  <span class="na">transformRequest</span><span class="p">:</span> <span class="p">[(</span><span class="nx">data</span><span class="p">,</span> <span class="nx">header</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">transformRequest</span><span class="dl">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nx">data</span>
+  <span class="p">}],</span>
+  <span class="na">transformResponse</span><span class="p">:</span> <span class="p">[(</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">transformResponse</span><span class="dl">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nx">data</span>
+  <span class="p">}]</span>
+<span class="p">})</span>
+
+<span class="nx">api</span><span class="p">.</span><span class="nx">interceptors</span><span class="p">.</span><span class="nx">request</span><span class="p">.</span><span class="nx">use</span><span class="p">((</span><span class="nx">config</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">interceptors.request</span><span class="dl">"</span><span class="p">)</span>
+  <span class="k">return</span> <span class="nx">config</span>
+<span class="p">})</span>
+<span class="nx">api</span><span class="p">.</span><span class="nx">interceptors</span><span class="p">.</span><span class="nx">response</span><span class="p">.</span><span class="nx">use</span><span class="p">((</span><span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">interceptors.response</span><span class="dl">"</span><span class="p">)</span>
+  <span class="k">return</span> <span class="nx">response</span>
+<span class="p">})</span>
+<span class="nx">api</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="dl">'</span><span class="s1">/foo</span><span class="dl">'</span><span class="p">,</span> <span class="p">{</span> <span class="na">mock</span><span class="p">:</span> <span class="dl">"</span><span class="s2">data</span><span class="dl">"</span><span class="p">})</span>
+</pre></div></div>
+
+<p>結果がこちら</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ node axios-interceptor.js
+interceptors.request
+transformRequest
+adapter
+adapter(promise)
+transformResponse
+interceptors.response
+</pre></div></div>
+
+<p><code>interceptor</code> =&gt; <code>transform</code> =&gt; <code>adapter</code>という形で処理が行われている事がわかる。</p>
+
+<h1>
+<span id="4-複数apiの並列処理-axiosall-axiosspread" class="fragment"></span><a href="#4-%E8%A4%87%E6%95%B0api%E3%81%AE%E4%B8%A6%E5%88%97%E5%87%A6%E7%90%86-axiosall-axiosspread"><i class="fa fa-link"></i></a>4. 複数APIの並列処理 (<code>axios.all</code>, <code>axios.spread</code>)</h1>
+
+<p><code>axios.all</code>と<code>spread</code>を利用して並列処理に扱える。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">axios</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">axios</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">api</span> <span class="o">=</span> <span class="nx">axios</span><span class="p">.</span><span class="nx">create</span><span class="p">()</span>
+
+<span class="nx">axios</span><span class="p">.</span><span class="nx">all</span><span class="p">([</span>
+  <span class="nx">api</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/my/api</span><span class="dl">'</span><span class="p">),</span>
+  <span class="nx">api</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/my/api2</span><span class="dl">'</span><span class="p">)</span>
+<span class="p">]).</span><span class="nx">then</span><span class="p">(</span> <span class="nx">axios</span><span class="p">.</span><span class="nx">spread</span><span class="p">(</span> <span class="p">(</span><span class="nx">api1Result</span><span class="p">,</span> <span class="nx">api2Result</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">//</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>但し、<code>axios.all</code>は<code>Promise.all</code>のラッパー、<code>axios.spread</code>は配列を引数化しているだけなので、ES2015のDestructuring構文を組み合わせると実はそちらでも十分出来てしまう。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">axios</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">axios</span><span class="dl">'</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">api</span> <span class="o">=</span> <span class="nx">axios</span><span class="p">.</span><span class="nx">create</span><span class="p">()</span>
+
+<span class="nb">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">([</span>
+  <span class="nx">api</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/my/api</span><span class="dl">'</span><span class="p">),</span>
+  <span class="nx">api</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="dl">'</span><span class="s1">/my/api2</span><span class="dl">'</span><span class="p">)</span>
+<span class="p">]).</span><span class="nx">then</span><span class="p">(</span> <span class="p">([</span><span class="nx">api1Result</span><span class="p">,</span> <span class="nx">api2Result</span><span class="p">])</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">//</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>色々使い方覚えると、結構使い勝手が変わるのでオススメ
+
+<ul>
+<li>特に<code>axios.create</code>や<code>interceptors</code>などは結構違う</li>
+</ul>
+</li>
+<li>その他にも<a href="https://github.com/mzabriskie/axios#cancellation" rel="nofollow noopener" target="_blank">Cancel</a>機能やら<a href="https://github.com/mzabriskie/axios#using-applicationx-www-form-urlencoded-format" rel="nofollow noopener" target="_blank">form形式での送信</a>など結構READMEに色々書いてある</li>
+</ul>

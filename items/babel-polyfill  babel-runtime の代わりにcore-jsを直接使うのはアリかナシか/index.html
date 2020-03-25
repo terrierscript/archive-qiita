@@ -1,0 +1,219 @@
+<p><a href="http://qiita.com/inuscript/items/d2a9d5d4daedaacff924" id="reference-9b453392f4c45237ace8">babel-polyfillとbabel-runtimeの使い分けに迷ったので調べた</a> の続編・追加調査。</p>
+
+<p>使い分け的なのわかったものの、未だにどうにも困りごとが多いので、更に深掘りしてみた。</p>
+
+<h1>
+<span id="それぞれのおさらい--困りごと" class="fragment"></span><a href="#%E3%81%9D%E3%82%8C%E3%81%9E%E3%82%8C%E3%81%AE%E3%81%8A%E3%81%95%E3%82%89%E3%81%84--%E5%9B%B0%E3%82%8A%E3%81%94%E3%81%A8"><i class="fa fa-link"></i></a>それぞれのおさらい &amp; 困りごと</h1>
+
+<p><a href="https://babeljs.io/docs/usage/polyfill/" rel="nofollow noopener" target="_blank">polyfill</a>のページで改めておさらいしつつ、それぞれの困りごとを書いてみる</p>
+
+<ul>
+<li>babel-polyfill
+
+<ul>
+<li>
+<a href="https://github.com/zloirock/core-js" rel="nofollow noopener" target="_blank">core-js</a>と<a href="https://github.com/facebook/regenerator" rel="nofollow noopener" target="_blank">regenerator-runtime</a>を読み込んでいる</li>
+<li>polyfillとして、windowグローバルを拡張する仕組み</li>
+<li>困りごと
+
+<ul>
+<li>複数ファイルからロードするとthrow errorされてしまうので、うっかりしてるとハマるので気を使う</li>
+<li>上記のような問題のため、ブラウザの場合は、別途<a href="https://babeljs.io/docs/usage/polyfill/#usage-in-browser" rel="nofollow noopener" target="_blank">dist/polyfill.jsなど、別管理してを読み込む</a>。
+
+<ul>
+<li>
+<code>require('babel-polyfill')</code>の様にコードベース上から読み込むことは推奨されてない。</li>
+<li>これをやると二度読みでコードが完全に死んでしまうので大変危険</li>
+</ul>
+</li>
+<li>polyfillを別なscriptファイルとして読み込ませることになったりする。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>babel-runtime / babel-plugin-transform-runtime
+
+<ul>
+<li>Polyfillが必要なコードを静的解析して、コードごと置き換える。</li>
+<li>静的変換なので、インスタンスメソッドの<code>Array.prototype.includes</code>とかは変換出来ない(<code>[1,2,3].inclues(3)</code>みたいなコードのはずなので、そりゃ辛そう)。</li>
+<li>困りごと
+
+<ul>
+<li>
+<code>.babelrc</code>やたらコンパイルでエラー起こしてくる問題児感。</li>
+<li>
+<a href="https://github.com/babel/babel/issues/2877" rel="nofollow noopener" target="_blank">export構文との組み合わせにバグ</a>が現行バージョンでは存在したりする。<a href="http://qiita.com/inuscript/items/65456941bd8a778b0641" id="reference-b76afa816f5eba7f0e66">ワークアラウンドも存在する</a>)が、ちょっとしんどい。</li>
+<li>個人的なユースケースだと<code>polyfill</code>でも十分という印象。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="じゃあcore-jsを読み込むのはどうなのか" class="fragment"></span><a href="#%E3%81%98%E3%82%83%E3%81%82core-js%E3%82%92%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%82%80%E3%81%AE%E3%81%AF%E3%81%A9%E3%81%86%E3%81%AA%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>じゃあ<code>core-js</code>を読み込むのはどうなのか？</h2>
+
+<p>babel-polyfill / babel-runtime　それぞれ内部的に<code>core-js</code>を利用している。</p>
+
+<p>「じゃあ<code>core-js</code>を直接使うのはどうなのだろう？」と考えた（regenerator-runtimeについては個人的にあまりお世話にならない都合で割愛させていただく。ほとんど扱いは一緒であろうと思われる）。</p>
+
+<p>ここで改めて<a href="https://babeljs.io/docs/usage/polyfill/" rel="nofollow noopener" target="_blank">Polyfill</a>のページを見てみると、こんな事が書いてある。</p>
+
+<blockquote>
+<p>Note: Depending on what ES2015 methods you actually use, you may not need to use <code>babel-polyfill</code> or the runtime plugin. You may want to only <a href="https://github.com/zloirock/core-js#commonjs" rel="nofollow noopener" target="_blank">load the specific polyfills you are using</a> (like <code>Object.assign</code>) or just document that the environment the library is being loaded in should include certain polyfills.</p>
+</blockquote>
+
+<p>要約すると、「必要なものだけ（例えば<code>Object.assign</code>など）を<a href="https://github.com/zloirock/core-js#commonjs" rel="nofollow noopener" target="_blank">選択してロード</a>しても良い」</p>
+
+<p>とのこと。つまり、「core-jsでpolyfillするのはアリかナシか？」という事については <strong>アリ</strong> と言えそうだ。</p>
+
+<h1>
+<span id="ちょっと待ったそれでもbabel-polyfillがごにょごにょしてるのは気になる" class="fragment"></span><a href="#%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E5%BE%85%E3%81%A3%E3%81%9F%E3%81%9D%E3%82%8C%E3%81%A7%E3%82%82babel-polyfill%E3%81%8C%E3%81%94%E3%81%AB%E3%82%87%E3%81%94%E3%81%AB%E3%82%87%E3%81%97%E3%81%A6%E3%82%8B%E3%81%AE%E3%81%AF%E6%B0%97%E3%81%AB%E3%81%AA%E3%82%8B"><i class="fa fa-link"></i></a>ちょっと待った。それでもbabel-polyfillがごにょごにょしてるのは気になる</h1>
+
+<p>自前でやるにしても、それはbabel-polyfillとどのぐらい差異が出るのかは気になる。</p>
+
+<p><a href="https://github.com/babel/babel/blob/v6.19.0/packages/babel-polyfill/src/index.js" rel="nofollow noopener" target="_blank">babel-polyfillのコード</a>を読んでここから細かく検証してみたい（versionは6.19.0）</p>
+
+<p>大まかにこんな具合になっている。</p>
+
+<ol>
+<li>globalの変数を利用して、複数読み込まれるのを制御(<a href="https://github.com/babel/babel/blob/v6.19.0/packages/babel-polyfill/src/index.js#L3-L6" rel="nofollow noopener" target="_blank">L3-6</a>)</li>
+<li>
+<a href="https://github.com/zloirock/core-js" rel="nofollow noopener" target="_blank">core-js</a>と<a href="https://github.com/facebook/regenerator" rel="nofollow noopener" target="_blank">regenerator-runtime</a>の読み込み(<a href="https://github.com/babel/babel/blob/v6.19.0/packages/babel-polyfill/src/index.js#L8-L9" rel="nofollow noopener" target="_blank">L8-9</a>)</li>
+<li>core-jsに対するモンキーパッチ的な処理(<a href="https://github.com/babel/babel/blob/v6.19.0/packages/babel-polyfill/src/index.js#L11-L29" rel="nofollow noopener" target="_blank">L11-29</a>)</li>
+</ol>
+
+<p>ということで、1と3について見てみる。</p>
+
+<h2>
+<span id="babel-polyfillの読み込みを一回しか許可しない" class="fragment"></span><a href="#babel-polyfill%E3%81%AE%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%81%BF%E3%82%92%E4%B8%80%E5%9B%9E%E3%81%97%E3%81%8B%E8%A8%B1%E5%8F%AF%E3%81%97%E3%81%AA%E3%81%84"><i class="fa fa-link"></i></a>babel-polyfillの読み込みを一回しか許可しない</h2>
+
+<p>なぜbabel-polyfillはなぜ1回しか読み込みを許していないのか？</p>
+
+<p>この疑問を調べるのに、下記２つのissueが役に立った</p>
+
+<p><a href="https://github.com/babel/babel/issues/4019" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/babel/babel/issues/4019</a><br>
+<a href="https://github.com/babel/babel/pull/2050" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/babel/babel/pull/2050</a></p>
+
+<p>この２つを総括すると、こんな具合が見て取れる</p>
+
+<ul>
+<li>polyfillというのは得てして冪等ではない。<strong>複数回読み込む事で副作用が起きる懸念がある。</strong>
+
+<ul>
+<li>これがcore-jsのことを指しているのはpolyfill全体のことを言っているのかはちょっと掴めなかった。</li>
+</ul>
+</li>
+<li>polyfillが衝突することで、問題を起こしやすい</li>
+<li>そのため、複数箇所で読むべきではない</li>
+<li>とはいえ、「<code>throw error</code>するのはやりすぎなのでもうちょっとスマートにやってほしい、ベストエフォートな振る舞いにしてほしい」という声が意見が散見される（個人的にもこれに同意）</li>
+<li>libraryを作るなら、globalを汚染せぬよう、babel-transform-runtime使うべきという情報もあった。</li>
+</ul>
+
+<p>ワークアラウンドとして、babelが利用している<code>_babelPolyfill</code>という変数をチェックするハックも紹介されている。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">window</span><span class="p">.</span><span class="nx">_babelPolyfill</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">babel-polyfill</span><span class="dl">'</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>ということで、babel-polyfillは <strong>polyfillの複数回読み込みによるバグを回避するために複数回読み込みを禁止している</strong> とわかった。</p>
+
+<p>ただし、今回の調査では「どのようなバグが起きるのか？」という事までは調べられなかった（もし知っている方がおりましたら是非コメントいただければ幸いです）。<br>
+core-jsも覗いてみたが、「複数回読み込むな、読み込むとバグがある」という報告や「冪等である（冪等になった）」というchangelogは見当たらない。<br>
+実装を読み得る限りで読む分には、<a href="https://github.com/zloirock/core-js/blob/v2.4.1/modules/_export.js#L22-L23" rel="nofollow noopener" target="_blank">nativeを優先する</a>ようになっているようにも読めた。</p>
+
+<p>この「一度のみ読み込ませる処理」というのは<a href="https://github.com/babel/babel/commit/377212290fd6f12cfbaa4f279ad5a861efb7c545" rel="nofollow noopener" target="_blank">6to5</a>時代から引き継がれているものだったりするので、実は今のcore-jsでは問題無い可能性（または少なくなっている可能性、かなりのエッジケースだったりベストエフォートとして片付けられる可能性）も考えられる</p>
+
+<p>とはいえ、基本としては複数回読み込むことへの副作用は注意すべき観点だろう</p>
+
+<h2>
+<span id="core-jsに対するモンキーパッチ" class="fragment"></span><a href="#core-js%E3%81%AB%E5%AF%BE%E3%81%99%E3%82%8B%E3%83%A2%E3%83%B3%E3%82%AD%E3%83%BC%E3%83%91%E3%83%83%E3%83%81"><i class="fa fa-link"></i></a>core-jsに対するモンキーパッチ？</h2>
+
+<p>core-jsに対して色々モンキーパッチされている箇所は、文頭に<br>
+<code>// Should be removed in the next major release</code>とある。<br>
+つまり、babel 7系になった際にはこれら処理は消えるものと思われる（core-jsのnext-versionとも読めてしまうが、下記の文脈を考えるとbabelのmajor versionの事と推測できた）</p>
+
+<p>では具体的に何が書かれているかというと、<a href="https://github.com/zloirock/core-js/blob/master/CHANGELOG.md#200---20151224" rel="nofollow noopener" target="_blank">core-js 2.0.0へのアップデート</a>時にremoveされたものを、後方互換措置として差し戻す処理をしている。</p>
+
+<p>具体的には、下記のような差し戻し処理がされている。</p>
+
+<ul>
+<li>
+<code>core-js/</code>から<code>regexp/escape</code>の読み込み
+
+<ul>
+<li> <code>RegExp.escape moved from the es7 to the non-standard core namespace</code>を差し戻す後方互換処理</li>
+<li>
+<code>import "core-js/fn/regexp/escape"</code>しているだけ</li>
+</ul>
+</li>
+<li>
+<code>padLeft</code>, <code>padRight</code>の互換維持
+
+<ul>
+<li>
+<code>renamed String#{padLeft, padRight} -&gt; String#{padStart, padEnd}</code>という変更を差し戻す後方互換処理。</li>
+<li>
+<code>padStart</code> -&gt; <code>padLeft</code> / <code>padEnd</code> -&gt; <code>padRight</code>と扱えるようにしている。</li>
+<li>
+<code>padLeft</code> / <code>padRight</code>というメソッドは<a href="https://github.com/rwaldron/tc39-notes/blob/master/es7/2015-11/nov-17.md#stringpadleftright" rel="nofollow noopener" target="_blank">TC39 Meeting</a>でrenameが決定しているので、もしこれを利用しているなら速やかに<code>padStart</code> / <code>padEnd</code>に置き換えるべきだろう</li>
+</ul>
+</li>
+<li>
+<code>Array</code>のジェネリクスの再定義
+
+<ul>
+<li>
+<code>removed Mozilla Array generics</code>を差し戻す後方互換処理</li>
+<li>すごくコード的にわかりづらいが、<code>Array.pop</code>みたいな呼び出しで、<code>[1,2,3].pop</code>と同じメソッドが呼び出されるようになっている</li>
+<li>この再現方法が結構難解だったので、だいたい何やっているかを自分向けに分解した<a href="https://gist.github.com/inuscript/7c2b578c7d02200ba6b0279e1b54cc3a" rel="nofollow noopener" target="_blank">gist</a>も併せて貼っておく</li>
+<li>core-jsとしては、もしこの機能がほしい場合は<a href="https://github.com/plusdude/array-generics" rel="nofollow noopener" target="_blank">array-generics</a>という別なshimを利用するようアナウンスされている</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="fyi-create-react-appも独自にpolyfllしてる" class="fragment"></span><a href="#fyi-create-react-app%E3%82%82%E7%8B%AC%E8%87%AA%E3%81%ABpolyfll%E3%81%97%E3%81%A6%E3%82%8B"><i class="fa fa-link"></i></a>FYI: <a href="https://github.com/facebookincubator/create-react-app" rel="nofollow noopener" target="_blank">create-react-app</a>も独自にpolyfllしてる。</h1>
+
+<p>偶然見つけたが、reactをさっくり作るためのツールであるcreate-react-appも、独自なpolyfillを作成している。<br>
+このコードは<code>npm run eject</code>するとコードベースに出力される。</p>
+
+<p><a href="https://github.com/facebookincubator/create-react-app/blob/master/packages/react-scripts/config/polyfills.js" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/facebookincubator/create-react-app/blob/master/packages/react-scripts/config/polyfills.js</a></p>
+
+<p>下記がPolyfillされている</p>
+
+<ul>
+<li>
+<code>Promise</code> ( <a href="https://github.com/then/promise" rel="nofollow noopener" target="_blank">promise</a> )</li>
+<li>
+<code>fetch()</code> ( <a href="https://github.com/github/fetch" rel="nofollow noopener" target="_blank">whatwg-fetch</a> )</li>
+<li>
+<code>Object.assign</code> ( <a href="https://github.com/sindresorhus/object-assign" rel="nofollow noopener" target="_blank">object-assgin</a> )</li>
+</ul>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>core-jsなどで別途自己管理でpolyfillするのは割りとアリ
+
+<ul>
+<li>core-js自体は独立したpolyfillライブラリなので、スタンドアローンに十分使える</li>
+</ul>
+</li>
+<li>ただし、polyfillは冪等というわけではないので、そのあたりの管理はやったほうが良い
+
+<ul>
+<li>core-jsでpolyfillするにしても、複数回呼び出しは避けるのが賢明と言えそう</li>
+</ul>
+</li>
+<li>
+<code>babel-polyfill</code>が差し戻してる<code>core-js</code>から落とされた機能を利用する場合には、何らか処理が必要
+
+<ul>
+<li>とはいえ、おそらくどこかで消えるので、なるべく早めに根本解決したほうが良い。</li>
+</ul>
+</li>
+<li>ライブラリ提供を目的としてるならbabel-runtime一択。global汚染するpolyfillに出番は無い</li>
+</ul>

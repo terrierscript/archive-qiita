@@ -1,0 +1,28 @@
+<ul>
+<li>引数のどれかが<code>nil</code>ならば関数は<code>nil</code>を返すことにする。</li>
+<li>
+<code>if let _a = a &amp;&amp; _b = b</code>のようなものがほしい。</li>
+</ul>
+
+<p>を満たすように，オプショナルなタプルを使う方法を考えてみました。<br>
+オプショナルな引数列をオプショナルなタプルへコンバートして，目的の関数本体でタプルに対して<code>lf let</code>を使えるようにします。</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="kd">func</span> <span class="nf">makeOptionalTuple</span><span class="p">(</span><span class="nv">a0</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span> <span class="nv">a1</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">String</span><span class="p">,</span> <span class="kt">String</span><span class="p">)?</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="n">a0</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">||</span> <span class="n">a1</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="nf">return</span> <span class="p">(</span><span class="n">a0</span><span class="o">!</span><span class="p">,</span> <span class="n">a1</span><span class="o">!</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">foo</span><span class="p">(</span><span class="nv">a</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span> <span class="nv">b</span><span class="p">:</span> <span class="kt">String</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="k">let</span> <span class="p">(</span><span class="nv">_a</span><span class="p">,</span> <span class="nv">_b</span><span class="p">)</span> <span class="o">=</span> <span class="nf">makeOptionalTuple</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">_a</span> <span class="o">+</span> <span class="s">"&amp;"</span> <span class="o">+</span> <span class="n">_b</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="nf">foo</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">)</span>    <span class="c1">// {Some "a&amp;b"}</span>
+<span class="nf">foo</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="s">"b"</span><span class="p">)</span>    <span class="c1">// nil</span>
+<span class="nf">foo</span><span class="p">(</span><span class="s">"a"</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>    <span class="c1">// nil</span>
+<span class="nf">foo</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>    <span class="c1">// nil</span>
+</pre></div></div>
+
+<p>makeOptinalTuple側でタプルを作るときに強制アンラップを使っていますが，目的の関数自体はスッキリと記述できるかなと。</p>

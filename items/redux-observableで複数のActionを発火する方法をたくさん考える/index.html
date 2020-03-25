@@ -1,0 +1,247 @@
+<p>redux-observableで１つのactionから最終的に複数のactionを発火する方法を毎回ググってるのでメモる</p>
+
+<h1>
+<span id="中間にactionをつくる" class="fragment"></span><a href="#%E4%B8%AD%E9%96%93%E3%81%ABaction%E3%82%92%E3%81%A4%E3%81%8F%E3%82%8B"><i class="fa fa-link"></i></a>中間にActionをつくる</h1>
+
+<p>これが一番スタンダードだと思われる。8割は解決するはず。</p>
+
+<p>今回は例えばこんなボタンを用意した時を考える</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Button</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">dispatch</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span> <span class="p">})</span><span class="si">}</span><span class="p">&gt;</span>
+    Ping
+  <span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<p>中間Actionを用意する場合のEpicはこうなる。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// ボタンからPINGのActionが来たら中間のTEMP_PINGを発火</span>
+<span class="kd">const</span> <span class="nx">seedEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">filter</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="o">!!</span><span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">),</span> <span class="c1">// 例としてここでは事前処理のepicでfilterをしてみる</span>
+    <span class="nx">map</span><span class="p">((</span><span class="nx">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+      <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">TEMP_PING</span><span class="dl">"</span><span class="p">,</span>
+      <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span>
+    <span class="p">}))</span>
+  <span class="p">)</span>
+
+<span class="c1">// TEMP_PINGを受けて値を2倍にするEpic</span>
+<span class="kd">const</span> <span class="nx">doubleEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">TEMP_PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">map</span><span class="p">((</span><span class="nx">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+      <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">,</span>
+      <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">3</span>
+    <span class="p">}))</span>
+  <span class="p">)</span>
+
+<span class="c1">// TEMP_PINGを受けて値を3倍にするEpic</span>
+<span class="kd">const</span> <span class="nx">tripleEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">TEMP_PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">map</span><span class="p">((</span><span class="nx">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+      <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PUNG</span><span class="dl">"</span><span class="p">,</span>
+      <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">4</span>
+    <span class="p">}))</span>
+  <span class="p">)</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">combineEpics</span><span class="p">(</span><span class="nx">debug</span><span class="p">(),</span> <span class="nx">seedEpic</span><span class="p">,</span> <span class="nx">doubleEpic</span><span class="p">,</span> <span class="nx">tripleEpic</span><span class="p">)</span>
+
+</pre></div></div>
+
+<h1>
+<span id="mergemapからの配列で返す" class="fragment"></span><a href="#mergemap%E3%81%8B%E3%82%89%E3%81%AE%E9%85%8D%E5%88%97%E3%81%A7%E8%BF%94%E3%81%99"><i class="fa fa-link"></i></a>mergeMapからの配列で返す</h1>
+
+<p>単純に複数actionを一関数中で発火出来るならmergeMapと配列を使う事でも実現出来る</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">mergeMap</span><span class="p">((</span><span class="nx">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span>
+          <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">,</span>
+          <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">2</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PUNG</span><span class="dl">"</span><span class="p">,</span>
+          <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">3</span>
+        <span class="p">}</span>
+      <span class="p">]</span>
+    <span class="p">})</span>
+  <span class="p">)</span>
+</pre></div></div>
+
+<h1>
+<span id="partitionで分離するできる場合" class="fragment"></span><a href="#partition%E3%81%A7%E5%88%86%E9%9B%A2%E3%81%99%E3%82%8B%E3%81%A7%E3%81%8D%E3%82%8B%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>Partitionで分離する（できる場合）</h1>
+
+<p>ここまでは「どっちも発火したい」であったが条件によって変えるなら<code>partition</code>で十分だろう</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">even</span><span class="p">,</span> <span class="nx">odd</span><span class="p">]</span> <span class="o">=</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">partition</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="nx">merge</span><span class="p">(</span>
+    <span class="c1">// 偶数の場合2倍</span>
+    <span class="nx">even</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+      <span class="nx">map</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">2</span>
+      <span class="p">})),</span>
+    <span class="p">),</span>
+    <span class="c1">// 奇数の場合3倍</span>
+    <span class="nx">odd</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+      <span class="nx">map</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PUNG</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">3</span>
+      <span class="p">}))</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="おまけrxを駆使する" class="fragment"></span><a href="#%E3%81%8A%E3%81%BE%E3%81%91rx%E3%82%92%E9%A7%86%E4%BD%BF%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>おまけ：Rxを駆使する</h1>
+
+<p>ここから下はほぼ使うことはない。思考実験に近い。<br>
+一応こういうのもあるという紹介</p>
+
+<h2>
+<span id="mergemapとofで対応する" class="fragment"></span><a href="#mergemap%E3%81%A8of%E3%81%A7%E5%AF%BE%E5%BF%9C%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>mergeMapとofで対応する</h2>
+
+<p>こんな感じでmergeMapを使う事が出来る<br>
+後述するがこれは冗長だろう</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span>
+  <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">mergeMap</span><span class="p">(</span><span class="nx">action</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">source$</span> <span class="o">=</span> <span class="k">of</span><span class="p">(</span><span class="nx">action</span><span class="p">)</span>
+      <span class="k">return</span> <span class="nx">merge</span><span class="p">(</span>
+        <span class="nx">source$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+          <span class="nx">map</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+            <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">,</span>
+            <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">2</span>
+          <span class="p">})),</span>
+        <span class="p">),</span>
+        <span class="nx">source$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+          <span class="nx">map</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+            <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PUNG</span><span class="dl">"</span><span class="p">,</span>
+            <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">3</span>
+          <span class="p">}))</span>
+        <span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">})</span>
+  <span class="p">)</span>
+
+</pre></div></div>
+
+<h2>
+<span id="mergeで２つを組み合わせる" class="fragment"></span><a href="#merge%E3%81%A7%EF%BC%92%E3%81%A4%E3%82%92%E7%B5%84%E3%81%BF%E5%90%88%E3%82%8F%E3%81%9B%E3%82%8B"><i class="fa fa-link"></i></a>mergeで２つを組み合わせる</h2>
+
+<p>上記の冗長さは下記のように分岐するとこまでをこんな感じで切り出して後でmergeするやり方もある。partitionでのやり方に近い</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// ここまでが共通</span>
+  <span class="kd">const</span> <span class="nx">source$</span> <span class="o">=</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+  <span class="p">)</span>
+  <span class="c1">// 分岐するsourceをそれぞれ Observable.mergeで混ぜる。</span>
+  <span class="k">return</span> <span class="nx">merge</span><span class="p">(</span>
+    <span class="nx">source$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+      <span class="nx">map</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">2</span>
+      <span class="p">})),</span>
+    <span class="p">),</span>
+    <span class="nx">source$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+      <span class="nx">map</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PUNG</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">3</span>
+      <span class="p">})),</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>例えばこれだと下記のように「連打されたActionをただログ出すだけと連打を検知するものに分けたい」ようなことも可能（使い所は不明）</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">source$</span> <span class="o">=</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="nx">merge</span><span class="p">(</span>
+    <span class="nx">source$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span> <span class="c1">// こっちはLOG出力だけ</span>
+      <span class="nx">map</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">LOG</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span>
+      <span class="p">})),</span>
+    <span class="p">),</span>
+    <span class="nx">source$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+      <span class="nx">bufferTime</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span> <span class="c1">// 連打</span>
+      <span class="nx">filter</span><span class="p">((</span><span class="na">items</span><span class="p">:</span> <span class="nx">any</span><span class="p">[])</span> <span class="o">=&gt;</span> <span class="nx">items</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span>
+      <span class="nx">map</span><span class="p">((</span><span class="na">actions</span><span class="p">:</span> <span class="nx">any</span><span class="p">[])</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="c1">// 受け取ったactionが配列になる</span>
+        <span class="k">return</span> <span class="p">{</span>
+          <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">MASH</span><span class="dl">"</span><span class="p">,</span>
+          <span class="na">payload</span><span class="p">:</span> <span class="nx">actions</span><span class="p">.</span><span class="nx">length</span>
+        <span class="p">}</span>
+      <span class="p">})</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="別途subjectを作る" class="fragment"></span><a href="#%E5%88%A5%E9%80%94subject%E3%82%92%E4%BD%9C%E3%82%8B"><i class="fa fa-link"></i></a>別途Subjectを作る</h1>
+
+<p>更にやらないであろう手法。<br>
+思いついたのでせっかくなので供養する。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre>
+<span class="c1">// Subjectを別に作る。</span>
+<span class="c1">// 本来redux-observableがSubjectを管理しているので、ここにわざわざ作るのはいったい、という感じ</span>
+<span class="kd">const</span> <span class="nx">pongSubject</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Subject</span><span class="p">()</span>
+<span class="kd">const</span> <span class="nx">pungSubject</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Subject</span><span class="p">()</span>
+
+<span class="kd">const</span> <span class="nx">mainEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="c1">// tapでそれぞれsubjectを発火</span>
+    <span class="nx">tap</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">pongSubject</span><span class="p">.</span><span class="nx">next</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PONG</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">})),</span>
+    <span class="nx">tap</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">pungSubject</span><span class="p">.</span><span class="nx">next</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">PUNG</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="o">*</span> <span class="mi">3</span> <span class="p">})),</span>
+    <span class="nx">ignoreElements</span><span class="p">()</span> <span class="c1">// tapだけでそのまま返すと無限PINGで死ぬ</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// SubjectをasObservableで変換してEpicと扱う</span>
+<span class="kd">const</span> <span class="nx">pongEpic</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">pongSubject</span><span class="p">.</span><span class="nx">asObservable</span><span class="p">()</span>
+<span class="kd">const</span> <span class="nx">pungEpic</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">pungSubject</span><span class="p">.</span><span class="nx">asObservable</span><span class="p">()</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">combineEpics</span><span class="p">(</span><span class="nx">mainEpic</span><span class="p">,</span> <span class="nx">pongEpic</span><span class="p">,</span> <span class="nx">pungEpic</span><span class="p">)</span>
+</pre></div></div>
+
+<p>使い所は殆どないが、例えばどうしてもメインの処理があってそこにうまくログのような処理をはさみたい場合とかがあれば使いどころになるかもしれない</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">logSubject</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Subject</span><span class="p">()</span>
+
+<span class="kd">const</span> <span class="nx">mainEpic</span> <span class="o">=</span> <span class="p">(</span><span class="nx">action$</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">action$</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span>
+    <span class="nx">ofType</span><span class="p">(</span><span class="dl">"</span><span class="s2">PING</span><span class="dl">"</span><span class="p">),</span>
+    <span class="nx">tap</span><span class="p">((</span><span class="na">action</span><span class="p">:</span> <span class="nx">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">logSubject</span><span class="p">.</span><span class="nx">next</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">LOG</span><span class="dl">"</span><span class="p">,</span> <span class="na">payload</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span> <span class="p">})),</span>
+    <span class="nx">bufferTime</span><span class="p">(</span><span class="mi">500</span><span class="p">),</span> <span class="c1">// 連打</span>
+    <span class="nx">filter</span><span class="p">((</span><span class="na">items</span><span class="p">:</span> <span class="nx">any</span><span class="p">[])</span> <span class="o">=&gt;</span> <span class="nx">items</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="nx">map</span><span class="p">((</span><span class="na">actions</span><span class="p">:</span> <span class="nx">any</span><span class="p">[])</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="c1">// 受け取ったactionが配列になる</span>
+      <span class="k">return</span> <span class="p">{</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">MASH</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">payload</span><span class="p">:</span> <span class="nx">actions</span><span class="p">.</span><span class="nx">length</span>
+      <span class="p">}</span>
+    <span class="p">}),</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">logEpic</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">logSubject</span><span class="p">.</span><span class="nx">asObservable</span><span class="p">()</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">pingEpic</span> <span class="o">=</span> <span class="nx">combineEpics</span><span class="p">(</span><span class="nx">mainEpic</span><span class="p">,</span> <span class="nx">logEpic</span><span class="p">)</span>
+</pre></div></div>

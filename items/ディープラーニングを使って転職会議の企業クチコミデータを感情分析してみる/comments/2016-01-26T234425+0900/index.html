@@ -1,0 +1,12 @@
+<p><a href="/eleven_2012" class="user-mention js-hovercard" title="eleven_2012" data-hovercard-target-type="user" data-hovercard-target-name="eleven_2012">@eleven_2012</a> <br>
+文字列からの数値化についてはgensimの<code>corpora.Dictionary</code>を利用しました。<br>
+ざっくり主要な部分のコードとしては、こんな感じでサンプルデータを結合したデータを食わせました</p>
+
+<div class="code-frame" data-lang="py"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">gensim</span> <span class="kn">import</span> <span class="n">corpora</span>
+
+<span class="n">chars</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">list</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">concatinated_sample_string_data</span> <span class="p">]</span>
+<span class="n">dic</span> <span class="o">=</span> <span class="n">corpora</span><span class="o">.</span><span class="n">Dictionary</span><span class="p">(</span><span class="n">chars</span><span class="p">)</span>
+</pre></div></div>
+
+<p>ここらへんのやり方はTensorFlowで同様のことを行っていた下記スクリプトも参考の一端としましたので、こちらも参考になるかもしれません<br>
+<a href="https://github.com/dennybritz/sentiment-analysis/blob/master/utils/ymr_data.py#L36" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/dennybritz/sentiment-analysis/blob/master/utils/ymr_data.py#L36</a></p>

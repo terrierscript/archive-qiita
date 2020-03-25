@@ -1,0 +1,65 @@
+<p>タスクの中でbower install的なことをしたかった話。</p>
+
+<h2>
+<span id="ダメだった方" class="fragment"></span><a href="#%E3%83%80%E3%83%A1%E3%81%A0%E3%81%A3%E3%81%9F%E6%96%B9"><i class="fa fa-link"></i></a>ダメだった方</h2>
+
+<p>最初に目についた<code>gulp-install</code>というのを使ってざっくり下記な感じでやってみた。</p>
+
+<p>が、これが癖者。finishのイベントのハンドリングがうまくいかない</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">bad-case.js</span></div>
+<div class="highlight"><pre><span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">install</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">cb</span><span class="p">){</span>
+  <span class="nx">gulp</span><span class="p">.</span><span class="nx">src</span><span class="p">([</span><span class="dl">"</span><span class="s2">./bower.json</span><span class="dl">"</span><span class="p">])</span>
+    <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">install</span><span class="p">())</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="dl">'</span><span class="s1">finish</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+      <span class="nx">cb</span><span class="p">();</span>
+     <span class="p">});</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="もっかい調べてみる" class="fragment"></span><a href="#%E3%82%82%E3%81%A3%E3%81%8B%E3%81%84%E8%AA%BF%E3%81%B9%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>もっかい調べてみる。</h2>
+
+<p>調べると類似で<code>gulp-bower</code>なんかを見つけたりした。<br>
+が、ここでひとまず落ち着いて<a href="https://github.com/gulpjs/plugins/blob/master/src/blackList.json" rel="nofollow noopener" target="_blank">blacklist</a>を見てみる。</p>
+
+<p><code>gulp-install</code>と<code>gulp-bower</code>、どっちも載っている。<br>
+これではgulpポリスに怒られてしまう。</p>
+
+<h2>
+<span id="なおす" class="fragment"></span><a href="#%E3%81%AA%E3%81%8A%E3%81%99"><i class="fa fa-link"></i></a>なおす</h2>
+
+<p>gulp-installについては <code>"use gulp-spawn"</code>だそうな。</p>
+
+<p>今回やりたい事はbowerを自動でインストールしたいというところなので、<code>gulp-bower</code>あたりをみる。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>"use the bower module directly"
+</pre></div></div>
+
+<p>なるほど。bower直接使えと。</p>
+
+<p><a href="http://bower.io/docs/api/#programmatic-api" rel="nofollow noopener" target="_blank">bowerの公式</a>を見ながらこんな感じで書いてみる</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">bower-directory.js</span></div>
+<div class="highlight"><pre><span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">install</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">cb</span><span class="p">){</span>
+  <span class="nx">bower</span><span class="p">.</span><span class="nx">commands</span><span class="p">.</span><span class="nx">install</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="dl">"</span><span class="s2">log</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">log</span><span class="p">){</span>
+      <span class="nx">gutil</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">log</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+    <span class="p">})</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="dl">"</span><span class="s2">end</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+      <span class="nx">cb</span><span class="p">();</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+
+<p>なるほど。うまく動いたっぽい。</p>
+
+<h2>
+<span id="締め" class="fragment"></span><a href="#%E7%B7%A0%E3%82%81"><i class="fa fa-link"></i></a>締め</h2>
+
+<p>blacklist、普段はあのやり方好きじゃないなーと思って最初見てなかったけど、今回は普通に役に立った。</p>

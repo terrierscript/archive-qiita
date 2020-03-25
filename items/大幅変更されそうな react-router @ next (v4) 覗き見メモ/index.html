@@ -1,0 +1,255 @@
+<ul>
+<li>2016/09/15 現在の情報。
+
+<ul>
+<li>出たばっかりなので今後変わる可能性大。</li>
+</ul>
+</li>
+<li>今まで個人的にはreact上のroutingはあんま使って来てなかったので、あんまりちゃんとした比較はできてない
+
+<ul>
+<li>
+<a href="https://medium.com/rackt-and-roll/rrtr-is-dead-long-live-react-router-ce982f6f1c10" rel="nofollow noopener" target="_blank">死んだと言われたり復活したと言われたり</a>、<a href="https://medium.freecodecamp.com/you-might-not-need-react-router-38673620f3d" rel="nofollow noopener" target="_blank">必要ないよ！</a>と言われたりと不安定感すごかったので見送ってた。</li>
+<li>あんまり好きじゃなかったし、そこ飲んでまで使うほどの要件も無かった</li>
+</ul>
+</li>
+<li>
+<a href="https://react-router-website-xvufzcovng.now.sh/" rel="nofollow noopener" target="_blank">v4のドキュメント</a>のページ見たら可能性感じたのでとりあえず眺め回してみることにした。
+
+<ul>
+<li><a href="https://twitter.com/search?src=typd&amp;q=react-router%20lang%3Aen" rel="nofollow noopener" target="_blank">twitter上からも歓喜の声が聞こえてくる</a></li>
+<li>ドキュメントのサンプルは素晴らしいのだが、APIやQuickStartは、何故かスクロールが変な感じなので、githubを直接見るほうが良いかもしれない</li>
+<li><a href="https://github.com/ReactTraining/react-router/tree/v4/website" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ReactTraining/react-router/tree/v4/website</a></li>
+</ul>
+</li>
+<li>現行のstableは2、3はalphaを出してしまったけどそこからbreaking changeしたらしくversionが4となったっぽい。</li>
+</ul>
+
+<h1>
+<span id="ざっくり" class="fragment"></span><a href="#%E3%81%96%E3%81%A3%E3%81%8F%E3%82%8A"><i class="fa fa-link"></i></a>ざっくり</h1>
+
+<ul>
+<li>基本今までのと全部違うと言っていいぐらい違う</li>
+<li>めっちゃコード量減ってる</li>
+<li>旧バージョンからアップデートするとなると結構書き換えは必要そうかも</li>
+</ul>
+
+<h1>
+<span id="installして試したかったら" class="fragment"></span><a href="#install%E3%81%97%E3%81%A6%E8%A9%A6%E3%81%97%E3%81%9F%E3%81%8B%E3%81%A3%E3%81%9F%E3%82%89"><i class="fa fa-link"></i></a>installして試したかったら？</h1>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm install react-router@next
+</pre></div></div>
+
+<h1>
+<span id="packagejson-から見る構造変更" class="fragment"></span><a href="#packagejson-%E3%81%8B%E3%82%89%E8%A6%8B%E3%82%8B%E6%A7%8B%E9%80%A0%E5%A4%89%E6%9B%B4"><i class="fa fa-link"></i></a>package.json から見る構造変更</h1>
+
+<ul>
+<li>v2（現行）
+
+<ul>
+<li>
+<a href="https://github.com/mjackson/history" rel="nofollow noopener" target="_blank">history</a>に依存しており、<code>&lt;Router /&gt;</code>には<code>history</code>オブジェクトを渡す必要があった。</li>
+<li>内部でhistoryとの結合とかを色々やってた。</li>
+</ul>
+</li>
+<li>v4
+
+<ul>
+<li>history APIにがっぷりな部分は<a href="https://github.com/ReactTraining/react-history/tree/master/modules" rel="nofollow noopener" target="_blank">react-history</a>に移植された感じ</li>
+<li>メンテナやOrganizationはだいたい一緒っぽい。</li>
+<li>ルーティング解決は<a href="https://github.com/pillarjs/path-to-regexp" rel="nofollow noopener" target="_blank">path-to-regexp</a>
+</li>
+<li>構成的には、<a href="https://medium.freecodecamp.com/you-might-not-need-react-router-38673620f3d#.uuq4y04fb" rel="nofollow noopener" target="_blank">You might not need React Router</a>で紹介されているものとかなり近い。</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="quick-start比較" class="fragment"></span><a href="#quick-start%E6%AF%94%E8%BC%83"><i class="fa fa-link"></i></a>Quick start比較</h1>
+
+<p>それぞれざっくり特徴が見えるところを抜粋</p>
+
+<h3>
+<span id="v2" class="fragment"></span><a href="#v2"><i class="fa fa-link"></i></a>v2</h3>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">render</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-dom</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Router</span><span class="p">,</span> <span class="nx">Route</span><span class="p">,</span> <span class="nx">Link</span><span class="p">,</span> <span class="nx">browserHistory</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-router</span><span class="dl">'</span>
+
+<span class="nx">render</span><span class="p">((</span>
+  <span class="o">&lt;</span><span class="nx">Router</span> <span class="nx">history</span><span class="o">=</span><span class="p">{</span><span class="nx">browserHistory</span><span class="p">}</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="dl">"</span><span class="s2">/</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">App</span><span class="p">}</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="dl">"</span><span class="s2">about</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">About</span><span class="p">}</span><span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="dl">"</span><span class="s2">users</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Users</span><span class="p">}</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="dl">"</span><span class="s2">/user/:userId</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">User</span><span class="p">}</span><span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/Route</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="dl">"</span><span class="s2">*</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">NoMatch</span><span class="p">}</span><span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/Route</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Router</span><span class="err">&gt;
+</span><span class="p">),</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">'</span><span class="s1">root</span><span class="dl">'</span><span class="p">))</span>
+</pre></div></div>
+
+<h3>
+<span id="v4" class="fragment"></span><a href="#v4"><i class="fa fa-link"></i></a>v4</h3>
+
+<p><a href="https://github.com/ReactTraining/react-router/blob/v4/website/pages/quick-start.md" rel="nofollow noopener" target="_blank">quick-start (v4)</a> からざっくり抜粋</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">render</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-dom</span><span class="dl">'</span>
+
+<span class="k">import</span> <span class="p">{</span> <span class="nx">BrowserRouter</span><span class="p">,</span> <span class="nx">Match</span><span class="p">,</span> <span class="nx">Miss</span><span class="p">,</span> <span class="nx">Link</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-router</span><span class="dl">'</span>
+
+<span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">BrowserRouter</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">ul</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">li</span><span class="o">&gt;&lt;</span><span class="nx">Link</span> <span class="nx">to</span><span class="o">=</span><span class="dl">"</span><span class="s2">/</span><span class="dl">"</span><span class="o">&gt;</span><span class="nx">Home</span><span class="o">&lt;</span><span class="sr">/Link&gt;&lt;/</span><span class="nx">li</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">li</span><span class="o">&gt;&lt;</span><span class="nx">Link</span> <span class="nx">to</span><span class="o">=</span><span class="dl">"</span><span class="s2">/about</span><span class="dl">"</span><span class="o">&gt;</span><span class="nx">About</span><span class="o">&lt;</span><span class="sr">/Link&gt;&lt;/</span><span class="nx">li</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">li</span><span class="o">&gt;&lt;</span><span class="nx">Link</span> <span class="nx">to</span><span class="o">=</span><span class="dl">"</span><span class="s2">/topics</span><span class="dl">"</span><span class="o">&gt;</span><span class="nx">Topics</span><span class="o">&lt;</span><span class="sr">/Link&gt;&lt;/</span><span class="nx">li</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="sr">/ul</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">exactly</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Home</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/about</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">About</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/topics</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Topics</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Miss</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">NoMatch</span><span class="p">}</span><span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/BrowserRouter</span><span class="err">&gt;
+</span><span class="p">)</span>
+
+<span class="nx">render</span><span class="p">(</span><span class="o">&lt;</span><span class="nx">App</span><span class="o">/&gt;</span><span class="p">,</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">'</span><span class="s1">#root</span><span class="dl">'</span><span class="p">))</span>
+</pre></div></div>
+
+<p><code>history</code>を渡さず、Componetとして定義出来るようになったことかなりのすっきり感がある。<br>
+<code>&lt;Match&gt;</code>のルールも子コンポーネントで更に定義するなどもあって、親<code>&lt;Router /&gt;</code>が全体のRoutingを把握しなくても良くなっているっぽい</p>
+
+<p>また、<code>&lt;div&gt;</code>などの標準的な記法と<code>&lt;Match/&gt;</code>の組み合わせで作られているので、HeaderやFooterやMenuなどの組み合わせがやりやすい。</p>
+
+<p><a href="https://react-router-website-xvufzcovng.now.sh/basic" class="autolink" rel="nofollow noopener" target="_blank">https://react-router-website-xvufzcovng.now.sh/basic</a></p>
+
+<h1>
+<span id="ファイル数" class="fragment"></span><a href="#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%95%B0"><i class="fa fa-link"></i></a>ファイル数</h1>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>### v2
+% git clone https://github.com/ReactTraining/react-router.git
+% ls -1 modules/ | grep .js | wc -l
+      38
+
+### v4
+% git co v4
+% ls -1 modules/ | grep .js | wc -l
+      16
+</pre></div></div>
+
+<p>38 -&gt; 16 と大激減！<br>
+多けりゃいい少なけりゃいいというものではないけど、内容としても見通しがよく感じる。<br>
+かなり読みやすいと感じた。</p>
+
+<p>historyとのつなぎ込み部分が<code>react-history</code>に移動されたことで減った部分が多い模様。</p>
+
+<h1>
+<span id="ロゴ" class="fragment"></span><a href="#%E3%83%AD%E3%82%B4"><i class="fa fa-link"></i></a>ロゴ</h1>
+
+<p><a href="https://github.com/ReactTraining/react-router/blob/42319709c3df1f660d67e6aac03c38d193f6d1ec/logo/vertical.png" rel="nofollow noopener" target="_blank"><font color="cyan">青かった</font></a>のが<a href="https://github.com/ReactTraining/react-router/blob/ecebbf09bc062214140e9b857f364d12f9253783/logo/Vertical.png" rel="nofollow noopener" target="_blank"><font color="red">赤くなった</font></a></p>
+
+<h1>
+<span id="ハマりどころrouterの直下は単一のコンポーネントである必要がある" class="fragment"></span><a href="#%E3%83%8F%E3%83%9E%E3%82%8A%E3%81%A9%E3%81%93%E3%82%8Drouter%E3%81%AE%E7%9B%B4%E4%B8%8B%E3%81%AF%E5%8D%98%E4%B8%80%E3%81%AE%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%81%A7%E3%81%82%E3%82%8B%E5%BF%85%E8%A6%81%E3%81%8C%E3%81%82%E3%82%8B"><i class="fa fa-link"></i></a>ハマりどころ：<code>&lt;Router/&gt;</code>の直下は単一のコンポーネントである必要がある</h1>
+
+<p>ちょっと使って見つけた部分。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>MatchProvider.render(): A valid React element (or null) must be returned. 
+You may have returned undefined, an array or some other invalid object.
+</pre></div></div>
+
+<p>こんなエラーが出てきてなんだろうなーと思ったら<code>&lt;Router /&gt;</code>直下のComponentは一つのコンポーネントでないといけない。なので<code>&lt;div&gt;&lt;/div&gt;</code>とかで囲まないといけない。</p>
+
+<p>これは仕様らしい。<br>
+<a href="https://github.com/ReactTraining/react-router/issues/3837#issuecomment-246919642" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ReactTraining/react-router/issues/3837#issuecomment-246919642</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// ダメ</span>
+<span class="kd">const</span> <span class="nx">BadRoute</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Router</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Foo</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/:bar</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Baz</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Router</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// ダメ</span>
+<span class="kd">const</span> <span class="nx">BadRoute</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Router</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Foo</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/:bar</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Baz</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Router</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// これならOK</span>
+<span class="kd">const</span> <span class="nx">Route</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Router</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Foo</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Match</span> <span class="nx">pattern</span><span class="o">=</span><span class="dl">"</span><span class="s2">/:bar</span><span class="dl">"</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Baz</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Router</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<h1>
+<span id="faqよりなんで巨大な変更をするのか" class="fragment"></span><a href="#faq%E3%82%88%E3%82%8A%E3%81%AA%E3%82%93%E3%81%A7%E5%B7%A8%E5%A4%A7%E3%81%AA%E5%A4%89%E6%9B%B4%E3%82%92%E3%81%99%E3%82%8B%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>FAQより「なんで巨大な変更をするのか？」</h1>
+
+<p>2016/09/16追記項目</p>
+
+<p><a href="https://github.com/ReactTraining/react-router/tree/v4#v4-faq" rel="nofollow noopener" target="_blank">FAQ</a> がREADMEに追加された。最初の項目に関して結構思想的な背景が見える部分だったので、雑訳してみる。<br>
+2016/09/16追記：<a href="https://github.com/ReactTraining/react-router/tree/v4#v4-faq" rel="nofollow noopener" target="_blank">FAQ</a> がREADMEに追加された。最初の項目に関して結構思想的な背景が見える部分だったので雑訳。</p>
+
+<ul>
+<li>Q. <a href="https://github.com/ReactTraining/react-router/tree/v4#why-the-huge-change-again" rel="nofollow noopener" target="_blank">なんで巨大な変更するのか？</a>
+</li>
+<li>A.  tl; dr: Declarative Composability（宣言的構築性？）のため
+
+<ul>
+<li>「我々はReact Routerでわくわくしたことなかった」</li>
+<li>「私達が学んだことは、Reactの最も愛すべき理由が <strong>Declarative Composabillity</strong>であることです」
+
+<ul>
+<li>要するにReactと同じように、宣言的に記述出来るのが良いよね。という感じっぽい。</li>
+</ul>
+</li>
+<li>「staticなrouterのconfigをしないといけないせいで、下記のようなルーターは書けなかったし、Routeをラップすることもできなかった」
+
+<ul>
+<li>「<code>const CoolRoute = (props) =&gt; &lt;Route {...props} cool={true}/&gt;</code>」</li>
+<li>宣言的な記述でない例として、静的なrouting configを書かないといけないことが弊害として上げられているものと思われる。</li>
+</ul>
+</li>
+<li>「routeコンポーネントのレンダリングに関与するために、<code>&lt;Router createElement render&gt;</code>とか<code>createRouterMiddleware</code>快適と言えないAPIを提供していた。我々は<code>createElement</code>を取り除き、あなたたちに返す」
+
+<ul>
+<li>うまく訳せないが、きっとAPIとしては提供しなくてもdeclarativeにすることで、「middlewareらへんはあなた達の好きな様にやってくれたらいい」という意味っぽく感じる。</li>
+</ul>
+</li>
+<li>「<code>onEnter</code>、<code>onLeave</code>、<code>onChange</code>のライフサイクルフックを再作成していた。けどReactには既に<code>componentWillMount</code>、<code>componentWillReceiveProps</code>、<code>componentWillUnmunt</code>がある」</li>
+<li>「Route configはviewヒエラルキーを記述していた。しかし、そもそもReact Componentは既にviewヒエラルキーを記述していた。」</li>
+<li>「今までのReact Routerは『Reactのルーター』ではなく、『Reactのルーティングフレームワーク』だった」<sup id="fnref1"><a href="#fn1" rel="footnote" title="個人的にこの表現が「おー」ってなった。">1</a></sup>
+
+<ul>
+<li>「Reactにとって余計なAPIだけでなく、ビルドエコシステムに対しても驚くほどやっかいな偶発的なフレームワークとなっていた」</li>
+</ul>
+</li>
+<li>「あなたはcomponentをレンダリングしてpropsを渡すことでroutingをコントロール出来る。」</li>
+</ul>
+</li>
+</ul>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>個人的にこの表現が「おー」ってなった。 <a href="#fnref1">↩</a></p>
+</li>
+
+</ol>
+</div>

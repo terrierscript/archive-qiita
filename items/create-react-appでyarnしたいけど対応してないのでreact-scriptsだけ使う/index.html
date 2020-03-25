@@ -1,0 +1,114 @@
+<p>create-react-appが素振りに最適なのだけど、電車の中などyarnで行いたい。<br>
+けど今のところ<a href="https://github.com/facebookincubator/create-react-app/issues/896" rel="nofollow noopener" target="_blank">対応前なので</a>で、「<code>create-react-app</code>時にinstallはしない」、みたいなことも出来なそうなので、react-scriptsだけ美味しく使うことをやってみる。</p>
+
+<p>今回は「start使えればいいや」ぐらいな気持ちなので、testなどは試していない。</p>
+
+<hr>
+
+<h2>
+<span id="1-普段通りのプロジェクト作成" class="fragment"></span><a href="#1-%E6%99%AE%E6%AE%B5%E9%80%9A%E3%82%8A%E3%81%AE%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E4%BD%9C%E6%88%90"><i class="fa fa-link"></i></a>1. 普段通りのプロジェクト作成</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ mkdir example-yarn-react
+$ cd example-yarn-react
+$ git init
+</pre></div></div>
+
+<p>npm init -yでもいいんだけど、せっかくなのでyarn使う</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn init -y
+</pre></div></div>
+
+<h2>
+<span id="2-必要パッケージのinstall" class="fragment"></span><a href="#2-%E5%BF%85%E8%A6%81%E3%83%91%E3%83%83%E3%82%B1%E3%83%BC%E3%82%B8%E3%81%AEinstall"><i class="fa fa-link"></i></a>2. 必要パッケージのinstall</h2>
+
+<p><code>react-scripts</code>を入れる。<code>react-script</code>という類似のパッケージがあるが、全く別物なので注意</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add --dev react-scripts --prefer-offline
+</pre></div></div>
+
+<p>reactとreact-domも入れる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add react react-dom --prefer-offline 
+</pre></div></div>
+
+<p>yarnさんも初回は時間がかかるのでじっくり待つ。。。</p>
+
+<h2>
+<span id="3-scripts部分を追加" class="fragment"></span><a href="#3-scripts%E9%83%A8%E5%88%86%E3%82%92%E8%BF%BD%E5%8A%A0"><i class="fa fa-link"></i></a>3. scripts部分を追加</h2>
+
+<p><code>package.json</code>のscripts部分の追加。手打ちだけどしょうがない。<br>
+個人的には素振り目的なのでstartだけ入れる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>  <span class="dl">"</span><span class="s2">scripts</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">start</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">react-scripts start</span><span class="dl">"</span>
+  <span class="p">}</span>
+</pre></div></div>
+
+<p>フルならこんな感じ。<a href="https://github.com/facebookincubator/create-react-app/blob/master/packages/react-scripts/template/README.md#available-scripts" rel="nofollow noopener" target="_blank">詳細はこのへん</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>  <span class="dl">"</span><span class="s2">scripts</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">start</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">react-scripts start</span><span class="dl">"</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">build</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">react-scripts build</span><span class="dl">"</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">test</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">react-scripts test --env=jsdom</span><span class="dl">"</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">eject</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">react-scripts eject</span><span class="dl">"</span>
+  <span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="4-起動のためのpublicindexhtmlファイル準備" class="fragment"></span><a href="#4-%E8%B5%B7%E5%8B%95%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AEpublicindexhtml%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>4. 起動のためのpublic/index.htmlファイル準備</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ mkdir public
+$ touch public/index.html
+</pre></div></div>
+
+<p>index.htmlの最低限はこのぐらいな感じ。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"root"</span><span class="nt">&gt;&lt;/div&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div></div>
+
+<h2>
+<span id="5-srcファイル準備" class="fragment"></span><a href="#5-src%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>5. srcファイル準備</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ mkdir src
+$ touch src/index.js
+</pre></div></div>
+
+<p>中身はこんな感じ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span>
+<span class="k">import</span> <span class="nx">ReactDOM</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-dom</span><span class="dl">'</span>
+
+<span class="nx">ReactDOM</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Hello</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">,
+</span>  <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">'</span><span class="s1">root</span><span class="dl">'</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<h2>
+<span id="6-起動" class="fragment"></span><a href="#6-%E8%B5%B7%E5%8B%95"><i class="fa fa-link"></i></a>6. 起動!!!</h2>
+
+<p>ここもせっかくなのでyarn使う</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn start
+</pre></div></div>
+
+<p>起動した！</p>
+
+<h1>
+<span id="結論" class="fragment"></span><a href="#%E7%B5%90%E8%AB%96"><i class="fa fa-link"></i></a>結論</h1>
+
+<ul>
+<li>めんどくさい！！旨味半減</li>
+<li>旨味半減だけど、半分ぐらいは旨い。のでそんなに悪くはない
+
+<ul>
+<li>webpack書かなくていいとかbabel設定しなくていいとかの部分で結構楽。</li>
+<li>budoセットアップするのより気持ち楽？ぐらい。</li>
+</ul>
+</li>
+<li>shell化するとかscript化するとかで改善できそうだけど、そこまでやる前に本体側が対応されそう</li>
+</ul>

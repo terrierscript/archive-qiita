@@ -1,0 +1,122 @@
+<p>Reactでアニメーションをさせたい時、<a href="https://popmotion.io/pose/" rel="nofollow noopener" target="_blank">react-pose</a>や<a href="https://www.react-spring.io/" rel="nofollow noopener" target="_blank">react-spring</a>などのライブラリがある。これらライブラリはすごくリッチなのだがちょちょっとCSSのtransitionを使うぐらいの時には若干オーバーになる。</p>
+
+<p>一方で過去公式だった（今はコミュニティ運用） <a href="https://github.com/reactjs/react-transition-group" rel="nofollow noopener" target="_blank">react-transition-group</a>もある。こちらは非常にシンプルだ。</p>
+
+<p><code>styled-componets</code>でさくっとアニメーションさせたい時、<code>react-transition-group</code>の<code>&lt;Transition&gt;</code>を使うと割とさくっとできることに気付いたのでまとめたい。</p>
+
+<h1>
+<span id="例示" class="fragment"></span><a href="#%E4%BE%8B%E7%A4%BA"><i class="fa fa-link"></i></a>例示</h1>
+
+<p>まずTransitionを利用する側を書く。<br>
+この例ではReact Hooksを使っているが別にそこは本筋ではないのでclass componentsでも問題無い。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">Transition</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react-transition-group</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Animation</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./Animation</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">AnimateItem</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// animationの状態を持つのにstateが必要。ここだけは面倒だけどしょうがない</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">animate</span><span class="p">,</span> <span class="nx">setAnimate</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+
+  <span class="c1">// ボタンを押したらtrueになって3000ms後にfalseになるように仕組む</span>
+  <span class="kd">const</span> <span class="nx">doAnimate</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">setAnimate</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+    <span class="nx">setTimeout</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">setAnimate</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+    <span class="p">},</span> <span class="mi">3000</span><span class="p">)</span>
+  <span class="p">},</span> <span class="p">[])</span>
+
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="si">{</span><span class="cm">/* Transition は `in` に渡した値で変化する */</span><span class="si">}</span>
+      <span class="p">&lt;</span><span class="nc">Transition</span> <span class="na">in=</span><span class="si">{</span><span class="nx">animate</span><span class="si">}</span> <span class="na">timeout=</span><span class="si">{</span><span class="mi">500</span><span class="si">}</span><span class="p">&gt;</span>
+        <span class="si">{</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">(</span>
+          <span class="c1">// stateは下記の順序で変遷する</span>
+          <span class="c1">// exited -&gt; entering -&gt; entered -&gt; exiting -&gt; exited</span>
+          <span class="p">&lt;</span><span class="nc">Animation</span> <span class="na">state=</span><span class="si">{</span><span class="nx">state</span><span class="si">}</span><span class="p">&gt;</span>Hello<span class="p">&lt;/</span><span class="nc">Animation</span><span class="p">&gt;</span>
+        <span class="p">)</span><span class="si">}</span>
+      <span class="p">&lt;/</span><span class="nc">Transition</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">doAnimate</span><span class="si">}</span><span class="p">&gt;</span>Animate<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>次にanimationを設定するstyled-components側を作る。<br>
+propsのcallbackを受け取れるのでこれに応じて値を変えるだけだ。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// Animation.js</span>
+<span class="k">import</span> <span class="nx">styled</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">styled-components</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">Animation</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  transition: 0.5s;
+  width: 300px;
+  height: 200px;
+  /* 要素を動かす */
+  transform: translateX(
+    </span><span class="p">${({</span> <span class="nx">state</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nx">state</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">entering</span><span class="dl">"</span> <span class="o">||</span> <span class="nx">state</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">entered</span><span class="dl">"</span> <span class="p">?</span> <span class="mi">400</span> <span class="p">:</span> <span class="mi">0</span><span class="p">)}</span><span class="s2">px
+  );
+  /* 色を変える */
+  background: </span><span class="p">${({</span> <span class="nx">state</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="dl">"</span><span class="s2">entering</span><span class="dl">"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="dl">"</span><span class="s2">red</span><span class="dl">"</span>
+      <span class="k">case</span> <span class="dl">"</span><span class="s2">entered</span><span class="dl">"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="dl">"</span><span class="s2">blue</span><span class="dl">"</span>
+      <span class="k">case</span> <span class="dl">"</span><span class="s2">exiting</span><span class="dl">"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="dl">"</span><span class="s2">green</span><span class="dl">"</span>
+      <span class="k">case</span> <span class="dl">"</span><span class="s2">exited</span><span class="dl">"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="dl">"</span><span class="s2">yellow</span><span class="dl">"</span>
+    <span class="p">}</span>
+  <span class="p">}};</span>
+<span class="s2">`
+</span></pre></div></div>
+
+<p>Animationの部分がちょっと分厚くなったり汚くなりがちなので、例えば基礎となる要素とanimation部分を分けて書くのもよいだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">BaseItem</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  width: 300px;
+  height: 200px;
+`</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">Animation</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">(</span><span class="nx">BaseItem</span><span class="p">)</span><span class="s2">`
+  transition: 0.5s;
+  transform: translateX(
+    </span><span class="p">${({</span> <span class="nx">state</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nx">state</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">entering</span><span class="dl">"</span> <span class="o">||</span> <span class="nx">state</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">entered</span><span class="dl">"</span> <span class="p">?</span> <span class="mi">400</span> <span class="p">:</span> <span class="mi">0</span><span class="p">)}</span><span class="s2">px
+  );
+`</span>
+</pre></div></div>
+
+<h1>
+<span id="結果" class="fragment"></span><a href="#%E7%B5%90%E6%9E%9C"><i class="fa fa-link"></i></a>結果</h1>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F47a73edc-87f7-a1b4-ae9d-4d0d91bf0e07.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=202ebd90daa5e725869971c1e32a3969" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F47a73edc-87f7-a1b4-ae9d-4d0d91bf0e07.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=202ebd90daa5e725869971c1e32a3969" alt="a.gif" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/47a73edc-87f7-a1b4-ae9d-4d0d91bf0e07.gif" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F47a73edc-87f7-a1b4-ae9d-4d0d91bf0e07.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=996adf5b79a9a6082225d80d062f2e59 1x" loading="lazy"></a></p>
+
+<h1>
+<span id="例えばfadein--fadeoutするなら" class="fragment"></span><a href="#%E4%BE%8B%E3%81%88%E3%81%B0fadein--fadeout%E3%81%99%E3%82%8B%E3%81%AA%E3%82%89"><i class="fa fa-link"></i></a>例えばfadeIn / fadeOutするなら</h1>
+
+<p>この理屈で例えばアニメーションの前後で要素を消したいfadeInのようなものを作るならこんな感じだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">Fade</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  transition: 0.5s;
+  opacity: </span><span class="p">${({</span> <span class="nx">state</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nx">state</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">entered</span><span class="dl">"</span> <span class="p">?</span> <span class="mi">1</span> <span class="p">:</span> <span class="mi">0</span><span class="p">)}</span><span class="s2">;
+  display: </span><span class="p">${({</span> <span class="nx">state</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nx">state</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">exited</span><span class="dl">"</span> <span class="p">?</span> <span class="dl">"</span><span class="s2">none</span><span class="dl">"</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">block</span><span class="dl">"</span><span class="p">)}</span><span class="s2">;
+`</span>
+</pre></div></div>
+
+<p>もしくは若干開始タイミングの制御が雑でもよければ<code>unmountOnExit</code>、 <code>mountOnEnter</code>を利用して下記のような方法もある</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">Fade2</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  transition: 5s;
+  opacity: </span><span class="p">${({</span> <span class="nx">state</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nx">state</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">entered</span><span class="dl">"</span> <span class="p">?</span> <span class="mi">1</span> <span class="p">:</span> <span class="mi">0</span><span class="p">)}</span><span class="s2">;
+`</span>
+
+<span class="kd">const</span> <span class="nx">Item</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// ...</span>
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nc">Transition</span> <span class="na">in=</span><span class="si">{</span><span class="nx">animate</span><span class="si">}</span> <span class="na">timeout=</span><span class="si">{</span><span class="mi">500</span><span class="si">}</span> <span class="nt">unmountOnExit</span> <span class="nt">mountOnEnter</span><span class="p">&gt;</span>
+    <span class="si">{</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">&lt;</span><span class="nc">Fade2</span> <span class="na">state=</span><span class="si">{</span><span class="nx">state</span><span class="si">}</span><span class="p">&gt;</span>Fade In<span class="p">&lt;/</span><span class="nc">Fade2</span><span class="p">&gt;</span><span class="si">}</span>
+  <span class="p">&lt;/</span><span class="nc">Transition</span><span class="p">&gt;</span>
+<span class="p">}</span>
+
+</pre></div></div>

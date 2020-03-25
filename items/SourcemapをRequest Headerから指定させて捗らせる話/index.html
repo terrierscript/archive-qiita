@@ -1,0 +1,91 @@
+<p>SCSSなどのprecompileを使うときにはもはや当たり前のになってきたたSourcemap。<br>
+あんまり気にせず使うことも出来るが、レガシー環境などで快適に使いたくなったりするとちょいと工夫が欲しくなる。</p>
+
+<h2>
+<span id="sourcemapを使う方法" class="fragment"></span><a href="#sourcemap%E3%82%92%E4%BD%BF%E3%81%86%E6%96%B9%E6%B3%95"><i class="fa fa-link"></i></a>Sourcemapを使う方法</h2>
+
+<p>Sourcemapを読み込む方法として、だいたい3つぐらい手法が用意されている</p>
+
+<ol>
+<li>該当の出力コードにインラインで記載する</li>
+<li>該当の出力コードに、別途出力したSourcemapファイルの位置を指定する</li>
+<li>
+<code>X-Sourcemap</code>のリクエストヘッダで、別途出力したSourcemapファイルの位置を指定する</li>
+</ol>
+
+<h2>
+<span id="出力コードに手を加えるやり方" class="fragment"></span><a href="#%E5%87%BA%E5%8A%9B%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AB%E6%89%8B%E3%82%92%E5%8A%A0%E3%81%88%E3%82%8B%E3%82%84%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>出力コードに手を加えるやり方</h2>
+
+<p>1, 2のソースコードが手法はわりとメジャー。<br>
+結構良く説明されている。qiitaでも下記のあたりの記事が見つかった</p>
+
+<ul>
+<li><a href="http://qiita.com/kyaido/items/04658c04a7dbe9f05c16" class="autolink" id="reference-c5cfac24af8c34b5efef">http://qiita.com/kyaido/items/04658c04a7dbe9f05c16</a></li>
+<li><a href="http://qiita.com/yokoh9/items/bc948a6ea7dd21f9c31d" class="autolink" id="reference-0d6d1721702e19c87214">http://qiita.com/yokoh9/items/bc948a6ea7dd21f9c31d</a></li>
+</ul>
+
+<p>が、これらの手段、こんな欠点がある</p>
+
+<ul>
+<li>出力cssそのまま本番環境にアップロードしてしまうと、元コードが見られたりファイルパス書かれたりするのでちょっと気まずい</li>
+<li>Sourcemapファイルをuploadしなければ、元コードは参照されないが、一部ブラウザでは読み込みエラーなどが吐かれてしまいちょっと気まずい</li>
+<li>このあたりを回避するとなると、本番uploadする前に何らかの形で再ビルドすることになるってちょっと面倒</li>
+</ul>
+
+<p>モダン環境だとビルドをちゃんとやってくれたりするので気にならないが、そうじゃない環境だと結構捗らない。</p>
+
+<h2>
+<span id="ということでheaderでsourcemap指定をする" class="fragment"></span><a href="#%E3%81%A8%E3%81%84%E3%81%86%E3%81%93%E3%81%A8%E3%81%A7header%E3%81%A7sourcemap%E6%8C%87%E5%AE%9A%E3%82%92%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>ということでHeaderでSourcemap指定をする</h2>
+
+<p>あんまりこの手法を使っている人が少ないのかもしれないが、この方法についてはいまいち文献が少なかったりする。<br>
+せいぜい見つけられたのがこのあたりだった。<br>
+<a href="http://www.html5rocks.com/en/tutorials/developertools/sourcemaps/" rel="nofollow noopener" target="_blank">Introduction to JavaScript Source Maps</a></p>
+
+<p>とはいえ別に複雑なこともなく、リクエストヘッダの<code>X-SourceMap</code>で指定してやれば良いというだけだった。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>X-SourceMap: /path/to/script.js.map
+</pre></div></div>
+
+<h3>
+<span id="タスクランナーの設定をいじる" class="fragment"></span><a href="#%E3%82%BF%E3%82%B9%E3%82%AF%E3%83%A9%E3%83%B3%E3%83%8A%E3%83%BC%E3%81%AE%E8%A8%AD%E5%AE%9A%E3%82%92%E3%81%84%E3%81%98%E3%82%8B"><i class="fa fa-link"></i></a>タスクランナーの設定をいじる</h3>
+
+<p>gulpなどの設定で普通のSourcemap指定と違うのは、<code>{addComment: false}</code>の指定をして出力cssには影響が出ないようにすること。<br>
+これで<code>some.css</code>のSourcemapファイルは<code>some.css.map</code>てな具合に出力され、元のcssは普通にSourcemapナシ状態が作れる。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">gulp.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">gulp</span>       <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">gulp</span><span class="dl">'</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">sass</span>       <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">gulp-sass</span><span class="dl">'</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">sourcemaps</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">gulp-sourcemaps</span><span class="dl">'</span><span class="p">);</span>
+
+<span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">sass</span><span class="dl">'</span><span class="p">,</span>  <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="nx">gulp</span><span class="p">.</span><span class="nx">src</span><span class="p">(</span><span class="nx">pathToSrcSass</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">sourcemaps</span><span class="p">.</span><span class="nx">init</span><span class="p">())</span>
+      <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">sass</span><span class="p">())</span>
+    <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">sourcemaps</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="dl">"</span><span class="s2">./</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span><span class="na">addComment</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span> <span class="na">debug</span><span class="p">:</span><span class="kc">true</span><span class="p">}))</span>
+    <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">gulp</span><span class="p">.</span><span class="nx">dest</span><span class="p">(</span><span class="nx">pathToOutputSass</span><span class="p">))</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="x-sourcemapが出力されるようにする" class="fragment"></span><a href="#x-sourcemap%E3%81%8C%E5%87%BA%E5%8A%9B%E3%81%95%E3%82%8C%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>X-Sourcemapが出力されるようにする。</h3>
+
+<p>ヘッダーで<code>X-Sourcemap</code>を指定するにはapacheの設定で指定したり<code>.htaccess</code>を使ったりあたりが思いつくが、今回のサンプルでは<code>.htaccess</code>を使う。</p>
+
+<div class="code-frame" data-lang="htaccess"><div class="highlight"><pre>&lt;IfModule mod_rewrite.c&gt;
+  RewriteEngine On
+  # source map
+  RewriteCond %{REQUEST_URI}          ^(.+\.(css|js))$
+  RewriteCond %{DOCUMENT_ROOT}%1.map  -f
+  RewriteRule .                       - [L,E=SOURCE_MAP:%{REQUEST_URI}.map?%{QUERY_STRING}]
+  Header set X-SourceMap "%{SOURCE_MAP}e" env=SOURCE_MAP
+
+&lt;/IfModule&gt;
+</pre></div></div>
+
+<p>やっていることとしては<code>css</code>か<code>js</code>の場合に<code>%{DOCUMENT_ROOT}%1.map</code>が存在していれば<code>X-SourceMap</code>を指定するという具合な感じ。</p>
+
+<p>また、出力先を<code>./map</code>とかにしたい場合は併せて<code>%{DOCUMENT_ROOT}%1.map</code>の部分を変える感じにすればよい。</p>
+
+<p>これによりリクエストヘッダでのSourcemap指定が歓声するので、本番用ビルドをしたり、Sourcemapファイルが無かった場合に妙な感じになったりしなくてとても良い環境が出来る。</p>

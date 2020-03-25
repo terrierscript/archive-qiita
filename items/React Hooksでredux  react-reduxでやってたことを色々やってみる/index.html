@@ -1,0 +1,419 @@
+<p>※ <strong>React HooksはRFCの段階です。この記事はあくまで実験の産物としてお読み下さい。</strong><br>
+-&gt; 16.8でリリースされました。それほど大きな変更はなさそうです</p>
+
+<p>また、出たばかりなので探り探りで書いています。何かある場合はコメントや編集リクエストをいただければ幸いです。</p>
+
+<h1>
+<span id="準備" class="fragment"></span><a href="#%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>準備</h1>
+
+<p>React hooksは16.7にのみ予定されているので、下記のコマンドで16.7を入れる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>yarn add react@^16.8.0 react-dom@^16.8.0
+</pre></div></div>
+
+<h1>
+<span id="1-usereducerでcombinereducersだけ使ってみる" class="fragment"></span><a href="#1-usereducer%E3%81%A7combinereducers%E3%81%A0%E3%81%91%E4%BD%BF%E3%81%A3%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>1. useReducerでcombineReducersだけ使ってみる</h1>
+
+<p>reduxにおいてはcombineReducersを利用してネストすることが出来た。<br>
+hooksの機能としてはこの部分だけは提供されてないので、reduxから流用して組み合わせることをやってみる</p>
+
+<p>例えばこんなreducer</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">combineReducers</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">redux</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">counter</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">state</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">state</span> <span class="o">-</span> <span class="mi">1</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">inputValue</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">UPDATE_VALUE</span><span class="dl">"</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">action</span><span class="p">.</span><span class="nx">value</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">rootReducer</span> <span class="o">=</span> <span class="nx">combineReducers</span><span class="p">({</span>
+  <span class="nx">counter</span><span class="p">,</span>
+  <span class="c1">// サンプルとしてネストしてみる</span>
+  <span class="na">someNested</span><span class="p">:</span> <span class="nx">combineReducers</span><span class="p">({</span>
+    <span class="nx">inputValue</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>利用側はこんな感じ</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">useReducer</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useReducer</span><span class="p">(</span><span class="nx">rootReducer</span><span class="p">,</span> <span class="kc">undefined</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DUMMY_INIT</span><span class="dl">"</span>
+  <span class="p">})</span>
+
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"App"</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>counter<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>count: <span class="si">{</span><span class="nx">state</span><span class="p">.</span><span class="nx">counter</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span> <span class="p">})</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span> <span class="p">})</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Input value<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>value: <span class="si">{</span><span class="nx">state</span><span class="p">.</span><span class="nx">someNested</span><span class="p">.</span><span class="nx">inputValue</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">input</span>
+          <span class="na">value=</span><span class="si">{</span><span class="nx">state</span><span class="p">.</span><span class="nx">someNested</span><span class="p">.</span><span class="nx">inputValue</span><span class="si">}</span>
+          <span class="na">onChange=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span>
+            <span class="nx">dispatch</span><span class="p">({</span>
+              <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">UPDATE_VALUE</span><span class="dl">"</span><span class="p">,</span>
+              <span class="na">value</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+            <span class="p">})</span>
+          <span class="si">}</span>
+        <span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>一点工夫する点として、initialStateとinitialActionをダミーでも渡してデフォルトのinitial値を使う必要があるようだ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="p">[</span><span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useReducer</span><span class="p">(</span><span class="nx">rootReducer</span><span class="p">,</span> <span class="kc">undefined</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DUMMY_INIT</span><span class="dl">"</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h1>
+<span id="2-createcontextとusecontextを組み合わせてproviderを作る" class="fragment"></span><a href="#2-createcontext%E3%81%A8usecontext%E3%82%92%E7%B5%84%E3%81%BF%E5%90%88%E3%82%8F%E3%81%9B%E3%81%A6provider%E3%82%92%E4%BD%9C%E3%82%8B"><i class="fa fa-link"></i></a>2: createContextとuseContextを組み合わせてProviderを作る</h1>
+
+<p><code>useReducer</code>だけだと孫までバケツリレーが必要になる。<br>
+ここはuseReducerにcontextを利用してみよう。<br>
+Contextを使うようなケースでも無いのかも？とは思ったが、一応公式にもこれに類似したドキュメントが存在しているようだ<br>
+<a href="https://reactjs.org/docs/hooks-faq.html#how-to-avoid-passing-callbacks-down" class="autolink" rel="nofollow noopener" target="_blank">https://reactjs.org/docs/hooks-faq.html#how-to-avoid-passing-callbacks-down</a></p>
+
+<p>まずContexを作成。初期値は空</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">ReducerContext</span> <span class="o">=</span> <span class="nx">createContext</span><span class="p">()</span>
+</pre></div></div>
+
+<p>Providerはこんな具合で書かれる</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="c1">// ContextのProviderをラップしているだけ。値としてstateとdispatchを渡してしまうことにする</span>
+<span class="kd">const</span> <span class="nx">Provider</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">children</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useReducer</span><span class="p">(</span><span class="nx">rootReducer</span><span class="p">,</span> <span class="kc">undefined</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DUMMY_INIT</span><span class="dl">"</span>
+  <span class="p">})</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">ReducerContext</span><span class="p">.</span><span class="nc">Provider</span> <span class="na">value=</span><span class="si">{</span><span class="p">{</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">}</span><span class="si">}</span><span class="p">&gt;</span>
+      <span class="si">{</span><span class="nx">children</span><span class="si">}</span>
+    <span class="p">&lt;/</span><span class="nc">ReducerContext</span><span class="p">.</span><span class="nc">Provider</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">Provider</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"App"</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">Counter</span> <span class="p">/&gt;</span>
+        <span class="p">&lt;</span><span class="nc">InputValue</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nc">Provider</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>利用側(Consumer）はuseContexを利用するとこうなる。<br>
+ちょっとだけuseContextの周りの値が不定で気持ち悪い感も否めない</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Counter</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">ReducerContext</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>counter<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>count: <span class="si">{</span><span class="nx">state</span><span class="p">.</span><span class="nx">counter</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span> <span class="p">})</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span> <span class="p">})</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">InputValue</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">ReducerContext</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Input value<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>value: <span class="si">{</span><span class="nx">state</span><span class="p">.</span><span class="nx">someNested</span><span class="p">.</span><span class="nx">inputValue</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">input</span>
+        <span class="na">value=</span><span class="si">{</span><span class="nx">state</span><span class="p">.</span><span class="nx">someNested</span><span class="p">.</span><span class="nx">inputValue</span><span class="si">}</span>
+        <span class="na">onChange=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span>
+          <span class="nx">dispatch</span><span class="p">({</span>
+            <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">UPDATE_VALUE</span><span class="dl">"</span><span class="p">,</span>
+            <span class="na">value</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+          <span class="p">})</span>
+        <span class="si">}</span>
+      <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>useContextを使わずConsumerを使うならこうだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">Counter</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">ReducerContext</span><span class="p">.</span><span class="nc">Consumer</span><span class="p">&gt;</span>
+      <span class="si">{</span><span class="p">({</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">(</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>counter<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>count: <span class="si">{</span><span class="nx">state</span><span class="p">.</span><span class="nx">counter</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span> <span class="p">})</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span> <span class="p">})</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">)</span>
+      <span class="p">}</span><span class="si">}</span>
+    <span class="p">&lt;/</span><span class="nc">ReducerContext</span><span class="p">.</span><span class="nc">Consumer</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="3-usecallbackでbindactioncreactors-っぽいこと" class="fragment"></span><a href="#3-usecallback%E3%81%A7bindactioncreactors-%E3%81%A3%E3%81%BD%E3%81%84%E3%81%93%E3%81%A8"><i class="fa fa-link"></i></a>3. useCallbackでbindActionCreactors っぽいこと</h1>
+
+<p>actionのbindをしたければuseCallbackが使えそうだ。<br>
+useCallbackはmemorizeしてくれる関数で、実は無くても動くが再レンダリングが起きてもmemo化されてくれる。引数として<code>[dispatch]</code>を与えているので、dispatchがもし変更された場合に再生成される（はず）</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>  <span class="kd">const</span> <span class="nx">increment</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">((</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span> <span class="p">}),</span> <span class="p">[</span>
+    <span class="nx">dispatch</span>
+  <span class="p">])</span>
+  <span class="kd">const</span> <span class="nx">decrement</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">((</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span> <span class="p">}),</span> <span class="p">[</span>
+    <span class="nx">dispatch</span>
+  <span class="p">])</span>
+  <span class="kd">const</span> <span class="nx">updateValue</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(</span>
+    <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">dispatch</span><span class="p">({</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">UPDATE_VALUE</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">value</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+      <span class="p">}),</span>
+    <span class="p">[</span><span class="nx">dispatch</span><span class="p">]</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+   :
+    <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">increment</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">decrement</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+   :
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+</pre></div></div>
+
+<h1>
+<span id="4-usememoでmapstatetopropsでreselect使っていたような部分をやってみる" class="fragment"></span><a href="#4-usememo%E3%81%A7mapstatetoprops%E3%81%A7reselect%E4%BD%BF%E3%81%A3%E3%81%A6%E3%81%84%E3%81%9F%E3%82%88%E3%81%86%E3%81%AA%E9%83%A8%E5%88%86%E3%82%92%E3%82%84%E3%81%A3%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>4. useMemoでmapStateToPropsでreselect使っていたような部分をやってみる</h1>
+
+<p>masStateToPropsでやっていたようなstateからpropsへの変換や、よくそこで使われていたreselectのmemo化機能を<code>useMemo</code>で扱えそうだ。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">InputValue</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">ReducerContext</span><span class="p">)</span>
+  <span class="c1">// state.someNested.inputValueが変更されるまでmemo化する</span>
+  <span class="kd">const</span> <span class="nx">inputValue</span> <span class="o">=</span> <span class="nx">useMemo</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">someNested</span><span class="p">.</span><span class="nx">inputValue</span><span class="p">,</span> <span class="p">[</span>
+    <span class="nx">state</span><span class="p">.</span><span class="nx">someNested</span><span class="p">.</span><span class="nx">inputValue</span>
+  <span class="p">])</span>
+
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Input foo<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>foo: <span class="si">{</span><span class="nx">inputValue</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">input</span>
+        <span class="na">value=</span><span class="si">{</span><span class="nx">inputValue</span><span class="si">}</span>
+        <span class="na">onChange=</span><span class="si">{</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span>
+          <span class="nx">dispatch</span><span class="p">({</span>
+            <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">UPDATE_VALUE</span><span class="dl">"</span><span class="p">,</span>
+            <span class="na">value</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+          <span class="p">})</span>
+        <span class="si">}</span>
+      <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="5-containerを再現する" class="fragment"></span><a href="#5-container%E3%82%92%E5%86%8D%E7%8F%BE%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>5. Containerを再現する</h1>
+
+<p>ここまでの応用で、Containerのような作用をするhooksを作ってみる。<br>
+inputValueの方のみ例示する。Counterの場合も一緒だ。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">useCounterContext</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">ReducerContext</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">counter</span> <span class="o">=</span> <span class="nx">useMemo</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">counter</span><span class="p">,</span> <span class="p">[</span><span class="nx">state</span><span class="p">.</span><span class="nx">counter</span><span class="p">])</span>
+  <span class="kd">const</span> <span class="nx">increment</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(</span>
+    <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">setTimeout</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">INCREMENT</span><span class="dl">"</span> <span class="p">}),</span> <span class="mi">500</span><span class="p">),</span>
+    <span class="p">[</span><span class="nx">dispatch</span><span class="p">]</span>
+  <span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">decrement</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">((</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DECREMENT</span><span class="dl">"</span> <span class="p">}),</span> <span class="p">[</span>
+    <span class="nx">dispatch</span>
+  <span class="p">])</span>
+
+  <span class="k">return</span> <span class="p">{</span> <span class="nx">counter</span><span class="p">,</span> <span class="nx">increment</span><span class="p">,</span> <span class="nx">decrement</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">Counter</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">counter</span><span class="p">,</span> <span class="nx">increment</span><span class="p">,</span> <span class="nx">decrement</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useCounterContext</span><span class="p">()</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>counter<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>count: <span class="si">{</span><span class="nx">counter</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">increment</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">decrement</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// containerという名前をつけるべきかはまだ悩ましい</span>
+<span class="kd">const</span> <span class="nx">useInputContainer</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">ReducerContext</span><span class="p">)</span>
+  <span class="c1">// memo化したcallbackを作成</span>
+  <span class="kd">const</span> <span class="nx">updateValue</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(</span>
+    <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">dispatch</span><span class="p">({</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">UPDATE_VALUE</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">value</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+      <span class="p">}),</span>
+    <span class="p">[</span><span class="nx">dispatch</span><span class="p">]</span>
+  <span class="p">)</span>
+  <span class="c1">// 値をmemo化。selectのような作用</span>
+  <span class="kd">const</span> <span class="nx">inputValue</span> <span class="o">=</span> <span class="nx">useMemo</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">state</span><span class="p">.</span><span class="nx">someNested</span><span class="p">.</span><span class="nx">inputValue</span><span class="p">,</span> <span class="p">[</span>
+    <span class="nx">state</span><span class="p">.</span><span class="nx">someNested</span><span class="p">.</span><span class="nx">inputValue</span>
+  <span class="p">])</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">updateValue</span><span class="p">,</span> <span class="nx">inputValue</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">InputValue</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="c1">// Component側でContainerの作用をするhookを呼び出す。</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">updateValue</span><span class="p">,</span> <span class="nx">inputValue</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useInputContainer</span><span class="p">()</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Input foo<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>value: <span class="si">{</span><span class="nx">inputValue</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">input</span> <span class="na">value=</span><span class="si">{</span><span class="nx">inputValue</span><span class="si">}</span> <span class="na">onChange=</span><span class="si">{</span><span class="nx">updateValue</span><span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// ここは相変わらず</span>
+<span class="kd">const</span> <span class="nx">Provider</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">children</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useReducer</span><span class="p">(</span><span class="nx">rootReducer</span><span class="p">,</span> <span class="kc">undefined</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">DUMMY_INIT</span><span class="dl">"</span>
+  <span class="p">})</span>
+  <span class="kd">const</span> <span class="nx">value</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">}</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">ReducerContext</span><span class="p">.</span><span class="nc">Provider</span> <span class="na">value=</span><span class="si">{</span><span class="nx">value</span><span class="si">}</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">children</span><span class="si">}</span><span class="p">&lt;/</span><span class="nc">ReducerContext</span><span class="p">.</span><span class="nc">Provider</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="できたもの" class="fragment"></span><a href="#%E3%81%A7%E3%81%8D%E3%81%9F%E3%82%82%E3%81%AE"><i class="fa fa-link"></i></a>できたもの</h1>
+
+<p>5まで行った状態のコードを下記に置いた<br>
+<a href="https://stackblitz.com/edit/github-hgrund?file=src/App.js" class="autolink" rel="nofollow noopener" target="_blank">https://stackblitz.com/edit/github-hgrund?file=src/App.js</a></p>
+
+<h1>
+<span id="番外編middleware" class="fragment"></span><a href="#%E7%95%AA%E5%A4%96%E7%B7%A8middleware"><i class="fa fa-link"></i></a>番外編：middleware</h1>
+
+<p>非同期処理をやるようなmiddlewareは、<code>useEffect</code>でも可能だが、<strong><a href="https://mobile.twitter.com/dan_abramov/status/1057011888335347713" rel="nofollow noopener" target="_blank">これは推奨されない使い方で、将来的にSuspenseがその役割を担う可能性が高い</a></strong> ため、あくまで番外編としている。</p>
+
+<p>まずreducerはこのような感じで生やす</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">fetchedData</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{},</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="dl">"</span><span class="s2">FETCH_DATA</span><span class="dl">"</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nx">action</span><span class="p">.</span><span class="nx">value</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>そしてfetchに相当する関数を作る。<br>
+今回はデータ取得の代わりに100ms後に乱数を返してみる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">fetchData</span> <span class="o">=</span> <span class="p">(</span><span class="nx">dispatch</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">new</span> <span class="nb">Promise</span><span class="p">((</span><span class="nx">resolve</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">setTimeout</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">resolve</span><span class="p">({</span> <span class="na">random</span><span class="p">:</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span> <span class="p">})</span>
+    <span class="p">},</span> <span class="mi">100</span><span class="p">)</span>
+  <span class="p">})</span>
+  <span class="c1">// 本当の通信であればこんな感じ</span>
+  <span class="c1">// return fetch("./async.json")</span>
+  <span class="c1">//   .then((res) =&gt; res.json())</span>
+  <span class="c1">//   .then((data) =&gt; {</span>
+  <span class="c1">//     return data</span>
+  <span class="c1">//   })</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>そしてcontainer相当の部分の作成。<br>
+注意点として<code>useEffect</code>の第二引数を空配列とすることでmount,unmount時に一度だけ実行されるようにすること。<br>
+ここに渡した値が変更される度にeffectに指定した関数が実行される。<br>
+何もしない場合レンダリングの度に毎回実行されるので注意。この場合でいうとfetchからdispatchしてstateが変更されることで無限ループが起きているものと推測される。<br>
+（参照：<a href="https://reactjs.org/docs/hooks-effect.html#tip-optimizing-performance-by-skipping-effects" class="autolink" rel="nofollow noopener" target="_blank">https://reactjs.org/docs/hooks-effect.html#tip-optimizing-performance-by-skipping-effects</a>)</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">useFetchDataContainer</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">state</span><span class="p">,</span> <span class="nx">dispatch</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useContext</span><span class="p">(</span><span class="nx">ReducerContext</span><span class="p">)</span>
+
+  <span class="c1">// 初回実行。第二引数を空arrayにすることで1度だけ実行にする</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">fetchData</span><span class="p">().</span><span class="nx">then</span><span class="p">((</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">dispatch</span><span class="p">({</span>
+        <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">FETCH_DATA</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">value</span><span class="p">:</span> <span class="nx">data</span>
+      <span class="p">})</span>
+    <span class="p">})</span>
+  <span class="p">},</span> <span class="p">[])</span> <span class="c1">// ← ここに注意</span>
+
+  <span class="c1">// 再実行関数を定義する</span>
+  <span class="kd">const</span> <span class="nx">reload</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">fetchData</span><span class="p">().</span><span class="nx">then</span><span class="p">((</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">dispatch</span><span class="p">({</span> <span class="na">type</span><span class="p">:</span> <span class="dl">"</span><span class="s2">FETCH_DATA</span><span class="dl">"</span><span class="p">,</span> <span class="na">value</span><span class="p">:</span> <span class="nx">data</span> <span class="p">})</span>
+    <span class="p">})</span>
+  <span class="p">})</span>
+
+  <span class="kd">const</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">useMemo</span><span class="p">(</span>
+    <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">state</span><span class="p">.</span><span class="nx">fetchedData</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">},</span>
+    <span class="p">[</span><span class="nx">state</span><span class="p">.</span><span class="nx">fetchedData</span><span class="p">]</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">reload</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// あとは利用部分のみ</span>
+<span class="kd">const</span> <span class="nx">FetchData</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">reload</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useFetchDataContainer</span><span class="p">()</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Fetch Data<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">pre</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">code</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">data</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">code</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">pre</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">reload</span><span class="si">}</span><span class="p">&gt;</span>Reload<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>書き味としては<code>redux-thunk</code>やもっと古い所で言えば個人的には<a href="https://github.com/markdalgleish/redial" rel="nofollow noopener" target="_blank"><code>redial</code></a>に近い形になってくる。</p>
+
+<p>また、<code>useReducer</code>にactionをフックするような仕組みは無いため、<code>redux-observabel</code>や<code>redux-saga</code>のようなアプローチはとれないように思える。<br>
+もしそういうものが必要な場合は<code>useState</code>から拡張される形ような気がする</p>

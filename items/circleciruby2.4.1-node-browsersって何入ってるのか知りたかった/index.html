@@ -1,0 +1,213 @@
+<p>2018-11-19追記<br>
+<a href="https://github.com/CircleCI-Public/circleci-dockerfiles/blob/master/ruby/images/" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/CircleCI-Public/circleci-dockerfiles/blob/master/ruby/images/</a><br>
+いつの間にか公開されてました</p>
+
+<h1>
+<span id="動機" class="fragment"></span><a href="#%E5%8B%95%E6%A9%9F"><i class="fa fa-link"></i></a>動機</h1>
+
+<ul>
+<li>circleciが提供しているdockerファイルで、rubyのバージョンとして、<code>node</code>, <code>browswer</code> , <code>node-browsers</code>とかがあった
+
+<ul>
+<li>
+<a href="https://circleci.com/setup-project" rel="nofollow noopener" target="_blank">setup-project</a>したときのデフォルトは<code>node-browsers</code>だった</li>
+<li>地味にsetup projectでボイラープレート出てくるのも知らなかった。。。</li>
+</ul>
+</li>
+<li>なんとなくフロント好きおじさんからするとnodeってバージョン何入ってるんだ！が気になった。</li>
+</ul>
+
+<h1>
+<span id="dockerの中身が見たい" class="fragment"></span><a href="#docker%E3%81%AE%E4%B8%AD%E8%BA%AB%E3%81%8C%E8%A6%8B%E3%81%9F%E3%81%84"><i class="fa fa-link"></i></a>dockerの中身が見たい。</h1>
+
+<p>残念ながらDockerfileは公開されていないっぽい</p>
+
+<p><a href="https://discuss.circleci.com/t/official-ruby-dockerfile/12853/2" class="autolink" rel="nofollow noopener" target="_blank">https://discuss.circleci.com/t/official-ruby-dockerfile/12853/2</a></p>
+
+<p>ここで<code>docker history</code>コマンドがあると知った。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ docker pull circleci/ruby:2.4.1-node-browsers
+$ docker history --no-trunc --format "{{.CreatedBy}}" circleci/ruby:2.4.1-node-browsers
+</pre></div></div>
+
+<p>今回はコマンド何やってるか知れれば良いだけなのでformatかける</p>
+
+<h2>
+<span id="circleciruby241-node-browsersは何が入っているっぽいか荒目に見る" class="fragment"></span><a href="#circleciruby241-node-browsers%E3%81%AF%E4%BD%95%E3%81%8C%E5%85%A5%E3%81%A3%E3%81%A6%E3%81%84%E3%82%8B%E3%81%A3%E3%81%BD%E3%81%84%E3%81%8B%E8%8D%92%E7%9B%AE%E3%81%AB%E8%A6%8B%E3%82%8B"><i class="fa fa-link"></i></a><code>circleci/ruby:2.4.1-node-browsers</code>は何が入っているっぽいか荒目に見る</h2>
+
+<p>historyなので、実行が逆順。先頭の方が後に行っているコマンド</p>
+
+<h3>
+<span id="entrypoint" class="fragment"></span><a href="#entrypoint"><i class="fa fa-link"></i></a>entrypoint</h3>
+
+<p><code>docker-entrypoint.sh</code>はssh接続したら見れそうだけど、今のところ興味ないのでスルー</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>#(nop)  CMD ["/bin/sh"]
+#(nop)  ENTRYPOINT ["/docker-entrypoint.sh"]
+#(nop)  LABEL com.circleci.preserve-entrypoint=true
+</pre></div></div>
+
+<h3>
+<span id="browser関連インストール" class="fragment"></span><a href="#browser%E9%96%A2%E9%80%A3%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB"><i class="fa fa-link"></i></a>browser関連インストール</h3>
+
+<p>怒号感ある。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>printf '#!/bin/sh\nXvfb :99 -screen 0 1280x1024x24 &amp;\nexec "$@"\n' &gt; /tmp/entrypoint  &amp;&amp; chmod +x /tmp/entrypoint         &amp;&amp; sudo mv /tmp/entrypoint /docker-entrypoint.sh
+#(nop)  ENV DISPLAY=:99
+export CHROMEDRIVER_RELEASE=$(curl --location --fail --retry 3 http://chromedriver.storage.googleapis.com/LATEST_RELEASE)       &amp;&amp; curl --silent --show-error --location --fail --retry 3 --output /tmp/chromedriver_linux64.zip "http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_RELEASE/chromedriver_linux64.zip"       &amp;&amp; cd /tmp       &amp;&amp; unzip chromedriver_linux64.zip       &amp;&amp; rm -rf chromedriver_linux64.zip       &amp;&amp; sudo mv chromedriver /usr/local/bin/chromedriver       &amp;&amp; sudo chmod +x /usr/local/bin/chromedriver
+curl --silent --show-error --location --fail --retry 3 --output /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb       &amp;&amp; (sudo dpkg -i /tmp/google-chrome-stable_current_amd64.deb || sudo apt-get -fy install)        &amp;&amp; rm -rf /tmp/google-chrome-stable_current_amd64.deb       &amp;&amp; sudo sed -i 's|HERE/chrome"|HERE/chrome" --disable-setuid-sandbox --no-sandbox|g'            "/opt/google/chrome/google-chrome"
+curl --silent --show-error --location --fail --retry 3 --output /tmp/firefox.deb https://s3.amazonaws.com/circle-downloads/firefox-mozilla-build_47.0.1-0ubuntu1_amd64.deb   &amp;&amp; echo 'ef016febe5ec4eaf7d455a34579834bcde7703cb0818c80044f4d148df8473bb  /tmp/firefox.deb' | sha256sum -c   &amp;&amp; sudo dpkg -i /tmp/firefox.deb || sudo apt-get -f install    &amp;&amp; sudo apt-get install -y libgtk3.0-cil-dev   &amp;&amp; rm -rf /tmp/firefox.deb
+export PHANTOMJS_VERSION=$(curl --location --fail --retry 3  https://api.github.com/repos/ariya/phantomjs/tags | jq -r '.[0].name')   &amp;&amp; sudo apt-get update; sudo apt-get install libfontconfig   &amp;&amp; curl --silent --show-error --location --fail --retry 3 --output /tmp/phantomjs.tar.bz2 https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PHANTOMJS_VERSION}-linux-x86_64.tar.bz2   &amp;&amp; tar -x -C /tmp -f /tmp/phantomjs.tar.bz2   &amp;&amp; sudo mv /tmp/phantomjs-${PHANTOMJS_VERSION}-linux-x86_64/bin/phantomjs /usr/local/bin   &amp;&amp; rm -rf /tmp/phantomjs.tar.bz2 /tmp/phantomjs-*
+#(nop)  USER [circleci]
+</pre></div></div>
+
+<p>こんな感じが読み取れる</p>
+
+<ul>
+<li>xvfbが入ってるっぽい</li>
+<li>chromedriver入れてる</li>
+<li>chrome入れてる</li>
+<li>firefox入れてる</li>
+<li>phantomjs入れてる</li>
+</ul>
+
+<h3>
+<span id="node--yarnインストール" class="fragment"></span><a href="#node--yarn%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB"><i class="fa fa-link"></i></a>node &amp; yarnインストール</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>set -ex   &amp;&amp; for key in     6A010C5166006599AA17F08146C2130DFD2497F5   ; do     gpg --keyserver pgp.mit.edu --recv-keys "$key" ||     gpg --keyserver keyserver.pgp.com --recv-keys "$key" ||     gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key" ;   done   &amp;&amp; curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz"   &amp;&amp; curl -fSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc"   &amp;&amp; gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   &amp;&amp; mkdir -p /opt/yarn   &amp;&amp; tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/yarn --strip-components=1   &amp;&amp; ln -s /opt/yarn/bin/yarn /usr/local/bin/yarn   &amp;&amp; ln -s /opt/yarn/bin/yarn /usr/local/bin/yarnpkg   &amp;&amp; rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz
+#(nop)  ENV YARN_VERSION=0.24.6
+curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz"   &amp;&amp; curl -SLO --compressed "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc"   &amp;&amp; gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc   &amp;&amp; grep " node-v$NODE_VERSION-linux-x64.tar.xz\$" SHASUMS256.txt | sha256sum -c -   &amp;&amp; tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1   &amp;&amp; rm "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt   &amp;&amp; ln -s /usr/local/bin/node /usr/local/bin/nodejs
+#(nop)  ENV NODE_VERSION=8.1.4
+#(nop)  ENV NPM_CONFIG_LOGLEVEL=info
+</pre></div></div>
+
+<ul>
+<li>yarn入れてる</li>
+<li>node入れてる
+
+<ul>
+<li>nodeが8.1ということも判明</li>
+</ul>
+</li>
+</ul>
+
+<p>なるほど。このへんまでで<code>-node-browswer</code>とわかった。わりと想像通り。</p>
+
+<h3>
+<span id="dockerなどツール系インストール" class="fragment"></span><a href="#docker%E3%81%AA%E3%81%A9%E3%83%84%E3%83%BC%E3%83%AB%E7%B3%BB%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB"><i class="fa fa-link"></i></a>dockerなどツール系インストール</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>set -ex   &amp;&amp; for key in     9554F04D7259F04124DE6B476D5A82AC7E37093B     94AE36675C464D64BAFA68DD7434390BDBE9B9C5     FD3A5288F042B6850C66B31F09FE44734EB7990E     71DCFD284A79C3B38668286BC97EC7A07EDE3FC1     DD8F2338BAE7501E3DD5AC78C273792F7D83545D     B9AE9905FFD7803F25714661B63B535A4C206CA9     C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8     56730D5401028683275BD23C23EFEFE93C4CFFFE   ; do     gpg --keyserver pgp.mit.edu --recv-keys "$key" ||     gpg --keyserver keyserver.pgp.com --recv-keys "$key" ||     gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key" ;   done
+groupadd --gid 1000 node   &amp;&amp; useradd --uid 1000 --gid node --shell /bin/bash --create-home node
+#(nop)  USER [root]
+#(nop)  CMD ["/bin/sh"]
+#(nop)  USER [circleci]
+groupadd --gid 3434 circleci   &amp;&amp; useradd --uid 3434 --gid circleci --shell /bin/bash --create-home circleci   &amp;&amp; echo 'circleci ALL=NOPASSWD: ALL' &gt;&gt; /etc/sudoers.d/50-circleci   &amp;&amp; echo 'Defaults    env_keep += "DEBIAN_FRONTEND"' &gt;&gt; /etc/sudoers.d/env_keep
+DOCKERIZE_URL=$(curl --location --fail --retry 3 https://api.github.com/repos/jwilder/dockerize/releases/latest | jq -r '.assets[] | select(.name | startswith("dockerize-linux-amd64")) | .browser_download_url')   &amp;&amp; curl --silent --show-error --location --fail --retry 3 --output /tmp/dockerize-linux-amd64.tar.gz $DOCKERIZE_URL   &amp;&amp; tar -C /usr/local/bin -xzvf /tmp/dockerize-linux-amd64.tar.gz   &amp;&amp; rm -rf /tmp/dockerize-linux-amd64.tar.gz
+COMPOSE_URL=$(curl --location --fail --retry 3 https://api.github.com/repos/docker/compose/releases/latest | jq -r '.assets[] | select(.name == "docker-compose-Linux-x86_64") | .browser_download_url')   &amp;&amp; curl --silent --show-error --location --fail --retry 3 --output /usr/bin/docker-compose $COMPOSE_URL   &amp;&amp; chmod +x /usr/bin/docker-compose
+set -ex   &amp;&amp; export DOCKER_VERSION=$(curl --silent --fail --retry 3 https://get.docker.com/builds/  | grep -P -o 'docker-\d+\.\d+\.\d+-ce\.tgz' | head -n 1)   &amp;&amp; DOCKER_URL="https://get.docker.com/builds/Linux/x86_64/${DOCKER_VERSION}"   &amp;&amp; echo Docker URL: $DOCKER_URL   &amp;&amp; curl --silent --show-error --location --fail --retry 3 --output /tmp/docker.tgz "${DOCKER_URL}"   &amp;&amp; ls -lha /tmp/docker.tgz   &amp;&amp; tar -xz -C /tmp -f /tmp/docker.tgz   &amp;&amp; mv /tmp/docker/* /usr/bin   &amp;&amp; rm -rf /tmp/docker /tmp/docker.tgz
+JQ_URL=$(curl --location --fail --retry 3 https://api.github.com/repos/stedolan/jq/releases/latest  | grep browser_download_url | grep '/jq-linux64"' | grep -o -e 'https.*jq-linux64')   &amp;&amp; curl --silent --show-error --location --fail --retry 3 --output /usr/bin/jq $JQ_URL   &amp;&amp; chmod +x /usr/bin/jq
+</pre></div></div>
+
+<p>docker関連とか色々瑣末なやつ入れている<br>
+* jq<br>
+    * jsonパーサー<br>
+* dockerize<br>
+    * <a href="https://github.com/jwilder/dockerize" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/jwilder/dockerize</a> <br>
+    * 専門知識が薄い部分なのでよくわかってないが、コンテナの起動関連？<br>
+* compose<br>
+    * <a href="https://github.com/docker/compose/" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/docker/compose/</a><br>
+    * docker-compose。複数のdockerを扱うやつ</p>
+
+<h3>
+<span id="apt-get" class="fragment"></span><a href="#apt-get"><i class="fa fa-link"></i></a>apt-get</h3>
+
+<p>gitやxvfbなどapt-getしてる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>#(nop)  ENV LANG=C.UTF-8
+locale-gen C.UTF-8 || true
+ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
+apt-get update   &amp;&amp; apt-get install -y     git mercurial xvfb     locales sudo openssh-client ca-certificates tar gzip parallel     net-tools netcat unzip zip bzip2
+#(nop)  ENV DEBIAN_FRONTEND=noninteractive
+echo 'APT::Get::Assume-Yes "true";' &gt; /etc/apt/apt.conf.d/90circleci   &amp;&amp; echo 'APT::Get::force-Yes "true";' &gt;&gt; /etc/apt/apt.conf.d/90circleci   &amp;&amp; echo 'DPkg::Options "--force-confnew";' &gt;&gt; /etc/apt/apt.conf.d/90circleci
+</pre></div></div>
+
+<ul>
+<li>apt-getで色々入れてる
+
+<ul>
+<li>git / mercurial </li>
+<li>xvfb</li>
+<li>locales / sudo</li>
+<li>openssh-client / ca-certificates</li>
+<li>tar / gzip parallel </li>
+<li>net-tools / netcat </li>
+<li>unzip / zip / bzip2</li>
+</ul>
+</li>
+<li>このへんはdockerhubに書いてる感じ
+
+<ul>
+<li><a href="https://hub.docker.com/r/circleci/ruby/" class="autolink" rel="nofollow noopener" target="_blank">https://hub.docker.com/r/circleci/ruby/</a></li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="rubyインストール" class="fragment"></span><a href="#ruby%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB"><i class="fa fa-link"></i></a>rubyインストール</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>#(nop)  CMD ["irb"]
+mkdir -p "$GEM_HOME" "$BUNDLE_BIN"  &amp;&amp; chmod 777 "$GEM_HOME" "$BUNDLE_BIN"
+#(nop)  ENV PATH=/usr/local/bundle/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+#(nop)  ENV BUNDLE_PATH=/usr/local/bundle BUNDLE_BIN=/usr/local/bundle/bin BUNDLE_SILENCE_ROOT_WARNING=1 BUNDLE_APP_CONFIG=/usr/local/bundle
+#(nop)  ENV GEM_HOME=/usr/local/bundle
+gem install bundler --version "$BUNDLER_VERSION"
+#(nop)  ENV BUNDLER_VERSION=1.15.1
+set -ex   &amp;&amp; buildDeps='   bison   dpkg-dev   libgdbm-dev   ruby  '  &amp;&amp; apt-get update  &amp;&amp; apt-get install -y --no-install-recommends $buildDeps  &amp;&amp; rm -rf /var/lib/apt/lists/*   &amp;&amp; wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR%-rc}/ruby-$RUBY_VERSION.tar.xz"  &amp;&amp; echo "$RUBY_DOWNLOAD_SHA256 *ruby.tar.xz" | sha256sum -c -   &amp;&amp; mkdir -p /usr/src/ruby  &amp;&amp; tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1  &amp;&amp; rm ruby.tar.xz   &amp;&amp; cd /usr/src/ruby   &amp;&amp; {   echo '#define ENABLE_PATH_CHECK 0';   echo;   cat file.c;  } &gt; file.c.new  &amp;&amp; mv file.c.new file.c   &amp;&amp; autoconf  &amp;&amp; gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"  &amp;&amp; ./configure   --build="$gnuArch"   --disable-install-doc   --enable-shared  &amp;&amp; make -j "$(nproc)"  &amp;&amp; make install   &amp;&amp; apt-get purge -y --auto-remove $buildDeps  &amp;&amp; cd /  &amp;&amp; rm -r /usr/src/ruby   &amp;&amp; gem update --system "$RUBYGEMS_VERSION"
+#(nop)  ENV RUBYGEMS_VERSION=2.6.12
+#(nop)  ENV RUBY_DOWNLOAD_SHA256=4fc8a9992de3e90191de369270ea4b6c1b171b7941743614cc50822ddc1fe654
+#(nop)  ENV RUBY_VERSION=2.4.1
+#(nop)  ENV RUBY_MAJOR=2.4
+mkdir -p /usr/local/etc  &amp;&amp; {   echo 'install: --no-document';   echo 'update: --no-document';  } &gt;&gt; /usr/local/etc/gemrc
+set -ex;  apt-get update;  apt-get install -y --no-install-recommends   autoconf   automake   bzip2   file   g++   gcc   imagemagick   libbz2-dev   libc6-dev   libcurl4-openssl-dev   libdb-dev   libevent-dev   libffi-dev   libgdbm-dev   libgeoip-dev   libglib2.0-dev   libjpeg-dev   libkrb5-dev   liblzma-dev   libmagickcore-dev   libmagickwand-dev   libncurses-dev   libpng-dev   libpq-dev   libreadline-dev   libsqlite3-dev   libssl-dev   libtool   libwebp-dev   libxml2-dev   libxslt-dev   libyaml-dev   make   patch   xz-utils   zlib1g-dev     $(    if apt-cache show 'default-libmysqlclient-dev' 2&gt;/dev/null | grep -q '^Version:'; then     echo 'default-libmysqlclient-dev';    else     echo 'libmysqlclient-dev';    fi   )  ;  rm -rf /var/lib/apt/lists/*
+</pre></div></div>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>apt-get update &amp;&amp; apt-get install -y --no-install-recommends   bzr   git   mercurial   openssh-client   subversion     procps  &amp;&amp; rm -rf /var/lib/apt/lists/*
+apt-get update &amp;&amp; apt-get install -y --no-install-recommends   ca-certificates   curl   wget  &amp;&amp; rm -rf /var/lib/apt/lists/*
+#(nop)  CMD ["bash"]
+#(nop) ADD file:9c48682ff75c756544d4491472081a078edf5dd0bb5038d1cb850a1f9c480e3e in / 
+</pre></div></div>
+
+<ul>
+<li>ruby系のインストール</li>
+<li>bundlerのインストール</li>
+<li>apt-getでビルドに必要なもの入れているっぽい</li>
+</ul>
+
+<h1>
+<span id="結論" class="fragment"></span><a href="#%E7%B5%90%E8%AB%96"><i class="fa fa-link"></i></a>結論</h1>
+
+<ul>
+<li>
+<code>circleci/ruby:2.4.1-node-browsers</code>はわりと名前の通り
+
+<ul>
+<li>xvfbとかphantomjsとかchromeとかそのへん使う場合に有益っぽい</li>
+<li>nodeは8系。stableを使うポリシーなのかedgeを利用するポリシーなのかとかは不明
+
+<ul>
+<li>地味に一番知りたかったのはこれだった。目的達成</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>他のtagは？
+
+<ul>
+<li>普通にそれぞれが必要な分入ってる</li>
+<li>
+<code>circleci/ruby:2.4.1-node</code>だとchromeとかxvfb入ってない</li>
+<li>
+<code>circleci/ruby:2.4.1-browsers</code>だとnodeとかyarn入らない</li>
+</ul>
+</li>
+</ul>

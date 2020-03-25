@@ -1,0 +1,195 @@
+<p>Firebase functionsは現在標準でTypeScriptに対応している。<br>
+しかしHostingなど他の機能も使いたい場合や、それらとモジュールを共有したい場合、tsconfigやpackage.jsonが複数のディレクトリに割れたりしてちょっとしんどくなる。<br>
+この場合lernaなどでmonorepo構成を取るのが良いのだろうが、TypeScriptが絡んだりするとなかなかまだハマりどころが少なく無く面倒になりがちだ。</p>
+
+<p>そこで以前<a>AWS Lambda向けのファイルをparcelでビルドした</a>のと似たようなことをやってみたら思ったより悪くなかったのでまとめておく。</p>
+
+<h2>
+<span id="1-準備" class="fragment"></span><a href="#1-%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>1. 準備</h2>
+
+<p>まずは適当にディレクトリを作るとこから</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ mkdir some-firebase-project
+$ cd some-firebase-project
+$ yarn init -y
+$ touch firebase.json
+</pre></div></div>
+
+<p>parcelとtypescriptも入れてしまおう</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add parcel typescript
+$ yarn tsc --init
+</pre></div></div>
+
+<p>あと今回は<code>firebase init</code>は使わないのでそこは自前で行う</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ mkdir functions
+$ touch functions/package.json
+</pre></div></div>
+
+<h2>
+<span id="2-package-install" class="fragment"></span><a href="#2-package-install"><i class="fa fa-link"></i></a>2. package install</h2>
+
+<p>次にプロジェクト直下でパッケージインストール。トップディレクトリでfunctionsに必要なパッケージを入れる。最終的にbundleしたものをアップするのでpeerDependencyも入れる</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add firebase-admin @firebase/database @firebase/app @firebase/app-types @firebase/database-types firebase-tools
+</pre></div></div>
+
+<h2>
+<span id="3-functionファイルの用意" class="fragment"></span><a href="#3-function%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AE%E7%94%A8%E6%84%8F"><i class="fa fa-link"></i></a>3. functionファイルの用意</h2>
+
+<p>function本体となるファイルを配置する。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ mkdir src
+$ mkdir src/functions
+</pre></div></div>
+
+<div class="code-frame" data-lang="typescript"><div class="highlight"><pre><span class="c1">// src/functions/index.ts</span>
+<span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">functions</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">firebase-functions</span><span class="dl">"</span> <span class="c1">// 全インポートにしないとひっかかるっぽい</span>
+
+<span class="nx">exports</span><span class="p">.</span><span class="nx">helloWorld</span> <span class="o">=</span> <span class="nx">functions</span><span class="p">.</span><span class="nx">https</span><span class="p">.</span><span class="nx">onRequest</span><span class="p">((</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">response</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="dl">"</span><span class="s2">Hello from Firebase!</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">})</span>
+
+</pre></div></div>
+
+<h2>
+<span id="4-スクリプト設定本題" class="fragment"></span><a href="#4-%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%83%88%E8%A8%AD%E5%AE%9A%E6%9C%AC%E9%A1%8C"><i class="fa fa-link"></i></a>4. スクリプト設定（本題）</h2>
+
+<p>package.jsonをこんな感じで設定</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"build:functions"</span><span class="p">:</span><span class="w"> </span><span class="s2">"parcel build src/functions/index.ts --target=node -d functions -o index.js --bundle-node-modules --no-source-maps --no-minify"</span><span class="p">,</span><span class="w">
+
+</span></pre></div></div>
+
+<p>だいたい<a href="https://qiita.com/terrierscript/items/e3452704af812fa14fc0" id="reference-e0f1195a507c7fcc74c0">AWS Lamdaの場合</a>と一緒で、<code>--target=node</code>、<code>--bundle-node-modules</code>にしている。<br>
+またfirebase-admin関連がsourcemap関連のwarningを吐き出してくるので<code>--no-source-maps</code>を付けている。<br>
+また吐き出し先を<code>-d functions</code>でfunctions下にしている。</p>
+
+<p><code>--no-minify</code>をしてるのはビルド速度を上げたい＆サーバーサイドのスクリプトなのでminifyする意味あんまり感じない＆デバッグ楽そう　ぐらいな気持ちなので好みで決めていい</p>
+
+<p>これで<code>yarn build:functions</code>が出来た。</p>
+
+<h3>
+<span id="45-cannot-resolve-dependency-http2-の対策をする" class="fragment"></span><a href="#45-cannot-resolve-dependency-http2-%E3%81%AE%E5%AF%BE%E7%AD%96%E3%82%92%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>4.5. Cannot resolve dependency 'http2' の対策をする</h3>
+
+<p>本当はここまでで通るはずなのだが、そのまま実行すると<code>Cannot resolve dependency 'http2'</code>のエラーが出る事がある。<br>
+どうもparcelの問題として、http2モジュールをうまく読み込めずビルドが失敗する状態にあるようだ</p>
+
+<p><a href="https://github.com/parcel-bundler/parcel/issues/2921" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/parcel-bundler/parcel/issues/2921</a></p>
+
+<p>ということでその場合は下記のようにhttp2パッケージをインストールしてしまえば解決する</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ yarn add http2
+</pre></div></div>
+
+<h2>
+<span id="5-firebasejsonの準備" class="fragment"></span><a href="#5-firebasejson%E3%81%AE%E6%BA%96%E5%82%99"><i class="fa fa-link"></i></a>5. firebase.jsonの準備</h2>
+
+<p>次にfirebase.jsonを記述する。だいたいこんな感じ。predeployで指定を与える部分が重要</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"functions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"functions"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"predeploy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"yarn build:functions"</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"hosting"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="err">...</span><span class="w"> 
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span></pre></div></div>
+
+<h2>
+<span id="6-functionspackagejsonをいじる" class="fragment"></span><a href="#6-functionspackagejson%E3%82%92%E3%81%84%E3%81%98%E3%82%8B"><i class="fa fa-link"></i></a>6. functions/package.jsonをいじる</h2>
+
+<p>AWS Lambdaと違ってpackage.jsonが無いとdeploy時に失敗してしまうので、これを回避するためにpackage.jsonを置いとく。<br>
+バージョンは10にしておく。今回はparcel側で<code>--bundle-node-modules</code>するやり方をとっているので<code>dependencies</code>は不要だ。</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">functions/package.json</span></div>
+<div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"functions"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"engines"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"node"</span><span class="p">:</span><span class="w"> </span><span class="s2">"10"</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"main"</span><span class="p">:</span><span class="w"> </span><span class="s2">"index.js"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"private"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<h2>
+<span id="7-gitignoreするオプション" class="fragment"></span><a href="#7-gitignore%E3%81%99%E3%82%8B%E3%82%AA%E3%83%97%E3%82%B7%E3%83%A7%E3%83%B3"><i class="fa fa-link"></i></a>7. gitignoreする（オプション）</h2>
+
+<p>細かいがgitignoreとしてfunctions/index.jsを追加しておくと良い。</p>
+
+<div class="code-frame" data-lang="gitignore"><div class="highlight"><pre>functions/index.js
+dist
+</pre></div></div>
+
+<p>好みでなければ吐き出し先を<code>functions/lib/</code>などディレクトリ先にしてそこごとignoreするのも良いだろう。</p>
+
+<h2>
+<span id="8-deploy" class="fragment"></span><a href="#8-deploy"><i class="fa fa-link"></i></a>8. deploy</h2>
+
+<p>レッツデプロイ。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ firebase deploy --only functions
+</pre></div></div>
+
+<h2>
+<span id="おまけ-hostingがここに入った場合" class="fragment"></span><a href="#%E3%81%8A%E3%81%BE%E3%81%91-hosting%E3%81%8C%E3%81%93%E3%81%93%E3%81%AB%E5%85%A5%E3%81%A3%E3%81%9F%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>おまけ: hostingがここに入った場合</h2>
+
+<p>hositngが入るとこんな具合のディレクトリ構成になる。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>.
+├── dist # hostingの出力先
+│   ├── hosting.09bd9689.js
+│   └── index.html
+├── functions # functionsの出力先
+│   ├── index.js
+│   └── package.json
+├── src
+│   ├── functions # functionsのソース
+│   │   └── index.ts
+│   ├── hosting # hostingのソース
+│   │   ├── index.html
+│   │   └── index.tsx
+│   └── lib # 共通部分
+│       └── database-client.ts
+├── firebase.json
+├── package.json
+├── renovate.json
+├── tsconfig.json
+└── yarn.lock
+</pre></div></div>
+
+<p>firebase.jsonとpackage.jsonはこんな感じになる</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="w">  </span><span class="nl">"script"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"parcel build src/index.html"</span><span class="p">,</span><span class="w">
+      </span><span class="err">...</span><span class="w">
+
+</span></pre></div>
+</div>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">firebase.json</span></div>
+<div class="highlight"><pre><span class="w">  </span><span class="nl">"hosting"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"public"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dist"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"predeploy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"yarn build"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"ignore"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"firebase.json"</span><span class="p">,</span><span class="w"> </span><span class="s2">"**/.*"</span><span class="p">,</span><span class="w"> </span><span class="s2">"**/node_modules/**"</span><span class="p">],</span><span class="w">
+    </span><span class="nl">"rewrites"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+      </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"**"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"destination"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/index.html"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>

@@ -1,0 +1,39 @@
+<p>ReactDomで、下記のように直接<code>document.body</code>にレンダリングすると怒られる</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">index.js</span></div>
+<div class="highlight"><pre><span class="nx">ReactDom</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span>
+<span class="err">　　</span><span class="o">&lt;</span><span class="nx">Main</span> <span class="o">/&gt;</span><span class="p">,</span> 
+<span class="err">　　</span><span class="nb">document</span><span class="p">.</span><span class="nx">body</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Warning: render(): Rendering components 
+directly into document.body is discouraged,
+since its children are often manipulated by third-party
+scripts and browser extensions. 
+This may lead to subtle reconciliation issues. 
+Try rendering into a container element created for your app.
+</pre></div></div>
+
+<p>サードパーティscriptやextensionが<code>document.body</code>に依存してる可能性あるからやめておけという警告。とても真っ当。<br>
+productionコードなら、<code>&lt;div id="container"&gt;&lt;/div&gt;</code>のようにdivを書いてそちらを指定して回避する。</p>
+
+<p>が、<a href="https://github.com/mattdesl/budo" rel="nofollow noopener" target="_blank">budo</a>などを使ってちょこちょこっと素振りやprototypingするときに、index.htmlをいちいち作りたくない。</p>
+
+<h1>
+<span id="解決策" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA%E7%AD%96"><i class="fa fa-link"></i></a>解決策</h1>
+
+<p><code>createElement</code>を直接<code>appendChild</code>してそれをターゲットとする。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">index.js</span></div>
+<div class="highlight"><pre><span class="nx">ReactDom</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span>
+<span class="err">　　</span><span class="o">&lt;</span><span class="nx">Main</span> <span class="o">/&gt;</span><span class="p">,</span>
+<span class="err">　　</span><span class="nb">document</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">div</span><span class="dl">'</span><span class="p">))</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+
+<p>繰り返しになるが、budoのようなprototyping用の想定なので、productionではやらない。おとなしく<code>&lt;div id="container"&gt;&lt;/div&gt;</code>とhtmlに書く方が良い</p>

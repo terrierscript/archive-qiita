@@ -1,0 +1,19 @@
+<p>いい記事の投稿ありがとうございます。<br>
+さて、１のサンプルコードの部分で、</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">mockAdapter</span> <span class="o">=</span> <span class="p">(</span><span class="nx">config</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">new</span> <span class="nb">Promise</span><span class="p">((</span><span class="nx">resolve</span><span class="p">,</span> <span class="nx">reject</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">resolve</span><span class="p">({</span><span class="na">data</span><span class="p">:</span> <span class="nx">mockData</span><span class="p">,</span> <span class="na">status</span><span class="p">:</span> <span class="mi">200</span> <span class="p">})</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>というのがありますが、これは以下のほうがコード量が短いです。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">mockAdapter</span> <span class="o">=</span> <span class="p">(</span><span class="nx">config</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nb">Promise</span><span class="p">.</span><span class="nx">resolve</span><span class="p">({</span><span class="na">data</span><span class="p">:</span> <span class="nx">mockData</span><span class="p">,</span> <span class="na">status</span><span class="p">:</span> <span class="mi">200</span> <span class="p">});</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><code>new Promise((resolve, reject) =&gt; {})</code>内は戻り値を認識しないため、個人的にはあまり頻繁に使うべきではないと思ってます。<br>
+使うしかない場面は存在するのですが、その場合も極力小さくしてほしかったりします。</p>

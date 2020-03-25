@@ -1,0 +1,16 @@
+<p>デフォルトでは <code>node_modules</code>以下はtranspileされないので、手動にはなるのですが、</p>
+
+<div class="code-frame" data-lang="js">
+<div class="code-lang"><span class="bold">tools/babel-register.js</span></div>
+<div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">babel-register</span><span class="dl">'</span><span class="p">)({</span>
+    <span class="na">ignore</span><span class="p">:</span> <span class="sr">/node_modules</span><span class="se">\/(?!</span><span class="sr">modules-to-transform</span><span class="se">)</span><span class="sr">/</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+
+<p>こんなのを入れてみるとか。<br>
+ただ確かに、どのモジュールに動かないコードがあるのか、を事前に探す必要があったのですね...失礼。</p>
+
+<p>やはりこれはライブラリ提供側の問題。ある程度の規模なら配布用のファイルをbabelで生成すべきです。。<br>
+1ファイルで、大げさになりそうなら、devDependenciesでacornを入れてテスト内に組み入れるべきですね、<br>
+自分もやってみます。</p>

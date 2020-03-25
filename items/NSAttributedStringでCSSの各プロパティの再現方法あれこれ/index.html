@@ -1,0 +1,179 @@
+<ul>
+<li>CSSと同じように考えてしまうのは結構危険だなあという感覚はありつつ、逆引き的にまとめたい。</li>
+<li>xcode 6.1、swift Playground上で確認。
+
+<ul>
+<li>貼り付けてお試し下さい。</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="font-size-font-family" class="fragment"></span><a href="#font-size-font-family"><i class="fa fa-link"></i></a>font-size, font-family</h2>
+
+<p>フォントは多少扱いづらい印象。複数指定は出来ない（確かにする必要はないのだけど）し、fontはサイズと種類が１セットになっている。</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">let</span> <span class="nv">font</span> <span class="o">=</span> <span class="kt">UIFont</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"Times New Roman"</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="mi">30</span><span class="p">)</span><span class="o">!</span>
+<span class="k">let</span> <span class="nv">fontText</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"Font"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span>
+    <span class="kt">NSFontAttributeName</span><span class="p">:</span> <span class="n">font</span>
+<span class="p">])</span>
+</pre></div></div>
+
+<h2>
+<span id="font-weigth" class="fragment"></span><a href="#font-weigth"><i class="fa fa-link"></i></a>font-weigth</h2>
+
+<p><code>UIFont</code>で対応するfontを指定することで再現する。<br>
+nameにどんな指定するといいかはここが参考になる。<a href="http://iosfonts.com/" class="autolink" rel="nofollow noopener" target="_blank">http://iosfonts.com/</a></p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="c1">// bold</span>
+<span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"bold"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span>  <span class="p">[</span><span class="kt">NSFontAttributeName</span><span class="p">:</span> <span class="kt">UIFont</span><span class="p">(</span><span class="nv">name</span><span class="p">:</span> <span class="s">"HelveticaNeue-Bold"</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="mi">20</span><span class="p">)</span><span class="o">!</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div></div>
+
+<h2>
+<span id="font-style-oblique-日本語italic代替" class="fragment"></span><a href="#font-style-oblique-%E6%97%A5%E6%9C%AC%E8%AA%9Eitalic%E4%BB%A3%E6%9B%BF"><i class="fa fa-link"></i></a>font-style: oblique (日本語italic代替）</h2>
+
+<p>基本としてはfont-weigthと同様<code>UIFont</code>でイタリック文字を利用することにはなるのだが、日本語なんかではそれが無い。<br>
+あまり綺麗ではないけどこんなやり方で日本語もイタリックっぽくできる</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">let</span> <span class="nv">obliqueness</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"日本語イタリック"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">NSObliquenessAttributeName</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">])</span>
+</pre></div></div>
+
+<p>1で45度ぐらいになっている印象。</p>
+
+<h2>
+<span id="line-height-15" class="fragment"></span><a href="#line-height-15"><i class="fa fa-link"></i></a>line-height: 1.5</h2>
+
+<p>NSParagrahSytleを使います</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">var</span> <span class="nv">paragraph</span> <span class="o">=</span> <span class="kt">NSMutableParagraphStyle</span><span class="p">()</span>
+<span class="n">paragraph</span><span class="o">.</span><span class="n">lineHeightMultiple</span> <span class="o">=</span> <span class="mf">1.5</span>
+<span class="k">let</span> <span class="nv">linehight</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"Line</span><span class="se">\n</span><span class="s">Height"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">NSParagraphStyleAttributeName</span><span class="p">:</span> <span class="n">paragraph</span><span class="p">])</span>
+</pre></div></div>
+
+<h2>
+<span id="text-decoration" class="fragment"></span><a href="#text-decoration"><i class="fa fa-link"></i></a>text-decoration</h2>
+
+<h3>
+<span id="text-decoration-underline" class="fragment"></span><a href="#text-decoration-underline"><i class="fa fa-link"></i></a>text-decoration :underline</h3>
+
+<p>NSUnderlineStyleを使います</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">let</span> <span class="nv">underline</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"Underline"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span>  
+    <span class="c1">// rawValueを指定しないといけないので注意</span>
+    <span class="p">[</span><span class="kt">NSUnderlineStyleAttributeName</span><span class="p">:</span> <span class="kt">NSUnderlineStyle</span><span class="o">.</span><span class="kt">StyleSingle</span><span class="o">.</span><span class="n">rawValue</span><span class="p">])</span>
+</pre></div></div>
+
+<p>下線の色だけ変えたりも。</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">let</span> <span class="nv">underline</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"Underline"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span>  
+    <span class="p">[</span><span class="kt">NSUnderlineStyleAttributeName</span><span class="p">:</span> <span class="kt">NSUnderlineStyle</span><span class="o">.</span><span class="kt">StyleSingle</span><span class="o">.</span><span class="n">rawValue</span><span class="p">,</span>
+    <span class="kt">NSUnderlineColorAttributeName</span><span class="p">:</span> <span class="kt">UIColor</span><span class="o">.</span><span class="nf">redColor</span><span class="p">()</span>
+<span class="p">])</span>
+</pre></div></div>
+
+<p>あとは点線とか二重線とかを組み合わせたり</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>let underlineStyle = NSUnderlineStyle.PatternDot.rawValue |
+        NSUnderlineStyle.StyleDouble.rawValue
+let underline = NSAttributedString(string: "Underline", attributes:
+    // rawValueを指定しないといけないので注意
+    [
+        // fontは関係ないのだが、小さすぎると二重線が見えない。
+        NSFontAttributeName: UIFont.systemFontOfSize(30),
+        NSUnderlineStyleAttributeName: underlineStyle
+])
+</pre></div></div>
+
+<h4>
+<span id="欄外-interface-builder編" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96-interface-builder%E7%B7%A8"><i class="fa fa-link"></i></a>欄外： Interface Builder編</h4>
+
+<p>最近発見したけどこんなやり方。あまりにも馴染みがなくて気付かなかった。<br>
+ちょっとした装飾にはいいかも</p>
+
+<ul>
+<li>UILabelなどでmodeをPlainからAttributedにする</li>
+<li>文字部分を選択状態にする</li>
+<li>Font選択で選ぶ</li>
+</ul>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F54616565-ed8b-119e-5319-0fffad9c00e9.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=dcec5b1c2fa3206790e89356712c42d2" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F54616565-ed8b-119e-5319-0fffad9c00e9.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=dcec5b1c2fa3206790e89356712c42d2" alt="スクリーンショット 2014-11-13 9.38.25.png" title="スクリーンショット 2014-11-13 9.38.25.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/54616565-ed8b-119e-5319-0fffad9c00e9.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F54616565-ed8b-119e-5319-0fffad9c00e9.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=69648998c763bb08c7d051641d29112a 1x" loading="lazy"></a></p>
+
+<h3>
+<span id="text-decoration-line-through" class="fragment"></span><a href="#text-decoration-line-through"><i class="fa fa-link"></i></a>text-decoration: line-through</h3>
+
+<p>取り消し線だが、styleの指定は<code>NSUnderlineStyle</code>を使う</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">let</span> <span class="nv">text</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"Text"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span>
+        <span class="kt">NSStrikethroughStyleAttributeName</span> <span class="p">:</span> <span class="kt">NSUnderlineStyle</span><span class="o">.</span><span class="kt">StyleSingle</span><span class="o">.</span><span class="n">rawValue</span><span class="p">,</span>
+        <span class="c1">// 取り消し線に色つけるなら下記</span>
+        <span class="kt">NSStrikethroughColorAttributeName</span><span class="p">:</span> <span class="kt">UIColor</span><span class="o">.</span><span class="nf">redColor</span><span class="p">()</span>
+<span class="p">])</span>
+</pre></div></div>
+
+<h2>
+<span id="text-align--center" class="fragment"></span><a href="#text-align--center"><i class="fa fa-link"></i></a>text-align : center</h2>
+
+<p>left, right, justfiedなんてのもあるみたい。</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">var</span> <span class="nv">paragraph</span> <span class="o">=</span> <span class="kt">NSMutableParagraphStyle</span><span class="p">()</span>
+<span class="n">paragraph</span><span class="o">.</span><span class="n">alignment</span> <span class="o">=</span> <span class="kt">NSTextAlignment</span><span class="o">.</span><span class="kt">Center</span>
+<span class="k">let</span> <span class="nv">alignment</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"text</span><span class="se">\n</span><span class="s">align</span><span class="se">\n</span><span class="s">center"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">NSParagraphStyleAttributeName</span><span class="p">:</span> <span class="n">paragraph</span><span class="p">])</span>
+</pre></div></div>
+
+<h2>
+<span id="text-indent" class="fragment"></span><a href="#text-indent"><i class="fa fa-link"></i></a>text-indent</h2>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">var</span> <span class="nv">paragraph</span> <span class="o">=</span> <span class="kt">NSMutableParagraphStyle</span><span class="p">()</span>
+<span class="n">paragraph</span><span class="o">.</span><span class="n">firstLineHeadIndent</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="k">let</span> <span class="nv">alignment</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"alignmentalignmentalignmentalignmentalignmentalignmentalignmentalignment"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">NSParagraphStyleAttributeName</span><span class="p">:</span> <span class="n">paragraph</span><span class="p">])</span>
+</pre></div></div>
+
+<h2>
+<span id="letter-spacing--3" class="fragment"></span><a href="#letter-spacing--3"><i class="fa fa-link"></i></a>letter-spacing : 3</h2>
+
+<p>字間ですね。<br>
+NSKernAttributeNameを利用。</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">var</span> <span class="nv">letterSpace</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"kern"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">NSKernAttributeName</span> <span class="p">:</span> <span class="mi">3</span><span class="p">])</span>
+</pre></div></div>
+
+<h2>
+<span id="shadow" class="fragment"></span><a href="#shadow"><i class="fa fa-link"></i></a>shadow</h2>
+
+<p>CALayerで設定するほうが早いかも・・</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">let</span> <span class="nv">shadow</span> <span class="o">=</span> <span class="kt">NSShadow</span><span class="p">()</span>
+<span class="n">shadow</span><span class="o">.</span><span class="n">shadowOffset</span> <span class="o">=</span> <span class="kt">CGSizeMake</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span> <span class="c1">//ずらし具合</span>
+<span class="n">shadow</span><span class="o">.</span><span class="n">shadowBlurRadius</span> <span class="o">=</span> <span class="mi">5</span> <span class="c1">// ぼかし具合</span>
+<span class="n">shadow</span><span class="o">.</span><span class="n">shadowColor</span> <span class="o">=</span> <span class="kt">UIColor</span><span class="o">.</span><span class="nf">redColor</span><span class="p">()</span> <span class="c1">// 色</span>
+<span class="k">let</span> <span class="nv">shadowText</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"shadow"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span>
+    <span class="kt">NSShadowAttributeName</span><span class="p">:</span> <span class="n">shadow</span>
+<span class="p">])</span>
+</pre></div></div>
+
+<h2>
+<span id="color--red" class="fragment"></span><a href="#color--red"><i class="fa fa-link"></i></a>color : red</h2>
+
+<p>UILabelなどにはfontColorなどそれぞれ設定が可能ですが<br>
+部分的に使いたかったりするならこんなんもありますというやつ</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">var</span> <span class="nv">color</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"red"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:</span> <span class="p">[</span><span class="kt">NSForegroundColorAttributeName</span> <span class="p">:</span> <span class="kt">UIColor</span><span class="o">.</span><span class="nf">redColor</span><span class="p">()])</span>
+</pre></div></div>
+
+<h3>
+<span id="欄外background-blue" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96background-blue"><i class="fa fa-link"></i></a>欄外：background: blue</h3>
+
+<p>背景色も変えられるけど細かな調整はしづらいので他の手法を取るほうが良いかも</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="k">let</span> <span class="nv">color</span> <span class="o">=</span> <span class="kt">NSAttributedString</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"Background"</span><span class="p">,</span> <span class="nv">attributes</span><span class="p">:[</span> <span class="kt">NSBackgroundColorAttributeName</span><span class="p">:</span> <span class="kt">UIColor</span><span class="o">.</span><span class="nf">blueColor</span><span class="p">()</span>
+<span class="p">])</span>
+</pre></div></div>
+
+<h2>
+<span id="transform-scalex2" class="fragment"></span><a href="#transform-scalex2"><i class="fa fa-link"></i></a>transform: scaleX(2);</h2>
+
+<p>正直このプロパティはCSSにあるものでもないのでちょっとtransformと対応づけてしまうのも無理があるけれど・・・</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>let expansion = NSAttributedString(string: "metabolic", attributes: [NSExpansionAttributeName: 1])
+</pre></div></div>

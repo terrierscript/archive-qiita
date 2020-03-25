@@ -1,0 +1,26 @@
+<p>結論： <code>npm pack</code>と<code>tar</code>コマンドを組み合わせる。</p>
+
+<p>残念ながら今のところ<code>npm publish --dry-run</code>オプションとかは無い。<br>
+（出典：<a href="https://github.com/npm/npm/issues/6351#issuecomment-119051586%EF%BC%89" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/npm/npm/issues/6351#issuecomment-119051586）</a></p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ tar -tf $(npm pack)
+package/package.json
+package/README.md
+package/index.js
+</pre></div></div>
+
+<p>npm packすると、publishの代わりとしてtarで固められるので、その出力を<code>tar -tf</code>に通すと一覧が出てくるという寸法。頭いい。</p>
+
+<p>yarnでも<code>yarn pack</code>はあるが、出力がうまくいかないのでそのまま使えなそう</p>
+
+<hr>
+
+<p>npm publishのhelpを見ると、一応下記のような記述までは存在してる。</p>
+
+<p><code>$ npm help publish</code></p>
+
+<blockquote>
+<p>For a "dry run" that does everything except actually publishing to  the<br>
+   registry,  see  npm  help  npm-pack,  which figures out the files to be<br>
+   included and packs them into a tarball to be uploaded to the  registry.</p>
+</blockquote>

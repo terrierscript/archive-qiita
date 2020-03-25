@@ -1,0 +1,94 @@
+<p>Reactで例えばグラフなんかを生成したい場合、d3やChartistを使いたくなる。<br>
+いくつかグラフ用のコンポーネントは散見されるが、簡単なものであればスッと利用できそうだが、ちょっと複雑なカスタマイズなどするにはなかなか厳しそうに見えた。</p>
+
+<p>なのでそのまま使うにはどうするかみたいなのを考えた。</p>
+
+<p>（基本的に元のライブラリにパフォーマンスが引きづられがちになったりと若干の邪道感があるやり方になっているのでそこらへんは要注意）</p>
+
+<h1>
+<span id="example" class="fragment"></span><a href="#example"><i class="fa fa-link"></i></a>Example</h1>
+
+<p>今回は<a href="https://gionkunz.github.io/chartist-js/" rel="nofollow noopener" target="_blank">Chartist</a>を使った。</p>
+
+<p>下記のような感じでRendererを用意する。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">ChartistRenderer.js</span></div>
+<div class="highlight"><pre><span class="kd">class</span> <span class="nx">ChartistRenderer</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(</span><span class="nx">targetSelector</span><span class="p">,</span> <span class="nx">props</span><span class="p">){</span>
+    <span class="kd">let</span> <span class="p">{</span><span class="nx">data</span><span class="p">}</span> <span class="o">=</span> <span class="nx">props</span>
+    <span class="c1">// 必要があればここでデータ加工したり。</span>
+    <span class="kd">var</span> <span class="nx">chart</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Chartist</span><span class="p">.</span><span class="nx">Bar</span><span class="p">(</span><span class="nx">targetSelector</span><span class="p">,</span> <span class="p">{</span>
+      <span class="na">labels</span><span class="p">:</span> <span class="nx">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+      <span class="na">series</span><span class="p">:</span> <span class="p">[</span> <span class="nx">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">]</span>
+    <span class="p">})</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>関数名とかはReact.Componentに気持ちだけ合わせておく。<br>
+この程度ならComponent側にメソッドとして持たせても良かったのだけど、実際に扱おうとするとこの辺りの処理が肥大化するし、Reactからそこらへんの感心事は切り出したい感じしたのでやっておく。</p>
+
+<p>で、あとはコンポーネント。</p>
+
+<div class="code-frame" data-lang="jsx">
+<div class="code-lang"><span class="bold">Chart.jsx</span></div>
+<div class="highlight"><pre><span class="kd">class</span> <span class="nx">Chart</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="p">{</span>
+  <span class="kd">constructor</span><span class="p">(){</span>
+    <span class="k">super</span><span class="p">()</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">chartClassName</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">chart</span><span class="dl">"</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">renderer</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ChartistRenderer</span><span class="p">()</span>
+  <span class="p">}</span>
+  <span class="nx">componentDidMount</span><span class="p">(){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">renderChart</span><span class="p">()</span>
+  <span class="p">}</span>
+  <span class="nx">componentDidUpdate</span><span class="p">(){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">renderChart</span><span class="p">()</span>
+  <span class="p">}</span>
+  <span class="nx">renderChart</span><span class="p">(){</span>
+    <span class="kd">var</span> <span class="nx">targetSelector</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">.</span><span class="dl">"</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">chartClassName</span>    
+    <span class="k">this</span><span class="p">.</span><span class="nx">renderer</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="nx">targetSelector</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">)</span>    
+  <span class="p">}</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">chartClassName</span><span class="si">}</span>  <span class="p">&gt;&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>renderではChartistのコンテナとなるdivだけ作る。<br>
+そして<code>componentDidUpdate</code>と<code>componentDidMount</code>でこのコンテナに対してrenderingをする。<br>
+renderの際にレンダリング対象のクラス名とデータ（propsを利用）を渡す。<br>
+propsでデータを渡すことで、propsがが変更されれば<code>componentDidUpdate</code>がフックされてくれるという仕組み。</p>
+
+<p>あとは起動部分。適当に。</p>
+
+<div class="code-frame" data-lang="jsx">
+<div class="code-lang"><span class="bold">app.jsx</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">[</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">bar</span><span class="dl">"</span><span class="p">],</span>
+  <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]</span>
+<span class="p">]</span>
+
+<span class="kd">var</span> <span class="nx">body</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">'</span><span class="s1">.container</span><span class="dl">'</span><span class="p">)</span>
+<span class="nx">React</span><span class="p">.</span><span class="nx">render</span><span class="p">(&lt;</span><span class="nc">Chart</span> <span class="na">data=</span><span class="si">{</span><span class="nx">data</span><span class="si">}</span> <span class="p">/&gt;,</span> <span class="nx">body</span><span class="p">);</span>
+
+</pre></div>
+</div>
+
+<p>おしまい！</p>
+
+<h3>
+<span id="サンプル" class="fragment"></span><a href="#%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB"><i class="fa fa-link"></i></a>サンプル</h3>
+
+<p>jsbinのbabelモードうまく使えnなかったのでcodepenで<br>
+<a href="http://codepen.io/suisho/pen/GJEwaP/" class="autolink" rel="nofollow noopener" target="_blank">http://codepen.io/suisho/pen/GJEwaP/</a></p>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F0bb58b20-d045-587d-9a23-234d184e9eb9.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=716ab49054e5d4217c62e8978816c648" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F0bb58b20-d045-587d-9a23-234d184e9eb9.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=716ab49054e5d4217c62e8978816c648" alt="A_Pen_by_suisho_と_ReactでReact以外のライブラリをそのまま使う_と_Developer_Tools_-_http___codepen_io_suisho_pen_GJEwaP_.png" title="A_Pen_by_suisho_と_ReactでReact以外のライブラリをそのまま使う_と_Developer_Tools_-_http___codepen_io_suisho_pen_GJEwaP_.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/0bb58b20-d045-587d-9a23-234d184e9eb9.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F0bb58b20-d045-587d-9a23-234d184e9eb9.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=2680c399d4657063d42dbad911e7dfa1 1x" loading="lazy"></a></p>
+
+<h1>
+<span id="参考" class="fragment"></span><a href="#%E5%8F%82%E8%80%83"><i class="fa fa-link"></i></a>参考</h1>
+
+<p>あとで調べたらd3で似たようなこと考えている人いた。<br>
+<a href="http://nicolashery.com/integrating-d3js-visualizations-in-a-react-app/" class="autolink" rel="nofollow noopener" target="_blank">http://nicolashery.com/integrating-d3js-visualizations-in-a-react-app/</a></p>

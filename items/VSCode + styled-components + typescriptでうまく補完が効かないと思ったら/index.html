@@ -1,0 +1,27 @@
+<p>限定公開テスト</p>
+
+<p>なんだか上記の組み合わせで補完がうまくいってないと思ったら、どうやらworkspaceのtypescriptを利用する場合、下記を入れる必要があるっぽい</p>
+
+<p><a href="https://github.com/Microsoft/typescript-styled-plugin" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/Microsoft/typescript-styled-plugin</a></p>
+
+<p>（ということが<a href="https://github.com/styled-components/vscode-styled-components#usage" rel="nofollow noopener" target="_blank">Usage</a>をよく読んだら書いてた）</p>
+
+<p>これ自体はVSCodeのプラグインと言うよりtypescriptのプラグインにあたるらしい</p>
+
+<p>ということでnpmでインストール</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>npm install --save-dev typescript-styled-plugin typescript
+</pre></div></div>
+
+<p>そしてtsconfig.jsonに下記を追記する</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="p">{</span>
+  <span class="dl">"</span><span class="s2">compilerOptions</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">plugins</span><span class="dl">"</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="dl">"</span><span class="s2">name</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">typescript-styled-plugin</span><span class="dl">"</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>

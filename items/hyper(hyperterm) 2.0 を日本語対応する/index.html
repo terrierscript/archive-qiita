@@ -1,0 +1,41 @@
+<p>hyper(term) 2.0 以上で日本語化する</p>
+
+<p>hypertermが日本語対応ずっとされてなかったのが</p>
+
+<p><a href="https://github.com/zeit/hyper/issues/2322" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/zeit/hyper/issues/2322</a><br>
+<a href="https://github.com/zeit/hyper/pull/2913" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/zeit/hyper/pull/2913</a></p>
+
+<p>このへんで解決されたようだが、デフォルトではやはりうまく対応されてなかった</p>
+
+<h1>
+<span id="答えlocaleは設定する必要があった" class="fragment"></span><a href="#%E7%AD%94%E3%81%88locale%E3%81%AF%E8%A8%AD%E5%AE%9A%E3%81%99%E3%82%8B%E5%BF%85%E8%A6%81%E3%81%8C%E3%81%82%E3%81%A3%E3%81%9F"><i class="fa fa-link"></i></a>答え：localeは設定する必要があった。</h1>
+
+<p>.bashrcや.zshrcに設定していれば不要。今回はhyperterm用に設定する</p>
+
+<p>メニューから <code>hyper</code> -&gt; <code>preferences</code> で、.hyper.jsファイルを開いて、envに下記を設定</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">hyper.js</span></div>
+<div class="highlight"><pre><span class="nx">env</span><span class="p">:</span> <span class="p">{</span>
+  <span class="nl">LANG</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ja_JP.UTF-8</span><span class="dl">"</span><span class="p">,</span>
+  <span class="nx">LC_ALL</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ja_JP.UTF-8</span><span class="dl">"</span>
+<span class="p">},</span>
+</pre></div>
+</div>
+
+<p>この後、<strong>hyperのプロセスを完全に落として再起動</strong>する</p>
+
+<p>localeを実行して下記のようになっていれば成功</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% locale
+LANG="ja_JP.utf8"
+LC_COLLATE="ja_JP.UTF-8"
+LC_CTYPE="ja_JP.UTF-8"
+LC_MESSAGES="ja_JP.UTF-8"
+LC_MONETARY="ja_JP.UTF-8"
+LC_NUMERIC="ja_JP.UTF-8"
+LC_TIME="ja_JP.UTF-8"
+LC_ALL="ja_JP.UTF-8"
+</pre></div></div>
+
+<p>日本語入力も表示もできるはず</p>

@@ -1,0 +1,1 @@
+{"created_at":"2016-06-01T22:39:19+09:00","id":"e820652ee0d68dd2c190","updated_at":"2016-06-01T22:57:11+09:00","title":"babelでlet a = () => {} が let a = function a(){}と匿名関数に名前が付けられるのはなんでなんでなの？というのを調べた","tags":["JavaScript","babel","ECMAScript2015"]}

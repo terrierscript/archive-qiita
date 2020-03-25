@@ -1,0 +1,28 @@
+
+<h1>
+<span id="rails4---rails5-のアップデートでactivemodelmissingattributeerrorで引っかかる" class="fragment"></span><a href="#rails4---rails5-%E3%81%AE%E3%82%A2%E3%83%83%E3%83%97%E3%83%87%E3%83%BC%E3%83%88%E3%81%A7activemodelmissingattributeerror%E3%81%A7%E5%BC%95%E3%81%A3%E3%81%8B%E3%81%8B%E3%82%8B"><i class="fa fa-link"></i></a>Rails4 -&gt; Rails5 のアップデートで<code>ActiveModel::MissingAttributeError</code>で引っかかる。</h1>
+
+<p>Rails5にアップデートしたところ、<code>FactoryGirl</code>が<code>ActiveModel::MissingAttributeError</code>を出してしまっていた。</p>
+
+<p>最初はなんだかよくわかっていなかったが、どうにも<code>default_value_for</code>を利用しているmodelが死んでいるようだった。</p>
+
+<p><a href="https://github.com/FooBarWidget/default_value_for/pull/57" rel="nofollow noopener" target="_blank">Pull Request</a>は既に出ているが、今のところ取り込まれてない（2016/07/08現在）</p>
+
+<h1>
+<span id="どうすれば---rails5で導入されたactiverecord-attributeを使う" class="fragment"></span><a href="#%E3%81%A9%E3%81%86%E3%81%99%E3%82%8C%E3%81%B0---rails5%E3%81%A7%E5%B0%8E%E5%85%A5%E3%81%95%E3%82%8C%E3%81%9Factiverecord-attribute%E3%82%92%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>どうすれば？ -&gt; Rails5で導入されたActiveRecord attributeを使う。</h1>
+
+<p>Modelのデフォルト値は<a href="http://edgeapi.rubyonrails.org/classes/ActiveRecord/Attributes/ClassMethods.html" rel="nofollow noopener" target="_blank">attribute</a>で対応出来る。</p>
+
+<p>なので、こんな感じのコードを</p>
+
+<div class="code-frame" data-lang="rb"><div class="highlight"><pre><span class="k">class</span> <span class="nc">SomeModel</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+  <span class="n">default_value_for</span> <span class="ss">:is_public</span><span class="p">,</span> <span class="kp">false</span>
+<span class="k">end</span>
+</pre></div></div>
+
+<p>こうするだけで良くなった。</p>
+
+<div class="code-frame" data-lang="rb"><div class="highlight"><pre><span class="k">class</span> <span class="nc">SomeModel</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+  <span class="n">attribute</span> <span class="ss">:some_flag</span><span class="p">,</span> <span class="ss">:boolean</span><span class="p">,</span> <span class="ss">default: </span><span class="o">-&gt;</span> <span class="p">{</span> <span class="kp">false</span> <span class="p">}</span>
+<span class="k">end</span>
+</pre></div></div>

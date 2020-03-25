@@ -1,0 +1,148 @@
+<p>next.jsをFirebase FunctionやGoogle Cloud Containerで動かす話はあったが、GAEの話があんまり無さそうだったのでざっくりメモる。</p>
+
+<ul>
+<li><a href="https://qiita.com/mizchi/items/60722563b8a938e7336f" class="autolink" id="reference-b34a3e4e1cd45429a00c">https://qiita.com/mizchi/items/60722563b8a938e7336f</a></li>
+<li><a href="https://medium.com/google-cloud/next-js-tutorial-deploy-to-docker-on-google-cloud-container-engine-6b0c19dd8ecb" class="autolink" rel="nofollow noopener" target="_blank">https://medium.com/google-cloud/next-js-tutorial-deploy-to-docker-on-google-cloud-container-engine-6b0c19dd8ecb</a></li>
+</ul>
+
+<h1>
+<span id="gaeについて" class="fragment"></span><a href="#gae%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6"><i class="fa fa-link"></i></a>GAEについて</h1>
+
+<p>Google App Engine、ざっくり言うとHerokuっぽいもの。</p>
+
+<p>GAEにはflexibleとstandardというのがあり、NodeのStandardが追加されたということ。</p>
+
+<p><a href="https://qiita.com/comameito/items/3738262923c49da94fb9" class="autolink" id="reference-b7d52227e374187cc545">https://qiita.com/comameito/items/3738262923c49da94fb9</a></p>
+
+<p>この部分に疎いので、どちらが良いのかわからないが、下記のデモなどでもStandardを利用しているため、Standardを利用する（Flexibleだと何がまずいのかいまいちわかっていない）</p>
+
+<p><a href="https://github.com/blainegarrett/node-next-gae-demo" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/blainegarrett/node-next-gae-demo</a></p>
+
+<h1>
+<span id="gaeの手続き" class="fragment"></span><a href="#gae%E3%81%AE%E6%89%8B%E7%B6%9A%E3%81%8D"><i class="fa fa-link"></i></a>GAEの手続き</h1>
+
+<p>このあたりをやった（このへんは資料溢れているし簡単だったので、すっとばす）</p>
+
+<ul>
+<li>カード登録をしてのGCPの有効化
+
+<ul>
+<li>無料枠がそこそこあるので、すぐに課金とかは無さそう</li>
+</ul>
+</li>
+<li>プロジェクトの作成
+
+<ul>
+<li><del>リージョンが後から変更出来ないので、東京になるようにしておく必要がある</del></li>
+<li><del>firebaseと紐付けるなど考えると、firebaseプロジェクトより先にこっちを作っておいたほうがいいのかもしれない</del></li>
+<li>↑firestore使えなかったりするので今の所デフォルトのリージョンじゃないと不幸があるっぽい</li>
+<li>チュートリアルが出てくるがスキップした。</li>
+</ul>
+</li>
+<li>予算の設定
+
+<ul>
+<li>一応変な動きしてたらまずいので100円でアラートなるようにした</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="nextの設定" class="fragment"></span><a href="#next%E3%81%AE%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>nextの設定</h2>
+
+<p>server側もtypescriptで動かしたい。<br>
+<a href="https://github.com/zeit/next.js/tree/canary/examples/custom-server-typescript" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/zeit/next.js/tree/canary/examples/custom-server-typescript</a><br>
+を見るといちいちコンパイルしていてちょっとやりたくなかったので、ts-nodeで直で動かせる方法を考えた。</p>
+
+<p>楽さをとってるので、上記のほうが自動再起動とかしてくれる嬉しさはあると思う。</p>
+
+<h3>
+<span id="nextconfigjs" class="fragment"></span><a href="#nextconfigjs"><i class="fa fa-link"></i></a>next.config.js</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>yarn add next @zeit/next-typescript ts-node
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">withTypescript</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">@zeit/next-typescript</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">withTypescript</span><span class="p">()</span>
+</pre></div></div>
+
+<p>package.jsonのスクリプトコマンドはこんな具合。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>  <span class="dl">"</span><span class="s2">scripts</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="dl">"</span><span class="s2">dev</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ts-node -T server/server.ts </span><span class="dl">"</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">prestart</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">next build</span><span class="dl">"</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">start</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">NODE_ENV=production ts-node -T server/server.ts </span><span class="dl">"</span><span class="p">,</span>
+    <span class="dl">"</span><span class="s2">deploy</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">gcloud app deploy</span><span class="dl">"</span>
+  <span class="p">},</span>
+</pre></div></div>
+
+<p>ポイントとしては、ts-nodeの引数に<code>-T</code>のtranspileOnlyを指定してやること。<br>
+そして、prestartを仕掛けて、start前にビルドされるようにする</p>
+
+<h3>
+<span id="欄外-nodemonも入れる" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96-nodemon%E3%82%82%E5%85%A5%E3%82%8C%E3%82%8B"><i class="fa fa-link"></i></a>欄外: nodemonも入れる</h3>
+
+<p>exampleよく見たらdevの場合だけnodemonするの良さそう。<br>
+（動作確認出来てないのでなにか足りてないかも）</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>yarn add nodemon
+</pre></div></div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">package.js</span></div>
+<div class="highlight"><pre><span class="p">{</span>
+    <span class="dl">"</span><span class="s2">dev</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">nodemon --exec ts-node -T server/server.ts</span><span class="dl">"</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">nodemon.json</span></div>
+<div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"watch"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"server/**/*.ts"</span><span class="p">],</span><span class="w">
+  </span><span class="nl">"execMap"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"ts"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ts-node --emit"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<h2>
+<span id="gcloudのコマンドインストール" class="fragment"></span><a href="#gcloud%E3%81%AE%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB"><i class="fa fa-link"></i></a>gcloudのコマンドインストール</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>brew cask install google-cloud-sdk
+</pre></div></div>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>gcloud
+gcloud auth login
+</pre></div></div>
+
+<p>そして先程設定したproject-idで</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>gcloud config set project &lt;Project-ID&gt;
+</pre></div></div>
+
+<p>を設定する</p>
+
+<h2>
+<span id="appyamlの設定" class="fragment"></span><a href="#appyaml%E3%81%AE%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>app.yamlの設定</h2>
+
+<div class="code-frame" data-lang="yaml"><div class="highlight"><pre><span class="na">runtime</span><span class="pi">:</span> <span class="s">nodejs8</span>
+</pre></div></div>
+
+<h2>
+<span id="deploy" class="fragment"></span><a href="#deploy"><i class="fa fa-link"></i></a>deploy</h2>
+
+<p>Cloud Container Builderの有効化を促されるので従う。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>gcloud app deploy
+</pre></div></div>
+
+<p>1分ちょいかかる感じ</p>
+
+<h1>
+<span id="エラーログを見る" class="fragment"></span><a href="#%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%E3%82%92%E8%A6%8B%E3%82%8B"><i class="fa fa-link"></i></a>エラーログを見る</h1>
+
+<p>なんか動かなかったらエラーログを見るとよい<br>
+App Engine -&gt; バージョン -&gt; 「診断」のカラムにある「ツール」-&gt; 「ログ」で吐き出されてるログがそのまま見れるはず。</p>

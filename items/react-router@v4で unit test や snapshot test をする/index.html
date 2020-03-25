@@ -1,0 +1,138 @@
+
+<h1>
+<span id="tldr" class="fragment"></span><a href="#tldr"><i class="fa fa-link"></i></a>tl,dr;</h1>
+
+<p><code>&lt;MemoryRouter&gt;</code>使えば良い。</p>
+
+<h1>
+<span id="例示" class="fragment"></span><a href="#%E4%BE%8B%E7%A4%BA"><i class="fa fa-link"></i></a>例示</h1>
+
+<h2>
+<span id="シンプルなパターン" class="fragment"></span><a href="#%E3%82%B7%E3%83%B3%E3%83%97%E3%83%AB%E3%81%AA%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3"><i class="fa fa-link"></i></a>シンプルなパターン</h2>
+
+<p>例えばこんなrouter設定で考える。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>
+<span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">BrowserRouter</span><span class="p">,</span> <span class="nx">Switch</span><span class="p">,</span> <span class="nx">Route</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react-router</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">SomeRouter</span> <span class="o">=</span> <span class="p">({</span><span class="nx">path</span> <span class="o">=</span> <span class="dl">""</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">Switch</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="p">{</span><span class="s2">`</span><span class="p">${</span><span class="nx">path</span><span class="p">}</span><span class="s2">/foo`</span><span class="p">}</span><span class="o">&gt;&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="o">&gt;</span><span class="nx">foo</span><span class="o">&lt;</span><span class="sr">/div&gt;&lt;/</span><span class="nx">Route</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="p">{</span><span class="s2">`</span><span class="p">${</span><span class="nx">path</span><span class="p">}</span><span class="s2">/baz`</span><span class="p">}</span><span class="o">&gt;&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span><span class="o">&gt;</span><span class="nx">baz</span><span class="o">&lt;</span><span class="sr">/div&gt;&lt;/</span><span class="nx">Route</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="p">{</span><span class="s2">`</span><span class="p">${</span><span class="nx">path</span><span class="p">}</span><span class="s2">/shallow`</span><span class="p">}</span><span class="o">&gt;&lt;</span><span class="nx">div</span><span class="o">&gt;&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">shallowTarget</span><span class="dl">"</span><span class="o">&gt;</span><span class="nx">shallow</span><span class="o">&lt;</span><span class="sr">/div&gt;&lt;/</span><span class="nx">div</span><span class="o">&gt;&lt;</span><span class="sr">/Route</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Route</span><span class="o">&gt;&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">default</span><span class="dl">"</span><span class="o">&gt;</span><span class="k">default</span><span class="o">&lt;</span><span class="sr">/div&gt;&lt;/</span><span class="nx">Route</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="sr">/Switch</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// RouterとRoute定義は分けておくとテストしやすい</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">BrowserRouter</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">SomeRouter</span> <span class="o">/&gt;</span>
+      <span class="o">&lt;</span><span class="sr">/BrowserRouter</span><span class="err">&gt;
+</span>    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>そしてtestコード。<br>
+今回はenzyme + jestでのサンプル。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>  <span class="k">import</span> <span class="p">{</span> <span class="nx">mount</span><span class="p">,</span> <span class="nx">render</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">enzyme</span><span class="dl">"</span>
+
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">memory routing</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">wrapper</span> <span class="o">=</span> <span class="nx">render</span><span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">MemoryRouter</span> <span class="nx">initialEntries</span><span class="o">=</span><span class="p">{[</span><span class="dl">"</span><span class="s2">/mount</span><span class="dl">"</span><span class="p">]}</span><span class="o">&gt;&lt;</span><span class="nx">SomeRouter</span> <span class="o">/&gt;&lt;</span><span class="sr">/MemoryRouter</span><span class="err">&gt;
+</span>    <span class="p">)</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">wrapper</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="dl">"</span><span class="s2">.testTarget</span><span class="dl">"</span><span class="p">).</span><span class="nx">length</span><span class="p">).</span><span class="nx">toBe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+  <span class="p">})</span>
+</pre></div></div>
+
+<p><code>&lt;MemoryRouter initialEntries={["対象にしたいパス"]}&gt;&lt;SomeRouter /&gt;&lt;/MemoryRouter&gt;</code>という感じでwrapするとテストが出来るようになる<br>
+MemoryRouterは、ReactNativeなど、ブラウザのnavigationに依存せず、配列でのみhistoryを擬似的に再現しているので、どんなテスト環境でも使える。<br>
+storybookなどで、<code>&lt;Link&gt;</code>を利用してコケたりする場合も<code>MemoryRouter</code>で解決する。</p>
+
+<p>enzymeについては、<code>shallow</code>だとうまくfindのテストなどができなそうだったので、<code>mount</code>か<code>render</code>を利用する必要があるようだ（理由あんま深く調べてない）。</p>
+
+<p>最近avaでも出来るようになったsnapshotテストならばこんな感じ。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>  <span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+  <span class="k">import</span> <span class="p">{</span> <span class="nx">MemoryRouter</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react-router-dom</span><span class="dl">"</span>
+  <span class="k">import</span> <span class="p">{</span> <span class="nx">create</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-test-renderer</span><span class="dl">'</span>
+
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">default routing</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">tree</span> <span class="o">=</span> <span class="nx">create</span><span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">MemoryRouter</span> <span class="nx">initialEntries</span><span class="o">=</span><span class="p">{[</span><span class="dl">"</span><span class="s2">/</span><span class="dl">"</span><span class="p">]}</span> <span class="o">&gt;&lt;</span><span class="nx">SomeRouter</span> <span class="o">/&gt;&lt;</span><span class="sr">/MemoryRouter</span><span class="err">&gt;
+</span>    <span class="p">).</span><span class="nx">toJSON</span><span class="p">()</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">tree</span><span class="p">).</span><span class="nx">toMatchSnapshot</span><span class="p">()</span>  
+  <span class="p">})</span>
+
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">/foo routing</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">tree</span> <span class="o">=</span> <span class="nx">create</span><span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">MemoryRouter</span> <span class="nx">initialEntries</span><span class="o">=</span><span class="p">{[</span><span class="dl">"</span><span class="s2">/foo</span><span class="dl">"</span><span class="p">]}</span><span class="o">&gt;&lt;</span><span class="nx">SomeRouter</span> <span class="o">/&gt;&lt;</span><span class="sr">/MemoryRouter</span><span class="err">&gt;
+</span>    <span class="p">).</span><span class="nx">toJSON</span><span class="p">()</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">tree</span><span class="p">).</span><span class="nx">toMatchSnapshot</span><span class="p">()</span>  
+  <span class="p">})</span>
+
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">/baz routing</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">tree</span> <span class="o">=</span> <span class="nx">create</span><span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">MemoryRouter</span> <span class="nx">initialEntries</span><span class="o">=</span><span class="p">{[</span><span class="dl">"</span><span class="s2">/baz</span><span class="dl">"</span><span class="p">]}</span><span class="o">&gt;&lt;</span><span class="nx">SomeRouter</span> <span class="o">/&gt;&lt;</span><span class="sr">/MemoryRouter</span><span class="err">&gt;
+</span>    <span class="p">).</span><span class="nx">toJSON</span><span class="p">()</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">tree</span><span class="p">).</span><span class="nx">toMatchSnapshot</span><span class="p">()</span>  
+  <span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="ちょっとだけ入り組んだパターン" class="fragment"></span><a href="#%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E3%81%A0%E3%81%91%E5%85%A5%E3%82%8A%E7%B5%84%E3%82%93%E3%81%A0%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3"><i class="fa fa-link"></i></a>ちょっとだけ入り組んだパターン</h2>
+
+<p>例えば<code>/user/:name</code>みたいなのも同じ要領でテスト可能</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Hello</span> <span class="o">=</span> <span class="p">({</span><span class="nx">match</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Hello</span> <span class="p">{</span><span class="nx">match</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">name</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">NotFound</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Oops</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">)</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">DynamicRouter</span> <span class="o">=</span> <span class="p">({</span><span class="nx">path</span> <span class="o">=</span> <span class="dl">""</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">Switch</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="p">{</span><span class="s2">`</span><span class="p">${</span><span class="nx">path</span><span class="p">}</span><span class="s2">/user/:name`</span><span class="p">}</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">Hello</span><span class="p">}</span><span class="o">&gt;&lt;</span><span class="sr">/Route</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">NotFound</span><span class="p">}</span><span class="o">&gt;&lt;</span><span class="sr">/Route</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/Switch</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">describe</span><span class="p">(</span><span class="dl">"</span><span class="s2">dynamic snapshot</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">/user/bob</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">wrapper</span> <span class="o">=</span> <span class="nx">render</span><span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">MemoryRouter</span> <span class="nx">initialEntries</span><span class="o">=</span><span class="p">{[</span><span class="dl">"</span><span class="s2">/user/bob</span><span class="dl">"</span><span class="p">]}</span> <span class="o">&gt;&lt;</span><span class="nx">DynamicRouter</span> <span class="o">/&gt;&lt;</span><span class="sr">/MemoryRouter</span><span class="err">&gt;
+</span>    <span class="p">)</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">wrapper</span><span class="p">.</span><span class="nx">text</span><span class="p">()).</span><span class="nx">toBe</span><span class="p">(</span><span class="dl">"</span><span class="s2">Hello bob</span><span class="dl">"</span><span class="p">)</span>
+  <span class="p">})</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">/user/sam</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">wrapper</span> <span class="o">=</span> <span class="nx">render</span><span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">MemoryRouter</span> <span class="nx">initialEntries</span><span class="o">=</span><span class="p">{[</span><span class="dl">"</span><span class="s2">/user/sam</span><span class="dl">"</span><span class="p">]}</span> <span class="o">&gt;&lt;</span><span class="nx">DynamicRouter</span> <span class="o">/&gt;&lt;</span><span class="sr">/MemoryRouter</span><span class="err">&gt;
+</span>    <span class="p">)</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">wrapper</span><span class="p">.</span><span class="nx">text</span><span class="p">()).</span><span class="nx">toBe</span><span class="p">(</span><span class="dl">"</span><span class="s2">Hello sam</span><span class="dl">"</span><span class="p">)</span>
+  <span class="p">})</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">/unknown</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">wrapper</span> <span class="o">=</span> <span class="nx">render</span><span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">MemoryRouter</span> <span class="nx">initialEntries</span><span class="o">=</span><span class="p">{[</span><span class="dl">"</span><span class="s2">/unknown</span><span class="dl">"</span><span class="p">]}</span> <span class="o">&gt;&lt;</span><span class="nx">DynamicRouter</span> <span class="o">/&gt;&lt;</span><span class="sr">/MemoryRouter</span><span class="err">&gt;
+</span>    <span class="p">)</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">wrapper</span><span class="p">.</span><span class="nx">text</span><span class="p">()).</span><span class="nx">toBe</span><span class="p">(</span><span class="dl">"</span><span class="s2">Oops</span><span class="dl">"</span><span class="p">)</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h1>
+<span id="参考" class="fragment"></span><a href="#%E5%8F%82%E8%80%83"><i class="fa fa-link"></i></a>参考</h1>
+
+<ul>
+<li><a href="https://github.com/ReactTraining/react-router/issues/4078" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ReactTraining/react-router/issues/4078</a></li>
+<li><a href="https://github.com/ReactTraining/react-router/issues/4227" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ReactTraining/react-router/issues/4227</a></li>
+</ul>

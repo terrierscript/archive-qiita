@@ -1,0 +1,476 @@
+<p>code splittingを頑張らずに切り抜けられるかと思ったけど、まだちょっと逃げ切れなそうだったのでちゃんと調べた。<br>
+（<a href="https://jakearchibald.com/2017/es-modules-in-browsers/" rel="nofollow noopener" target="_blank">Chrome Canaryに<code>&lt;script module&gt;</code></a> が来てたり数年スパンだと不要になりそうな技術だけど、もう少しの間はこのへんを扱っていかないといけなそう）</p>
+
+<h1>
+<span id="code-splitting" class="fragment"></span><a href="#code-splitting"><i class="fa fa-link"></i></a>Code splitting</h1>
+
+<h2>
+<span id="まず普通のコード" class="fragment"></span><a href="#%E3%81%BE%E3%81%9A%E6%99%AE%E9%80%9A%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89"><i class="fa fa-link"></i></a>まず普通のコード</h2>
+
+<p>こんなコードを用意する</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// index.js</span>
+<span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">./lib</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">lib</span><span class="p">()</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// lib.js</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">This is Lib</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>するとこんなふうにビルドされる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// モジュール解決する基本的な部分が差し込まれる</span>
+<span class="c1">// ...</span>
+<span class="c1">// ...</span>
+<span class="cm">/******/</span>    <span class="kd">function</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="nx">moduleId</span><span class="p">)</span> <span class="p">{</span>
+<span class="cm">/******/</span>        <span class="c1">// Check if module is in cache</span>
+<span class="cm">/******/</span>        <span class="k">if</span><span class="p">(</span><span class="nx">installedModules</span><span class="p">[</span><span class="nx">moduleId</span><span class="p">])</span> <span class="p">{</span>
+<span class="cm">/******/</span>            <span class="k">return</span> <span class="nx">installedModules</span><span class="p">[</span><span class="nx">moduleId</span><span class="p">].</span><span class="nx">exports</span><span class="p">;</span>
+<span class="cm">/******/</span>        <span class="p">}</span>
+<span class="cm">/******/</span>    <span class="p">}</span>
+<span class="c1">// ...</span>
+<span class="c1">// ...</span>
+<span class="c1">// それが終わると、自分が書いたモジュールが差し込まれる</span>
+
+<span class="cm">/******/</span> <span class="p">([</span>
+<span class="cm">/* 0 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">This is Lib</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">}</span>
+
+
+<span class="cm">/***/</span> <span class="p">}),</span>
+<span class="cm">/* 1 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">,</span> <span class="nx">__webpack_require__</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="nx">lib</span><span class="p">()</span>
+
+<span class="cm">/***/</span> <span class="p">})</span>
+<span class="cm">/******/</span> <span class="p">]);</span>
+</pre></div></div>
+
+<p><code>__webpack_require__</code>によって<code>require</code>が解決される様子が見て取れる。</p>
+
+<p><code>__webpack_require__</code>の詳細は、<a href="https://github.com/webpack/webpack/blob/aecc297c509f08f95148ccb2915a2b9ff3ee5fa3/lib/MainTemplate.js" rel="nofollow noopener" target="_blank">lib/MainTemplate.js</a>あたりで構築されている（文字列でjavascriptが組み立てられているっぽい。つらそう）</p>
+
+<h2>
+<span id="webpackランタイム部分の分離manifest分離" class="fragment"></span><a href="#webpack%E3%83%A9%E3%83%B3%E3%82%BF%E3%82%A4%E3%83%A0%E9%83%A8%E5%88%86%E3%81%AE%E5%88%86%E9%9B%A2manifest%E5%88%86%E9%9B%A2"><i class="fa fa-link"></i></a>webpackランタイム部分の分離（Manifest分離）</h2>
+
+<p>この<code>__webpack_require__</code>に関するランタイム部分をCommonChunkPluginを利用することで分離することが紹介されている。</p>
+
+<p>webpack公式ではこれをManifest fileと呼称している。<br>
+railsあたりと組み合わせた時のmanifestと役割が似ているが、微妙に違う</p>
+
+<p><a href="https://webpack.js.org/plugins/commons-chunk-plugin/#manifest-file" class="autolink" rel="nofollow noopener" target="_blank">https://webpack.js.org/plugins/commons-chunk-plugin/#manifest-file</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// webpack.config.js</span>
+  <span class="nx">plugins</span><span class="p">:</span> <span class="p">[</span>
+    <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">({</span> 
+      <span class="na">name</span><span class="p">:</span> <span class="dl">'</span><span class="s1">manifest</span><span class="dl">'</span><span class="p">,</span>
+      <span class="na">minChunks</span><span class="p">:</span> <span class="kc">Infinity</span>
+    <span class="p">})</span>
+  <span class="p">]</span>
+</pre></div></div>
+
+<p><code>CommonChunkPlugin</code>で分離されたmanifestには、webpack内部でのモジュール解決に利用される関数のみが抽出される。<br>
+非同期ローディング用の関数（<code>requireEnsure</code>）も含まれるようになる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// manifest.js</span>
+ <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">modules</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// webpackBootstrap</span>
+    <span class="c1">// install a JSONP callback for chunk loading</span>
+    <span class="kd">var</span> <span class="nx">parentJsonpFunction</span> <span class="o">=</span> <span class="nb">window</span><span class="p">[</span><span class="dl">"</span><span class="s2">webpackJsonp</span><span class="dl">"</span><span class="p">];</span>
+    <span class="nb">window</span><span class="p">[</span><span class="dl">"</span><span class="s2">webpackJsonp</span><span class="dl">"</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">webpackJsonpCallback</span><span class="p">(</span><span class="nx">chunkIds</span><span class="p">,</span> <span class="nx">moreModules</span><span class="p">,</span> <span class="nx">executeModules</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// manifest外に書かれたscriptをJSONPとして実行する。</span>
+    <span class="c1">// ...</span>
+    <span class="p">};</span>
+
+    <span class="c1">// webpack内部のrequire関数</span>
+    <span class="kd">function</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="nx">moduleId</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+    <span class="c1">// ...</span>
+    <span class="p">}</span>
+
+  <span class="c1">// requireEnsure。関数を非同期ロードする仕組み。</span>
+    <span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">e</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">requireEnsure</span><span class="p">(</span><span class="nx">chunkId</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... </span>
+    <span class="c1">// ...</span>
+
+        <span class="c1">// コード読み込みは、&lt;script&gt;タグを生成してDOMに埋め込んで読み込む</span>
+        <span class="kd">var</span> <span class="nx">head</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="dl">'</span><span class="s1">head</span><span class="dl">'</span><span class="p">)[</span><span class="mi">0</span><span class="p">];</span>
+        <span class="kd">var</span> <span class="nx">script</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">script</span><span class="dl">'</span><span class="p">);</span>
+        <span class="nx">script</span><span class="p">.</span><span class="nx">type</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">text/javascript</span><span class="dl">'</span><span class="p">;</span>
+    <span class="c1">// ...</span>
+    <span class="c1">// ...</span>
+        <span class="c1">// 後述する非同期読み込みを行うと、それらの読み込みをうまく解決するコードが差し込まれる。ｍanifestっぽさのある部分</span>
+        <span class="nx">script</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">p</span> <span class="o">+</span> <span class="dl">""</span> <span class="o">+</span> <span class="p">({</span><span class="dl">"</span><span class="s2">1</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">main</span><span class="dl">"</span><span class="p">}[</span><span class="nx">chunkId</span><span class="p">]</span><span class="o">||</span><span class="nx">chunkId</span><span class="p">)</span> <span class="o">+</span> <span class="dl">"</span><span class="s2">.js?</span><span class="dl">"</span> <span class="o">+</span> <span class="p">{</span><span class="dl">"</span><span class="s2">0</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">d5186cef317c5c895373</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">1</span><span class="dl">"</span><span class="p">:</span><span class="dl">"</span><span class="s2">eb51fb214d292368d33e</span><span class="dl">"</span><span class="p">}[</span><span class="nx">chunkId</span><span class="p">]</span> <span class="o">+</span> <span class="dl">""</span><span class="p">;</span>
+
+        <span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">script</span><span class="p">);</span>
+
+        <span class="k">return</span> <span class="nx">promise</span><span class="p">;</span>
+    <span class="p">};</span>
+  <span class="c1">// ここから下は様々便利関数などが展開される</span>
+  <span class="c1">// ...</span>
+  <span class="c1">// ...</span>
+
+ <span class="p">})</span>
+ <span class="p">([]);</span>
+</pre></div></div>
+
+<p>残されたメインのコード側は、<code>webpackJsonp</code>で囲まれる。<br>
+これが<code>manifest.js</code>によってうまく読み込み解決される</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// main.js</span>
+
+<span class="nx">webpackJsonp</span><span class="p">([</span><span class="mi">0</span><span class="p">],[</span>
+<span class="cm">/* 0 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">This is Lib</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="cm">/***/</span> <span class="p">}),</span>
+<span class="cm">/* 1 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">,</span> <span class="nx">__webpack_require__</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="nx">lib</span><span class="p">()</span>
+
+<span class="cm">/***/</span> <span class="p">})</span>
+<span class="p">],[</span><span class="mi">1</span><span class="p">]);</span>
+</pre></div></div>
+
+<h2>
+<span id="import--requireensure--bundle-でlazy-importする" class="fragment"></span><a href="#import--requireensure--bundle-%E3%81%A7lazy-import%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>import() / require.ensure / bundle でLazy importする</h2>
+
+<p>非同期処理するのは現在webpackは3つほどやり方が提供されている。</p>
+
+<h3>
+<span id="import" class="fragment"></span><a href="#import"><i class="fa fa-link"></i></a>import()</h3>
+
+<p><code>import()</code>は<a href="https://github.com/tc39/proposal-dynamic-import" rel="nofollow noopener" target="_blank">Dynamic import</a>と呼ばれる現在stage-3の機能。<br>
+非同期をPromise読み込みする。一番記述量が少なく書ける。</p>
+
+<p><a href="https://webpack.js.org/guides/code-splitting-async/#dynamic-import-import-" class="autolink" rel="nofollow noopener" target="_blank">https://webpack.js.org/guides/code-splitting-async/#dynamic-import-import-</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">main</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="k">import</span><span class="p">(</span><span class="dl">"</span><span class="s2">./lib</span><span class="dl">"</span><span class="p">)</span>
+  <span class="nx">lib</span><span class="p">()</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// main.js</span>
+<span class="nx">webpackJsonp</span><span class="p">([</span><span class="mi">1</span><span class="p">],[</span>
+<span class="cm">/* 0 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">,</span> <span class="nx">__webpack_require__</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="kd">const</span> <span class="nx">main</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">e</span><span class="cm">/* import() */</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nx">then</span><span class="p">(</span><span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+  <span class="nx">lib</span><span class="p">()</span>
+<span class="p">}</span>
+
+
+<span class="cm">/***/</span> <span class="p">})</span>
+<span class="p">],[</span><span class="mi">0</span><span class="p">]);</span>
+</pre></div></div>
+
+<p>webpackでは内部的に<code>requireEnsure</code>(<code>__webpack_require__.e</code>)が利用される</p>
+
+<h3>
+<span id="requireensure" class="fragment"></span><a href="#requireensure"><i class="fa fa-link"></i></a>require.ensure</h3>
+
+<p>webpack1時代から存在するwebpack固有のrequire拡張。<code>import()</code>より少し機能が多いが、<code>import()</code>に置き換えられるということがアナウンスされている。</p>
+
+<p><a href="https://webpack.js.org/guides/code-splitting-async/#require-ensure-" class="autolink" rel="nofollow noopener" target="_blank">https://webpack.js.org/guides/code-splitting-async/#require-ensure-</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">main</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">require</span><span class="p">.</span><span class="nx">ensure</span><span class="p">([],</span> <span class="p">(</span><span class="nx">require</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">./lib</span><span class="dl">"</span><span class="p">)</span>
+    <span class="nx">lib</span><span class="p">()</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">webpackJsonp</span><span class="p">([</span><span class="mi">1</span><span class="p">],[</span>
+<span class="cm">/* 0 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">,</span> <span class="nx">__webpack_require__</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="kd">const</span> <span class="nx">main</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">e</span><span class="cm">/* require.ensure */</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nx">then</span><span class="p">(((</span><span class="nx">require</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="nx">lib</span><span class="p">()</span>
+  <span class="p">}).</span><span class="nx">bind</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">__webpack_require__</span><span class="p">)).</span><span class="k">catch</span><span class="p">(</span><span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">oe</span><span class="p">)</span>
+<span class="p">}</span>
+
+
+<span class="cm">/***/</span> <span class="p">})</span>
+<span class="p">],[</span><span class="mi">0</span><span class="p">]);</span>
+</pre></div></div>
+
+<h3>
+<span id="bundle-loader" class="fragment"></span><a href="#bundle-loader"><i class="fa fa-link"></i></a>bundle-loader</h3>
+
+<p>require-ensureの別解として<code>bundle-loader</code>も存在する。<br>
+こちらもおそらく<code>import()</code>を利用すれば使う事は無いと思われるが、比較として掲載する</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">main</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">bundle-loader?lazy!./lib</span><span class="dl">"</span><span class="p">)</span>
+  <span class="nx">lib</span><span class="p">()</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// main.js</span>
+<span class="nx">webpackJsonp</span><span class="p">([</span><span class="mi">1</span><span class="p">],[</span>
+<span class="cm">/* 0 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">,</span> <span class="nx">__webpack_require__</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">cb</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">e</span><span class="cm">/* require.ensure */</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nx">then</span><span class="p">((</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">cb</span><span class="p">(</span><span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+    <span class="p">}).</span><span class="nx">bind</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">__webpack_require__</span><span class="p">)).</span><span class="k">catch</span><span class="p">(</span><span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">oe</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="cm">/***/</span> <span class="p">}),</span>
+<span class="cm">/* 1 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">,</span> <span class="nx">__webpack_require__</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="kd">const</span> <span class="nx">main</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">lib</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="nx">lib</span><span class="p">()</span>
+<span class="p">}</span>
+
+
+<span class="cm">/***/</span> <span class="p">})</span>
+<span class="p">],[</span><span class="mi">1</span><span class="p">]);</span>
+</pre></div></div>
+
+<h3>
+<span id="systemimport" class="fragment"></span><a href="#systemimport"><i class="fa fa-link"></i></a>System.import</h3>
+
+<p>System.import is deprecated だそうです<br>
+<a href="https://webpack.js.org/guides/code-splitting-async/#system-import-is-deprecated" class="autolink" rel="nofollow noopener" target="_blank">https://webpack.js.org/guides/code-splitting-async/#system-import-is-deprecated</a><br>
+さして難しくも無いはずなので、<code>import()</code>へ置き換えるだけでよさそう</p>
+
+<h3>
+<span id="importについてもうちょっと深いトピック" class="fragment"></span><a href="#import%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E3%82%82%E3%81%86%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E6%B7%B1%E3%81%84%E3%83%88%E3%83%94%E3%83%83%E3%82%AF"><i class="fa fa-link"></i></a>import()についてもうちょっと深いトピック</h3>
+
+<h4>
+<span id="webpackでのimportの制限" class="fragment"></span><a href="#webpack%E3%81%A7%E3%81%AEimport%E3%81%AE%E5%88%B6%E9%99%90"><i class="fa fa-link"></i></a>webpackでの<code>import()</code>の制限</h4>
+
+<p>なんとなく<code>import()</code>の構文を見ると</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">lazy</span> <span class="o">=</span> <span class="p">(</span><span class="nx">modulePath</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="k">import</span><span class="p">(</span><span class="nx">modulePath</span><span class="p">)</span>
+</pre></div></div>
+
+<p>的なことが出来そうな気がしてしまうが、これは下記のようなWarningが出る</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="mi">10</span><span class="p">:</span><span class="mi">9</span><span class="o">-</span><span class="mi">22</span> <span class="nx">Critical</span> <span class="nx">dependency</span><span class="p">:</span> <span class="nx">the</span> <span class="nx">request</span> <span class="k">of</span> <span class="nx">a</span> <span class="nx">dependency</span> <span class="nx">is</span> <span class="nx">an</span> <span class="nx">expression</span>
+</pre></div></div>
+
+<p>webpackにおいては、<code>import()</code>をビルド時に静的解決するので、これが出来ないような作りになっている。</p>
+
+<p>実際のビルド結果では、不正なパッケージとして扱われ、その実態は<code>webpackEmptyContext</code>に置き換えられてしまう。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">lazySomeApp</span> <span class="o">=</span> <span class="nx">lazy</span><span class="p">(</span><span class="dl">"</span><span class="s2">./SomeApp</span><span class="dl">"</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">lazy</span> <span class="o">=</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">281</span><span class="p">)(</span><span class="nx">path</span><span class="p">);</span>
+
+<span class="cm">/***/</span> <span class="mi">281</span><span class="p">:</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="kd">function</span> <span class="nx">webpackEmptyContext</span><span class="p">(</span><span class="nx">req</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="dl">"</span><span class="s2">Cannot find module '</span><span class="dl">"</span> <span class="o">+</span> <span class="nx">req</span> <span class="o">+</span> <span class="dl">"</span><span class="s2">'.</span><span class="dl">"</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">webpackEmptyContext</span><span class="p">.</span><span class="nx">keys</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="p">[];</span> <span class="p">};</span>
+<span class="nx">webpackEmptyContext</span><span class="p">.</span><span class="nx">resolve</span> <span class="o">=</span> <span class="nx">webpackEmptyContext</span><span class="p">;</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">webpackEmptyContext</span><span class="p">;</span>
+<span class="nx">webpackEmptyContext</span><span class="p">.</span><span class="nx">id</span> <span class="o">=</span> <span class="mi">281</span><span class="p">;</span>
+
+<span class="cm">/***/</span> <span class="p">}),</span>
+
+</pre></div></div>
+
+<h4>
+<span id="babel-plugin-syntax-dynamic-import" class="fragment"></span><a href="#babel-plugin-syntax-dynamic-import"><i class="fa fa-link"></i></a>babel-plugin-syntax-dynamic-import</h4>
+
+<p>babelの<code>babel-plugin-syntax-dynamic-import</code>を使うやり方も記載されている。</p>
+
+<p><a href="https://webpack.js.org/guides/code-splitting-async/#usage-with-babel" class="autolink" rel="nofollow noopener" target="_blank">https://webpack.js.org/guides/code-splitting-async/#usage-with-babel</a></p>
+
+<p>webpack側では解決されず、ただのpromiseに変換される。ファイル分割もされなくなる。<br>
+「import()は使いたいけどコード分離はしたくない」とかの場合には使えるかもしれない。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// babelがimport()をこんな感じの関数に置き換える。ただのpromiseになる</span>
+<span class="kd">const</span> <span class="nx">importConverted</span> <span class="o">=</span> <span class="p">(</span><span class="nx">module</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nb">Promise</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">module</span><span class="p">)</span>
+</pre></div></div>
+
+<h4>
+<span id="typescriptとの組み合わせ" class="fragment"></span><a href="#typescript%E3%81%A8%E3%81%AE%E7%B5%84%E3%81%BF%E5%90%88%E3%82%8F%E3%81%9B"><i class="fa fa-link"></i></a>TypeScriptとの組み合わせ</h4>
+
+<p>TypeScriptと組み合わせた時、現状だと構文エラー扱いになってしまう。<br>
+<a href="https://github.com/Microsoft/TypeScript/issues/12364" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/Microsoft/TypeScript/issues/12364</a></p>
+
+<p><code>import()</code>を利用する箇所だけ<code>js</code>ファイル化する妥協が必要になる。型がつかない問題もあるものの、そのへんは<code>d.ts</code>の型定義ファイルを別で作るか、2.3以上から対応された<a href="https://github.com/Microsoft/TypeScript/wiki/JSDoc-support-in-JavaScript" rel="nofollow noopener" target="_blank">JSDoc</a>でカバーすると良さそう。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// import.js</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">lazySomeApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">import</span><span class="p">(</span><span class="dl">"</span><span class="s2">./SomeApp</span><span class="dl">"</span><span class="p">)</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// import.d.ts</span>
+<span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">SomeApp</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./SomeApp</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">lazySomeApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">Promise</span><span class="o">&lt;</span><span class="k">typeof</span> <span class="nx">SomeApp</span><span class="o">&gt;</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// Typescript 2.3以降でのJSDoc利用</span>
+<span class="cm">/**
+ * @template T
+ * @return {Promise&lt;T&gt;}
+ */</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">lazySomeApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">import</span><span class="p">(</span><span class="dl">"</span><span class="s2">./SomeApp</span><span class="dl">"</span><span class="p">)</span>
+</pre></div></div>
+
+<p>その他にもissueでは、<code>_import()</code>でちょろまかす手段も提案されている。かなりトリッキーかもしれない。<br>
+<a href="https://github.com/Microsoft/TypeScript/issues/12364#issuecomment-270819757" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/Microsoft/TypeScript/issues/12364#issuecomment-270819757</a></p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="nx">declare</span> <span class="kd">function</span> <span class="nx">_import</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">path</span><span class="p">:</span> <span class="nx">string</span><span class="p">):</span> <span class="nb">Promise</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">lazyPromise</span> <span class="o">=</span> <span class="nx">_import</span><span class="p">(</span><span class="dl">"</span><span class="s2">./SomeApp</span><span class="dl">"</span><span class="p">)</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// webpack.config.js</span>
+<span class="c1">// webpack側でこれを置き換えている。力技感</span>
+<span class="p">{</span>
+    <span class="nl">loader</span><span class="p">:</span> <span class="dl">'</span><span class="s1">string-replace-loader</span><span class="dl">'</span><span class="p">,</span>
+    <span class="nx">options</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nl">search</span><span class="p">:</span> <span class="dl">'</span><span class="s1">_import(</span><span class="dl">'</span><span class="p">,</span>
+        <span class="nx">replace</span><span class="p">:</span> <span class="dl">'</span><span class="s1">import(</span><span class="dl">'</span>
+    <span class="p">}</span>
+<span class="p">},</span>
+</pre></div></div>
+
+<h2>
+<span id="reactとの組み合わせ" class="fragment"></span><a href="#react%E3%81%A8%E3%81%AE%E7%B5%84%E3%81%BF%E5%90%88%E3%82%8F%E3%81%9B"><i class="fa fa-link"></i></a>reactとの組み合わせ</h2>
+
+<p>非同期なcomponentをreactで扱おうとすると一工夫する必要が出て来る。<br>
+そんなに難しいものではないので<a href="https://reacttraining.com/react-router/web/guides/code-splitting" rel="nofollow noopener" target="_blank">react-routerのcode splitting</a>ページあたりを参考に作るでも良いが、ざっくり調べるとこのへんがあった</p>
+
+<ul>
+<li>
+<a href="https://github.com/xtuc/async-reactor/" rel="nofollow noopener" target="_blank">async-reactor</a>
+
+<ul>
+<li>Star: 200 over</li>
+<li>
+<code>async/await</code>をベースにしたcomponentローダー</li>
+<li>コードベースが小さく素直な作りに見える</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/ctrlplusb/react-async-component" rel="nofollow noopener" target="_blank">react-async-component</a>
+
+<ul>
+<li>Star: 300 over</li>
+<li>ベータ扱い</li>
+<li>SSRも対応している</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/thejameskyle/react-loadable" rel="nofollow noopener" target="_blank">react-loadable</a>
+
+<ul>
+<li>Star: 2000 over</li>
+<li>Issueが閉じられてPull Requ受付のみになっている。</li>
+<li>内部で色々やっている</li>
+</ul>
+</li>
+</ul>
+
+<p>react-loadableは良いのだがissueを受け付けてないという点に少々怖さもあり、個人的に利用するならasync-reactorかreact-async-componentが良さそうだなと感じている。</p>
+
+<h1>
+<span id="おまけ更なるcode-splittingについても少し調べる" class="fragment"></span><a href="#%E3%81%8A%E3%81%BE%E3%81%91%E6%9B%B4%E3%81%AA%E3%82%8Bcode-splitting%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E3%82%82%E5%B0%91%E3%81%97%E8%AA%BF%E3%81%B9%E3%82%8B"><i class="fa fa-link"></i></a>（おまけ）更なるCode splittingについても少し調べる</h1>
+
+<p>ちょっと実戦投入するには勇気がいりそうなものを触りだけ。</p>
+
+<h2>
+<span id="swprecachewebpackplugin" class="fragment"></span><a href="#swprecachewebpackplugin"><i class="fa fa-link"></i></a>SWPrecacheWebpackPlugin</h2>
+
+<p><a href="https://github.com/goldhand/sw-precache-webpack-plugin" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/goldhand/sw-precache-webpack-plugin</a></p>
+
+<p>service-workerのPrecacheをする</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">SWPrecacheWebpackPlugin</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">sw-precache-webpack-plugin</span><span class="dl">'</span><span class="p">)</span>
+<span class="c1">// ...</span>
+<span class="c1">// ...</span>
+<span class="c1">// ...</span>
+<span class="nx">plugins</span><span class="p">:</span> <span class="p">[</span>
+  <span class="k">new</span> <span class="nx">SWPrecacheWebpackPlugin</span><span class="p">({</span>
+    <span class="na">cacheId</span><span class="p">:</span> <span class="dl">'</span><span class="s1">dynamic-example</span><span class="dl">'</span><span class="p">,</span>
+  <span class="p">})</span>
+</pre></div></div>
+
+<p>これを実行すると、<code>service-worker.js</code>というファイルが出力される。<br>
+これを下記のように読み込むことでservice-workerが有効になる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="dl">'</span><span class="s1">serviceWorker</span><span class="dl">'</span> <span class="k">in</span> <span class="nb">navigator</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nb">navigator</span><span class="p">.</span><span class="nx">serviceWorker</span><span class="p">.</span><span class="nx">register</span><span class="p">(</span><span class="dl">'</span><span class="s1">service-worker.js</span><span class="dl">'</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">})();</span>
+</pre></div></div>
+
+<p>react-routerのwebsiteでも使われているが、現在はコメントアウトされている</p>
+
+<h2>
+<span id="aggressivesplittingplugin" class="fragment"></span><a href="#aggressivesplittingplugin"><i class="fa fa-link"></i></a>AggressiveSplittingPlugin</h2>
+
+<p>読んで字の如くアグレッシブに分割するplugin。特性上、ほぼHTTP2向けという謳い文句。</p>
+
+<p><a href="https://github.com/webpack/webpack/tree/master/examples/http2-aggressive-splitting" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/webpack/webpack/tree/master/examples/http2-aggressive-splitting</a></p>
+
+<p>作者による記事もある。<br>
+<a href="https://medium.com/webpack/webpack-http-2-7083ec3f3ce6" class="autolink" rel="nofollow noopener" target="_blank">https://medium.com/webpack/webpack-http-2-7083ec3f3ce6</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">plugins</span><span class="p">:</span> <span class="p">[</span>
+  <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">AggressiveSplittingPlugin</span><span class="p">({</span>
+    <span class="na">minSize</span><span class="p">:</span> <span class="mi">30000</span><span class="p">,</span>
+    <span class="na">maxSize</span><span class="p">:</span> <span class="mi">50000</span>
+  <span class="p">}),</span>
+<span class="p">]</span>
+</pre></div></div>
+
+<p>指定されたminSize以上maxSize未満を目指して分離していく。<br>
+reactあたりをimportしてみるとわかりやすく分割される</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">react</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">react</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">main</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">This is main</span><span class="dl">"</span><span class="p">)</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">react</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>0,1,2に分割される</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>      Asset     Size  Chunks             Chunk Names
+       0.js  50.4 kB       0  [emitted]
+       1.js    52 kB       1  [emitted]
+       2.js  42.4 kB       2  [emitted]
+</pre></div></div>
+
+<p><code>__webpack_require__</code>などの挙動、コードベースは特に変更されない。<br>
+また、こちらは特にlazyなloadingを目指したものではないので、<code>&lt;script&gt;</code>タグで全部読み込むのが前提に鳴る</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">src</span><span class="o">=</span><span class="dl">"</span><span class="s2">0.js</span><span class="dl">"</span><span class="o">&gt;&lt;</span><span class="sr">/script</span><span class="err">&gt;
+</span><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">src</span><span class="o">=</span><span class="dl">"</span><span class="s2">1.js</span><span class="dl">"</span><span class="o">&gt;&lt;</span><span class="sr">/script</span><span class="err">&gt;
+</span><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">src</span><span class="o">=</span><span class="dl">"</span><span class="s2">2.js</span><span class="dl">"</span><span class="o">&gt;&lt;</span><span class="sr">/script</span><span class="err">&gt;
+</span></pre></div></div>

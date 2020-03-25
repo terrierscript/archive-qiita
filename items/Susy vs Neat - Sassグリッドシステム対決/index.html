@@ -1,0 +1,401 @@
+<p>sassでグリッドデザインをするときに有効なgrid frameworkの話。</p>
+
+<h2>
+<span id="今回比較するやつら" class="fragment"></span><a href="#%E4%BB%8A%E5%9B%9E%E6%AF%94%E8%BC%83%E3%81%99%E3%82%8B%E3%82%84%E3%81%A4%E3%82%89"><i class="fa fa-link"></i></a>今回比較するやつら</h2>
+
+<p>数値は2015/02/03時点</p>
+
+<h3>
+<span id="susy" class="fragment"></span><a href="#susy"><i class="fa fa-link"></i></a><a href="http://susy.oddbird.net/" rel="nofollow noopener" target="_blank">Susy</a>
+</h3>
+
+<ul>
+<li>sassの公式サイトでも使われている（らしい）</li>
+<li>すーじーと読むらしい。（ロゴあたりをhoverすると読みが出てくる）</li>
+<li>Star数: 2367</li>
+</ul>
+
+<h3>
+<span id="neat" class="fragment"></span><a href="#neat"><i class="fa fa-link"></i></a><a href="http://neat.bourbon.io/" rel="nofollow noopener" target="_blank">Neat</a>
+</h3>
+
+<ul>
+<li>Bourbonシリーズ
+
+<ul>
+<li>Bourbonは軽量ライブラリ</li>
+</ul>
+</li>
+<li>throughbot製</li>
+<li>ドキュメントが丁寧</li>
+<li>Star数: 2632</li>
+</ul>
+
+<h2>
+<span id="今回除外したもの" class="fragment"></span><a href="#%E4%BB%8A%E5%9B%9E%E9%99%A4%E5%A4%96%E3%81%97%E3%81%9F%E3%82%82%E3%81%AE"><i class="fa fa-link"></i></a>今回除外したもの</h2>
+
+<h3>
+<span id="profound-grid" class="fragment"></span><a href="#profound-grid"><i class="fa fa-link"></i></a><a href="http://www.profoundgrid.com/" rel="nofollow noopener" target="_blank">Profound grid</a>
+</h3>
+
+<ul>
+<li>サイトが黄色い。</li>
+<li>最終更新が5ヶ月前とあまり更新が活発でなさげ</li>
+<li>Star数: 902</li>
+</ul>
+
+<p>あまり活発でなさそうなので除外。</p>
+
+<h2>
+<span id="用語" class="fragment"></span><a href="#%E7%94%A8%E8%AA%9E"><i class="fa fa-link"></i></a>用語</h2>
+
+<p>用語みたいなものが複雑な感じでぶれそうなので<br>
+一旦このドキュメントでは下記のように定義しておく。</p>
+
+<ul>
+<li>column
+
+<ul>
+<li>12分割などしたうちの1つ</li>
+</ul>
+</li>
+<li>span
+
+<ul>
+<li>複数のcolumnを含むブロック</li>
+</ul>
+</li>
+<li>gutter
+
+<ul>
+<li>columとcolumの間の空白の隙間</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="installation" class="fragment"></span><a href="#installation"><i class="fa fa-link"></i></a>Installation</h2>
+
+<p>どちらもgruntなら</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">Gruntfile.js</span></div>
+<div class="highlight"><pre><span class="nx">sass</span><span class="p">:</span> <span class="p">{</span>
+  <span class="nl">dist</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nl">options</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nl">style</span><span class="p">:</span> <span class="dl">'</span><span class="s1">expanded</span><span class="dl">'</span><span class="p">,</span>
+      <span class="nx">require</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">susy</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">neat</span><span class="dl">'</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="nx">files</span><span class="p">:</span> <span class="p">{</span>
+      <span class="dl">'</span><span class="s1">css/style.css</span><span class="dl">'</span><span class="p">:</span> <span class="dl">'</span><span class="s1">scss/style.scss</span><span class="dl">'</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>とかlibsassのrequireで利用可能。</p>
+
+<h3>
+<span id="neat-1" class="fragment"></span><a href="#neat-1"><i class="fa fa-link"></i></a>Neat</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>gem install bourbon
+gem install neat
+bourbon install
+neat install
+</pre></div></div>
+
+<p>これで素のsassファイルを管理していけば良いというのはシンプルで好き。</p>
+
+<h3>
+<span id="susy-1" class="fragment"></span><a href="#susy-1"><i class="fa fa-link"></i></a>Susy</h3>
+
+<p>bundle, compass, Bower, npmが用意されている模様。(npmはどう使うんだろう)</p>
+
+<p>bourbonライクに素のsassを使うならgithubからzip落とすとかしかなさそう。</p>
+
+<h2>
+<span id="2-column-gridの例" class="fragment"></span><a href="#2-column-grid%E3%81%AE%E4%BE%8B"><i class="fa fa-link"></i></a>2 column gridの例</h2>
+
+<p>2カラムでの場合<br>
+どちらも吐だされるコードはわりと一緒。</p>
+
+<h3>
+<span id="neat-2" class="fragment"></span><a href="#neat-2"><i class="fa fa-link"></i></a>Neat</h3>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">neat.scss</span></div>
+<div class="highlight"><pre><span class="k">@import</span> <span class="s2">"bourbon/bourbon"</span><span class="p">;</span>
+<span class="k">@import</span> <span class="s2">"neat/neat"</span><span class="p">;</span>
+
+<span class="nc">.two</span><span class="p">{</span>
+  <span class="k">@include</span> <span class="nd">outer-container</span><span class="p">();</span>
+  <span class="nc">.side</span><span class="p">{</span>
+    <span class="k">@include</span> <span class="nd">span-columns</span><span class="p">(</span><span class="m">4</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="nc">.main</span><span class="p">{</span>
+    <span class="k">@include</span> <span class="nd">span-columns</span><span class="p">(</span><span class="m">8</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<ul>
+<li>最後のcolumnに対し<code>:last-child</code>で打ち消しをしているため、susyの<code>last</code>のように付与しなくてもよいのは魅力</li>
+<li>IE8ではちょっと残念に（後述）</li>
+</ul>
+
+<h3>
+<span id="susy-2" class="fragment"></span><a href="#susy-2"><i class="fa fa-link"></i></a>Susy</h3>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">susy.scss</span></div>
+<div class="highlight"><pre><span class="k">@import</span> <span class="s2">"susy/susy"</span><span class="p">;</span>
+<span class="nv">$susy</span><span class="p">:</span> <span class="p">(</span> 
+  <span class="n">columns</span><span class="o">:</span> <span class="m">12</span><span class="o">,</span> <span class="o">//</span> <span class="err">絶対に設定が必要。最初ここではまった。</span>
+<span class="p">);</span>
+
+<span class="nc">.two</span><span class="p">{</span>
+  <span class="k">@include</span> <span class="nd">container</span><span class="p">();</span>
+  <span class="nc">.side</span><span class="p">{</span>
+    <span class="k">@include</span> <span class="nd">span</span><span class="p">(</span><span class="m">4</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="nc">.main</span><span class="p">{</span>
+    <span class="k">@include</span> <span class="nd">span</span><span class="p">(</span><span class="m">8</span> <span class="n">last</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<ul>
+<li>最終要素に<code>last</code>とつけるのはちょっとださいかもとも。</li>
+<li>これをつけると<code>float:right</code>になるので、右左を入れ替えたいとかいう時は楽ちん（邪道）</li>
+</ul>
+
+<p>2015/02/05追記：</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$susy : (
+  columns : 12,
+  gutter-position : split
+)
+</pre></div></div>
+
+<p>とすればgutterが左右均等につくのでlastなどを書かなくて良くなった。</p>
+
+<h2>
+<span id="タイル状に並ぶパターン" class="fragment"></span><a href="#%E3%82%BF%E3%82%A4%E3%83%AB%E7%8A%B6%E3%81%AB%E4%B8%A6%E3%81%B6%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3"><i class="fa fa-link"></i></a>タイル状に並ぶパターン</h2>
+
+<p>結構これはsusyのgalleryありきで比較してしまっているけど頻出パターンなので。</p>
+
+<h3>
+<span id="neat-3" class="fragment"></span><a href="#neat-3"><i class="fa fa-link"></i></a>Neat</h3>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">neat.scss</span></div>
+<div class="highlight"><pre><span class="nc">.items</span><span class="p">{</span>
+  <span class="k">@include</span> <span class="nd">outer-container</span><span class="p">();</span>
+  <span class="nc">.item</span><span class="p">{</span>
+    <span class="k">@include</span> <span class="nd">span-columns</span><span class="p">(</span><span class="m">4</span><span class="p">);</span>
+    <span class="k">@include</span> <span class="nd">omega</span><span class="p">(</span><span class="m">3n</span><span class="p">);</span> <span class="c1">// 12 / 4 で 3</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<ul>
+<li>個数を変えたくなったときに<code>span-columns</code>と<code>omega</code>をどっちも書き換えないといえないのはちょっとだるい。</li>
+<li>
+<code>nth-child(3n)</code>に対してgutterを消すようなstyleが出力される</li>
+</ul>
+
+<h3>
+<span id="susy-3" class="fragment"></span><a href="#susy-3"><i class="fa fa-link"></i></a>Susy</h3>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">susy.scss</span></div>
+<div class="highlight"><pre><span class="nc">.items</span><span class="p">{</span>
+  <span class="k">@include</span> <span class="nd">container</span><span class="p">();</span>
+  <span class="nc">.item</span><span class="p">{</span>
+    <span class="k">@include</span> <span class="nd">gallery</span><span class="p">(</span><span class="m">4</span><span class="p">);</span> <span class="c1">// 4カラムずつ</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<ul>
+<li>galleryはだいぶイケてる機能</li>
+<li>ただsusyは<code>nth-child(3n)</code>,<code>nth-child(3n+1)</code>,<code>nth-child(3n+2)</code>..と全部作る。</li>
+<li>IE8では（後述）</li>
+</ul>
+
+<h2>
+<span id="ie8対応" class="fragment"></span><a href="#ie8%E5%AF%BE%E5%BF%9C"><i class="fa fa-link"></i></a>IE8対応</h2>
+
+<p>やりたくなくてもやらなきゃいけないこの対応。</p>
+
+<h3>
+<span id="neat-4" class="fragment"></span><a href="#neat-4"><i class="fa fa-link"></i></a>Neat</h3>
+
+<p>サポートブラウザについては言及済み。<a href="https://github.com/thoughtbot/neat#browser-support" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/thoughtbot/neat#browser-support</a><br>
+<a href="http://selectivizr.com/" rel="nofollow noopener" target="_blank">selectivizr</a>を使えば対応できる、と書いてあるものの、bourbonがIE8の対応を切っているため実際どうなんだろう？という所。</p>
+
+<p>基本的なgridも</p>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">neat.scss</span></div>
+<div class="highlight"><pre><span class="nc">.two</span><span class="p">{</span>
+  <span class="k">@include</span> <span class="nd">outer-container</span><span class="p">();</span>
+  <span class="nc">.side</span><span class="p">{</span>
+    <span class="k">@include</span> <span class="nd">span-columns</span><span class="p">(</span><span class="m">4</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="nc">.main</span><span class="p">{</span>
+    <span class="k">@include</span> <span class="nd">span-columns</span><span class="p">(</span><span class="m">8</span><span class="p">);</span>
+    <span class="k">@include</span> <span class="nd">omega</span><span class="p">();</span> <span class="c1">// for IE8</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>このように<code>omega()</code>をつけないとダメっぽい。<br>
+これだとsusyと似た感じに（または記述が長いのでより悪いかも）</p>
+
+<p>参考 : <a href="https://github.com/thoughtbot/neat/issues/165" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/thoughtbot/neat/issues/165</a></p>
+
+<h3>
+<span id="susy-4" class="fragment"></span><a href="#susy-4"><i class="fa fa-link"></i></a>Susy</h3>
+
+<p>サポートブラウザについても明言は見当たらない。<br>
+TODOには<code>Add IE support to new syntax.</code>というのが見当たる。<br>
+またissueを見ているとNeatよりは答えてくれている印象。</p>
+
+<p>galleryについてはgutterが綺麗にいかない。<br>
+ちょっとトリッキーだが</p>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">susy.scss</span></div>
+<div class="highlight"><pre><span class="nc">.items</span><span class="p">{</span>
+  <span class="k">@include</span> <span class="nd">container</span><span class="p">();</span>
+  <span class="nc">.item</span><span class="p">{</span>
+    <span class="c1">// @include gallery(4);</span>
+    <span class="k">@include</span> <span class="nd">span</span><span class="p">(</span><span class="m">4</span> <span class="nb">inside</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>とすることで等間隔のブロックを作る事ができる。<br>
+<code>inside</code>はgutterをspanの中に内包してしまうやり方。まあこれだと<code>width : 33%</code>とほぼ等価かもしれないけど・・・</p>
+
+<p>参考：</p>
+
+<ul>
+<li><a href="http://stackoverflow.com/questions/24639512/susy-2-gallery-mixin-is-incompatible-with-ie8-workaround" class="autolink" rel="nofollow noopener" target="_blank">http://stackoverflow.com/questions/24639512/susy-2-gallery-mixin-is-incompatible-with-ie8-workaround</a></li>
+<li><a href="https://github.com/ericam/susy/issues/363" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ericam/susy/issues/363</a></li>
+</ul>
+
+<h2>
+<span id="config変数" class="fragment"></span><a href="#config%E5%A4%89%E6%95%B0"><i class="fa fa-link"></i></a>config変数</h2>
+
+<h3>
+<span id="neat-5" class="fragment"></span><a href="#neat-5"><i class="fa fa-link"></i></a>Neat</h3>
+
+<p>ずらずらっと変数で記載。</p>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">neat.scss</span></div>
+<div class="highlight"><pre><span class="nv">$column</span><span class="p">:</span> <span class="m">90px</span><span class="p">;</span>
+<span class="nv">$gutter</span><span class="p">:</span> <span class="m">30px</span><span class="p">;</span>
+<span class="nv">$grid-columns</span><span class="p">:</span> <span class="m">10</span><span class="p">;</span>
+<span class="nv">$max-width</span><span class="p">:</span> <span class="nf">em</span><span class="p">(</span><span class="m">1088</span><span class="p">);</span>
+</pre></div>
+</div>
+
+<p>途中で潰せるように<code>@mixin reset-all()</code>なんていうのもあったけどなんだか危なっかしいイメージ。</p>
+
+<h3>
+<span id="susy-5" class="fragment"></span><a href="#susy-5"><i class="fa fa-link"></i></a>Susy</h3>
+
+<p>mapで記載。ナウい。</p>
+
+<div class="code-frame" data-lang="scss">
+<div class="code-lang"><span class="bold">susy.scss</span></div>
+<div class="highlight"><pre><span class="nv">$susy</span><span class="p">:</span> <span class="p">(</span>
+  <span class="n">columns</span><span class="o">:</span> <span class="m">12</span><span class="o">,</span>
+  <span class="n">gutters</span><span class="o">:</span> <span class="m">1</span><span class="o">/</span><span class="m">4</span><span class="o">,</span>
+  <span class="n">math</span><span class="o">:</span> <span class="n">fluid</span><span class="o">,</span>
+  <span class="n">output</span><span class="o">:</span> <span class="n">float</span><span class="o">,</span>
+  <span class="n">gutter-position</span><span class="o">:</span> <span class="nb">inside</span><span class="o">,</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+
+<p>スコープ毎に設定する仕組みっぽい。<br>
+しかし結構色々変数がありすぎてちょっと理解に時間かかりそう</p>
+
+<h2>
+<span id="responsive" class="fragment"></span><a href="#responsive"><i class="fa fa-link"></i></a>responsive</h2>
+
+<p>あんまり必要に迫られてないのでちゃんと調べてない</p>
+
+<h3>
+<span id="neat-6" class="fragment"></span><a href="#neat-6"><i class="fa fa-link"></i></a>Neat</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$mobile: new-breakpoint(max-width 480px 4);
+
+@include media($mobile) {
+  @include span-columns(4);
+}
+</pre></div></div>
+
+<p>breakpointというmobileとそうじゃないときの分岐点を決めて<code>@include media</code>で分岐部分を記載する。</p>
+
+<h3>
+<span id="susy-6" class="fragment"></span><a href="#susy-6"><i class="fa fa-link"></i></a>Susy</h3>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>// mobile 
+@include susy-breakpoint(0 480px, 4) {
+  .example { @include span(3); }
+}
+
+</pre></div></div>
+
+<p>breakpointという考えはだいたい一緒。ちょっとmixinの入力が値がひとつだと<code>min-width</code>扱いされるようなので注意。</p>
+
+<h2>
+<span id="その他" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96"><i class="fa fa-link"></i></a>その他</h2>
+
+<h3>
+<span id="susyのfunction" class="fragment"></span><a href="#susy%E3%81%AEfunction"><i class="fa fa-link"></i></a>Susyのfunction</h3>
+
+<p>susyは幅計算などを関数単体として呼べるようになっている。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>.item {
+  width: span(2);
+}
+</pre></div></div>
+
+<p>APIを見てもだいぶ低レイヤーなことまで出来るイメージ。</p>
+
+<h2>
+<span id="雑感" class="fragment"></span><a href="#%E9%9B%91%E6%84%9F"><i class="fa fa-link"></i></a>雑感</h2>
+
+<ul>
+<li>なんとなくsusy寄りになってしまっているなあと思うけどsusyは確かに悪くないかなあと思った。
+
+<ul>
+<li>結構<a href="http://www.sitepoint.com/sass-grids-neat-susy/" rel="nofollow noopener" target="_blank">NeatからSusyにした</a>みたいな記事などある。</li>
+</ul>
+</li>
+<li>ドキュメントは個人的にはneatのほうが断然わかりやすかった
+
+<ul>
+<li>Neatのほうがコンパクトというのもあるだろう。</li>
+</ul>
+</li>
+<li>IE8まで考えるとsusyのほうがよさそうかもという体感。
+
+<ul>
+<li>issue見ていてもbourbn勢はIE8に冷たい</li>
+</ul>
+</li>
+</ul>

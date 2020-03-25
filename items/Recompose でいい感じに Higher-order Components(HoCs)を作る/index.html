@@ -1,0 +1,252 @@
+
+<h1>
+<span id="recompose" class="fragment"></span><a href="#recompose"><i class="fa fa-link"></i></a><a href="https://github.com/acdlite/recompose/" rel="nofollow noopener" target="_blank">Recompose</a>
+</h1>
+
+<p>RecomposeはHigher-order Componentsをサポートするライブラリ。</p>
+
+<p>Higher-order Componentsについては下記記事で軽くまとめた。</p>
+
+<ul>
+<li><a href="http://qiita.com/inuscript/items/6eb6076a7e5237a2911a" id="reference-cfde58af8992857355ec">ReactのHigher-order Component(HoCs)に関するメモ</a></li>
+</ul>
+
+<h2>
+<span id="どんなライブラリ" class="fragment"></span><a href="#%E3%81%A9%E3%82%93%E3%81%AA%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA"><i class="fa fa-link"></i></a>どんなライブラリ？</h2>
+
+<ul>
+<li>HoCsを作成・提供するための便利関数ライブラリ</li>
+<li>「lodash的なノリで、関数群をまとめている」とのこと </li>
+<li>作者は<a href="https://github.com/acdlite/flummox" rel="nofollow noopener" target="_blank">flummox</a>や<a href="https://github.com/acdlite/redux-actions" rel="nofollow noopener" target="_blank">react-action</a>など、reactやredux関連を多く作っているライブラリの作者。</li>
+<li>まだ 0.20で微妙にAPIは安定してない部分もアリ</li>
+</ul>
+
+<h1>
+<span id="まずはサンプル" class="fragment"></span><a href="#%E3%81%BE%E3%81%9A%E3%81%AF%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB"><i class="fa fa-link"></i></a>まずはサンプル</h1>
+
+<h2>
+<span id="例-未サポートブラウザの時にメッセージ出す" class="fragment"></span><a href="#%E4%BE%8B-%E6%9C%AA%E3%82%B5%E3%83%9D%E3%83%BC%E3%83%88%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B6%E3%81%AE%E6%99%82%E3%81%AB%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E5%87%BA%E3%81%99"><i class="fa fa-link"></i></a>例： 未サポートブラウザの時にメッセージ出す</h2>
+
+<p>説明だけだとわかりづらいので、個人的に一番とっつきやすかった<code>branch</code>を使って、特定のブラウザの場合に「お使いのブラウザはサポートされてません」と出すサンプルを書いてみる。</p>
+
+<h3>
+<span id="普通のreactcomponentで書くrecomposeナシ" class="fragment"></span><a href="#%E6%99%AE%E9%80%9A%E3%81%AEreactcomponent%E3%81%A7%E6%9B%B8%E3%81%8Frecompose%E3%83%8A%E3%82%B7"><i class="fa fa-link"></i></a>普通の<code>React.Component</code>で書く（Recomposeナシ）</h3>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">export</span> <span class="kd">const</span> <span class="nx">NotSupportedMessage</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">h3</span><span class="o">&gt;</span><span class="err">お使いのブラウザはサポートされておりません</span><span class="o">&lt;</span><span class="sr">/h3</span><span class="err">&gt;
+</span>
+<span class="k">export</span> <span class="k">default</span> <span class="kd">class</span> <span class="nx">MainApp</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">isSupportedPlatform</span><span class="p">(){</span>
+    <span class="k">if</span><span class="p">(</span><span class="cm">/*ブラウザが未サポートかの判定*/</span><span class="p">){</span>
+      <span class="k">return</span> <span class="kc">false</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kc">true</span>
+  <span class="p">}</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">isSupportedPlatform</span><span class="p">()){</span>
+      <span class="k">return</span> <span class="o">&lt;</span><span class="nx">NotSupportedMessage</span> <span class="o">/&gt;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">SomeApp</span><span class="dl">"</span><span class="o">&gt;</span>
+        <span class="err">何らかのアプリケーション</span>
+      <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>まあこれでも全然問題ない。が、本筋の<code>SomeApp</code>の部分までスッとたどり着いていないし、このあたりの処理が肥大化すると色々辛いことになりそうなのが見える。</p>
+
+<h3>
+<span id="higher-order-componentで書くrecomposeアリ" class="fragment"></span><a href="#higher-order-component%E3%81%A7%E6%9B%B8%E3%81%8Frecompose%E3%82%A2%E3%83%AA"><i class="fa fa-link"></i></a>Higher-order Componentで書く(Recomposeアリ）</h3>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">branch</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">recompose/branch</span><span class="dl">'</span>
+<span class="k">import</span> <span class="nx">renderComponent</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">recompose/renderComponent</span><span class="dl">'</span>
+
+<span class="c1">// branchは、下記のように引数を取る</span>
+<span class="c1">// branch(判定関数, trueの時, falseの時)</span>
+
+<span class="kd">const</span> <span class="nx">NotSupportedMessage</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">h3</span><span class="o">&gt;</span><span class="err">お使いのブラウザはサポートされておりません</span><span class="o">&lt;</span><span class="sr">/h3</span><span class="err">&gt;
+</span>
+<span class="kd">const</span> <span class="nx">SomeMyApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">SomeApp</span><span class="dl">"</span><span class="o">&gt;</span>
+    <span class="err">何らかのアプリケーション</span>
+  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">isSupportedBrowser</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="cm">/*ブラウザが未サポートかの判定*/</span><span class="p">){</span>
+    <span class="k">return</span> <span class="kc">false</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">withBrowserCheck</span> <span class="o">=</span> <span class="nx">branch</span><span class="p">(</span>
+  <span class="nx">isSupportedBrowser</span><span class="p">,</span>
+  <span class="nx">component</span> <span class="o">=&gt;</span> <span class="nx">component</span><span class="p">,</span> <span class="c1">// trueの時は、受け取っていた引数をそのまま流用</span>
+  <span class="nx">renderComponent</span><span class="p">(</span><span class="nx">NotSupportedMessage</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">MainApp</span> <span class="o">=</span> <span class="nx">withBrowserCheck</span><span class="p">(</span><span class="nx">SomeMyApp</span><span class="p">)</span>
+</pre></div></div>
+
+<p><code>withBrowserCheck</code>がHigerOrderCoponentとして、<code>ReactComponent</code>を渡すと、ブラウザチェックを挟んだ状態の<code>SomeMyApp</code>を<code>ReactComponent</code>として返してくれるようになる。</p>
+
+<p>また、もし「desktopだけの判定もいれたい」とかになったら、下記のような感じで拡張されるので、本筋の<code>SomeMyApp</code>の肥大化が防げる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">MainApp</span> <span class="o">=</span> <span class="nx">compose</span><span class="p">(</span><span class="nx">withBrowserCheck</span><span class="p">,</span> <span class="nx">withDeviceCheck</span><span class="p">)(</span><span class="nx">SomeMyApp</span><span class="p">)</span>
+</pre></div></div>
+
+<h1>
+<span id="recomposeが提供してる関数の種類など" class="fragment"></span><a href="#recompose%E3%81%8C%E6%8F%90%E4%BE%9B%E3%81%97%E3%81%A6%E3%82%8B%E9%96%A2%E6%95%B0%E3%81%AE%E7%A8%AE%E9%A1%9E%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>Recomposeが提供してる関数の種類など</h1>
+
+<p>だいたいこんなあたりがある。</p>
+
+<ul>
+<li>
+<p><a href="https://github.com/acdlite/recompose#perform-the-most-common-react-patterns" rel="nofollow noopener" target="_blank">StateやらContextをWrapして隠したりする系</a></p>
+
+<ul>
+<li>
+<a href="https://git.io/vodCm#withstate" rel="nofollow noopener" target="_blank"><code>withState()</code></a> , <a href="https://git.io/vodCm#withcontext" rel="nofollow noopener" target="_blank"><code>withContext()</code></a>,　<a href="https://git.io/vodCm#withreducer" rel="nofollow noopener" target="_blank"><code>withReducer()</code></a> , <a href="https://git.io/vodCm#shouldupdate" rel="nofollow noopener" target="_blank"><code>shouldUpdate()</code></a>など</li>
+<li>stateやらcontextを利用したり。</li>
+<li>
+<code>withReudcer()</code>は、ReduxやFlux Utilなどから影響受けている感じ。</li>
+</ul>
+</li>
+<li>
+<p>Propsを色々うまいことする系</p>
+
+<ul>
+<li>
+<a href="https://git.io/vodCm#mapprops" rel="nofollow noopener" target="_blank"><code>mapProps()</code></a> , <a href="https://git.io/vodCm#withprops" rel="nofollow noopener" target="_blank"><code>withProps()</code></a>, <a href="https://git.io/vodCm#defaultprops" rel="nofollow noopener" target="_blank"><code>defaultProps()</code></a>, <a href="https://git.io/vodCm#flattenprop" rel="nofollow noopener" target="_blank"><code>flattenProp()</code></a>, など</li>
+<li>
+<code>branch</code>の次に扱いやすそうだなと思った分類。</li>
+<li>
+<code>withProps</code>は<code>&lt;Some hoge={fuga} /&gt;</code>を<code>withProps({hoge: fuga})(Some)</code>とかに出来る。</li>
+<li>
+<code>defaultProps</code>とうまく組み合わせると結構良い。</li>
+</ul>
+</li>
+<li>
+<p>Lifecycle扱う系</p>
+
+<ul>
+<li>
+<a href="https://git.io/vodCm#shouldupdate" rel="nofollow noopener" target="_blank"><code>shouldUpdate()</code></a>、<a href="https://git.io/vodCm#lifecycle" rel="nofollow noopener" target="_blank">lifecycle</a>
+</li>
+<li>
+<code>Stateless Functional</code>でも<code>React.Component</code>でのライフライクルを扱えるようになる。</li>
+<li>
+<code>shouldUpdate</code>は、第一引数としてtest関数を渡すので、スマートに書けそう</li>
+</ul>
+</li>
+<li>
+<p><a href="https://git.io/vodCm#observable-utilities" rel="nofollow noopener" target="_blank">Observebleなライブラリと組み合わせる系</a></p>
+
+<ul>
+<li>
+<a href="https://git.io/vodCm#componentfromstream" rel="nofollow noopener" target="_blank"><code>componentFromStream()</code></a>, <a href="https://git.io/vodCm#mappropsstream" rel="nofollow noopener" target="_blank"><code>mapPropsStream()</code></a>, <a href="https://git.io/vodCm#createEventHandler" rel="nofollow noopener" target="_blank"><code>createEventHandler()</code></a>, <a href="https://git.io/vodCm#setobservableconfig" rel="nofollow noopener" target="_blank"><code>setObservableConfig()</code></a>
+</li>
+<li>元々、<code>rx-recompose</code>として別ライブラリでpublishされていたが、最近のバージョンアップで統合した。</li>
+<li>
+<code>RxJS</code>だけでなく、<code>most</code>、<code>kefir</code>、<code>Bacon</code>、<code>xstream</code>など、だいたい一通りのStreamライブラリ使えるっぽい</li>
+</ul>
+</li>
+<li>
+<p><a href="https://git.io/vodCm#static-property-helpers" rel="nofollow noopener" target="_blank">Staticなpropertyを与える</a></p>
+
+<ul>
+<li>
+<a href="https://git.io/vodCm#setstatic" rel="nofollow noopener" target="_blank"><code>setStatic()</code></a>, <a href="https://git.io/vodCm#setproptypes" rel="nofollow noopener" target="_blank"><code>setPropTypes()</code></a>, <a href="https://git.io/vodCm#setdisplayname" rel="nofollow noopener" target="_blank"><code>setDisplayName()</code></a>
+</li>
+<li>
+<code>propTypes</code>や<code>displayName</code>などComponentにstaticに与えられるプロパティを与える。</li>
+</ul>
+</li>
+<li>
+<p>Renderをいい感じにする系</p>
+
+<ul>
+<li>
+<a href="https://git.io/vodCm#branch" rel="nofollow noopener" target="_blank"><code>branch()</code></a>, <a href="https://git.io/vodCm#rendercomponent" rel="nofollow noopener" target="_blank"><code>renderComponent()</code></a>, <a href="https://git.io/vodCm#rendernothing" rel="nofollow noopener" target="_blank"><code>renderNothing()</code></a>
+</li>
+<li>Sampleで触れたので省略</li>
+</ul>
+</li>
+<li>
+<p><a href="https://github.com/acdlite/recompose#perform-the-most-common-react-patterns" rel="nofollow noopener" target="_blank">Reactのよくあるパターンを再現したりする</a></p>
+
+<ul>
+<li>
+<a href="https://git.io/vodCm#componentfromprop" rel="nofollow noopener" target="_blank"><code>componentFromProp()</code></a>,</li>
+<li>READMEのサンプルにある。</li>
+<li>ぶっちゃけあんまりまだちゃんと理解出来てない</li>
+</ul>
+</li>
+<li>
+<p><a href="https://github.com/acdlite/recompose#optimize-rendering-performance" rel="nofollow noopener" target="_blank">パフォーマンスをいい感じにする系</a></p>
+
+<ul>
+<li>
+<a href="https://git.io/vodCm#onlyupdateforkeys" rel="nofollow noopener" target="_blank"><code>onlyUpdateForKeys()</code></a>, <a href="https://git.io/vodCm#onlyupdateforproptypes" rel="nofollow noopener" target="_blank"><code>onlyUpdateForPropTypes()</code></a> など</li>
+<li>READMEのサンプルにある。</li>
+<li>updateする対象を絞ったりしてパフォーマンス調整に役立たせられる</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<h2>
+<span id="雑感良かった所" class="fragment"></span><a href="#%E9%9B%91%E6%84%9F%E8%89%AF%E3%81%8B%E3%81%A3%E3%81%9F%E6%89%80"><i class="fa fa-link"></i></a>雑感・良かった所</h2>
+
+<ul>
+<li>
+<a href="https://facebook.github.io/react/docs/reusable-components.html#stateless-functions" rel="nofollow noopener" target="_blank"><code>Stateless Function</code></a>を推してる感じがする。</li>
+<li>HoCsの下記の利点が活かしやすい
+
+<ul>
+<li>
+<a href="https://medium.com/@dan_abramov/smart-and-dumb-components-7ca2f9a7c7d0#.3e46v6pu3" rel="nofollow noopener" target="_blank">"smart" vs "dumb" component pattern</a>にのっとりやすい</li>
+<li>Component巨大化を押さえやすい</li>
+<li>HoCsに対するテストしやすい</li>
+<li>再利用性を高くしやすい</li>
+</ul>
+</li>
+<li>いわゆるテンプレート的なviewとロジックをどんどん分離出来る感覚がとても良い
+
+<ul>
+<li>
+<code>withProps</code>あたりをうまく扱えると、<code>Component</code>が素のtemplateっぽくなっていって良い</li>
+</ul>
+</li>
+<li>jsxの記述が減らしやすい
+
+<ul>
+<li>テンプレート的な扱いをするComponent以外だとほとんどjsxいらないとすら言えそう</li>
+</ul>
+</li>
+<li>HoCsは簡単に自前実装出来るが、ちょっとだけ自前より嬉しい事が多い。
+
+<ul>
+<li>いい感じにHoCsの名前をつけてくれたりするので、デバッグに役立つ</li>
+<li>
+<code>compose</code>など、自前だと微妙に面倒な部分を提供してくれる</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="良くなかった所注意点" class="fragment"></span><a href="#%E8%89%AF%E3%81%8F%E3%81%AA%E3%81%8B%E3%81%A3%E3%81%9F%E6%89%80%E6%B3%A8%E6%84%8F%E7%82%B9"><i class="fa fa-link"></i></a>良くなかった所、注意点</h2>
+
+<ul>
+<li>HoCsに慣れるまでちょっとつらい。</li>
+<li>やりすぎると可読性酷くなりかねない</li>
+<li>jsxの記述量減っても、全体のコード量増えそう
+
+<ul>
+<li>一周回って「あれ、これjsxの方が簡素に書けてね？」みたいな事がたまにある</li>
+</ul>
+</li>
+</ul>

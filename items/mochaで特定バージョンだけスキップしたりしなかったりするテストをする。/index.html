@@ -1,0 +1,19 @@
+<p><a href="http://qiita.com/inuscript/items/f5dd5eacb10085d15ff7" id="reference-2e326bbf082a6c3e6318">circle-ciで複数バージョンを検証</a>できるようにしたので、特定バージョンだけでやるテストを書きたい。</p>
+
+<p><code>process.version</code>で現在のnodeのバージョンは取れるので、そこに<code>semver</code>を組み合わせると手軽にできる</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">mocha.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">semver</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">semver</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">describe</span><span class="p">(</span><span class="dl">"</span><span class="s2">何らかのテスト</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="kd">var</span> <span class="nx">itFn</span> <span class="o">=</span> <span class="nx">it</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">semver</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">version</span><span class="p">,</span> <span class="dl">'</span><span class="s1"> &lt; 0.12</span><span class="dl">'</span><span class="p">)){</span>
+    <span class="nx">itFn</span> <span class="o">=</span> <span class="nx">it</span><span class="p">.</span><span class="nx">skip</span>
+  <span class="p">}</span>
+
+  <span class="nx">itFn</span><span class="p">(</span><span class="dl">"</span><span class="s2">0.12以上ならやるテスト</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="c1">// test...</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+</pre></div>
+</div>

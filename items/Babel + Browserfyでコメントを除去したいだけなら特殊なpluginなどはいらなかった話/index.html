@@ -1,0 +1,62 @@
+<p>minifyじゃない。コメントだけ消したいんだよ！<br>
+みたいなのにちょっと苦戦したのでメモ。</p>
+
+<h1>
+<span id="結論" class="fragment"></span><a href="#%E7%B5%90%E8%AB%96"><i class="fa fa-link"></i></a>結論</h1>
+
+<p>特にpluginなどはいらなかった。<code>babelify</code>で十分</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">gulp</span><span class="p">.</span><span class="nx">task</span><span class="p">(</span><span class="dl">'</span><span class="s1">babel-build</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">browserify</span><span class="p">({</span>
+    <span class="na">entries</span><span class="p">:</span> <span class="dl">"</span><span class="s2">someFile.js</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">extensions</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">js</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">jsx</span><span class="dl">'</span><span class="p">],</span>
+  <span class="p">})</span>
+  <span class="p">.</span><span class="nx">transform</span><span class="p">(</span><span class="nx">babelify</span><span class="p">.</span><span class="nx">configure</span><span class="p">({</span>
+    <span class="na">comments</span><span class="p">:</span> <span class="kc">false</span> <span class="c1">// これ！</span>
+  <span class="p">}))</span>
+  <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">source</span><span class="p">(</span><span class="dl">"</span><span class="s2">bundle.js</span><span class="dl">"</span><span class="p">))</span>
+  <span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">gulp</span><span class="p">.</span><span class="nx">dest</span><span class="p">(</span><span class="dl">"</span><span class="s2">/dest</span><span class="dl">"</span><span class="p">))</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="ドキュメントとか" class="fragment"></span><a href="#%E3%83%89%E3%82%AD%E3%83%A5%E3%83%A1%E3%83%B3%E3%83%88%E3%81%A8%E3%81%8B"><i class="fa fa-link"></i></a>ドキュメントとか</h2>
+
+<p><a href="https://babeljs.io/docs/usage/options/" class="autolink" rel="nofollow noopener" target="_blank">https://babeljs.io/docs/usage/options/</a><br>
+↑<br>
+ここ。<br>
+<code>comments</code>オプションがあった。最初は「コメント除去とかはbabelの責務なわけ無い」と思ってたけどどうもそうでもないらしい。思い込みだった。<br>
+sourcemapとかも多分一番綺麗に対応してくれる気がする。</p>
+
+<h2>
+<span id="経緯とかメモとか" class="fragment"></span><a href="#%E7%B5%8C%E7%B7%AF%E3%81%A8%E3%81%8B%E3%83%A1%E3%83%A2%E3%81%A8%E3%81%8B"><i class="fa fa-link"></i></a>経緯とかメモとか</h2>
+
+<ul>
+<li>最初、<a href="https://www.npmjs.com/package/gulp-uglify" rel="nofollow noopener" target="_blank">gulp-uglify</a>を試してみた
+
+<ul>
+<li>→ 失敗。コメントだけ消したいけど結構色々変換されててだるい。</li>
+<li>色々オプションいじってみるが思った感じにならぬ。辛い。</li>
+<li>まあ別にそれでもいいんだけど・・・</li>
+</ul>
+</li>
+<li>次に<a href="https://www.npmjs.com/package/minifyify" rel="nofollow noopener" target="_blank">minifyify</a>を試す
+
+<ul>
+<li>→ callbackの書き方とgulpの組み合わせが微妙そうで挫折。</li>
+</ul>
+</li>
+<li>次に<a href="https://www.npmjs.com/package/gulp-strip-comments" rel="nofollow noopener" target="_blank">gulp-strip-comments</a>を試す
+
+<ul>
+<li>→ 一応動くっぽいがsourcemapがうまくいかない・・・</li>
+</ul>
+</li>
+<li>ここでbabelのドキュメント読み返す。
+
+<ul>
+<li>あるじゃん！</li>
+<li>おしまい。</li>
+</ul>
+</li>
+</ul>

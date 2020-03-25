@@ -1,0 +1,94 @@
+<p>Circle-CIでいつのまにcron実行する機能が追加されていたので試した。</p>
+
+<ul>
+<li><a href="https://circleci.com/docs/2.0/configuration-reference/#triggers" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/docs/2.0/configuration-reference/#triggers</a></li>
+<li><a href="https://circleci.com/blog/manual-job-approval-and-scheduled-workflow-runs/" class="autolink" rel="nofollow noopener" target="_blank">https://circleci.com/blog/manual-job-approval-and-scheduled-workflow-runs/</a></li>
+</ul>
+
+<p>TravisCIには少し前から入っていた機能。</p>
+
+<ul>
+<li><a href="https://docs.travis-ci.com/user/cron-jobs/" class="autolink" rel="nofollow noopener" target="_blank">https://docs.travis-ci.com/user/cron-jobs/</a></li>
+</ul>
+
+<p>Circle-CIの場合、TravisCIほとさくっと使える感じではなかったのでメモ</p>
+
+<h1>
+<span id="どんな時に使えるか" class="fragment"></span><a href="#%E3%81%A9%E3%82%93%E3%81%AA%E6%99%82%E3%81%AB%E4%BD%BF%E3%81%88%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>どんな時に使えるか？</h1>
+
+<p>例えばこんなユースケースが思いつく</p>
+
+<ul>
+<li>E2Eなど重くて全branchで実行するには辛いもの</li>
+<li>外部のAPIに引きづられて落ちてないかのテスト</li>
+<li>masterを定期的にstagingと同期するdeploy処理</li>
+</ul>
+
+<p>今回は一番上の「branchにCIは回したい、でも重いテストだけは一日一回にしたい」みたいな場合で考えてみる</p>
+
+<h1>
+<span id="config" class="fragment"></span><a href="#config"><i class="fa fa-link"></i></a>config</h1>
+
+<p>とりあえず最終的にどうなるかを記載。</p>
+
+<div class="code-frame" data-lang="yaml">
+<div class="code-lang"><span class="bold">circleci/config.yml</span></div>
+<div class="highlight"><pre><span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">test</span><span class="pi">:</span> <span class="c1"># 普通のテスト</span>
+    <span class="na">docker</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">image</span><span class="pi">:</span> <span class="s">node:8</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">npm run test</span>
+  <span class="na">heavy_test</span><span class="pi">:</span> <span class="c1"># 重いテスト</span>
+    <span class="na">docker</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">image</span><span class="pi">:</span> <span class="s">node:8</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">npm run heavy_test</span>
+
+<span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">normal_test_workflow</span><span class="pi">:</span>
+    <span class="na">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">test</span>
+  <span class="na">nightly_workflow</span><span class="pi">:</span>
+    <span class="na">triggers</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">schedule</span><span class="pi">:</span>
+          <span class="na">cron</span><span class="pi">:</span> <span class="s2">"</span><span class="s">0</span><span class="nv"> </span><span class="s">1</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*"</span> <span class="c1"># UTCで記述。この場合は朝10時</span>
+          <span class="na">filters</span><span class="pi">:</span>
+            <span class="na">branches</span><span class="pi">:</span>
+              <span class="na">only</span><span class="pi">:</span>
+                <span class="pi">-</span> <span class="s">master</span>
+    <span class="na">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">heavy_test</span>
+</pre></div>
+</div>
+
+<p>ポイントは下記の通り</p>
+
+<ul>
+<li>Circle-CIのconfigは2.0向けに書く必要がある
+
+<ul>
+<li>workflowを利用するので、workflow形式で。</li>
+</ul>
+</li>
+<li>
+<code>trigger</code>の処理は、<code>job</code>ではなく、<code>workflow</code>に対して設定する必要がある。
+
+<ul>
+<li>今回の場合だと、通常のbranch向けのjobとworkflowと、一日一回実行するjobとworkflowを記述する必要がある</li>
+<li>定期実行が通常のテストと同じで良いなら、jobを一つ、workflowだけ２つ書く感じになる。</li>
+<li>それぞれでの共通化については、以前別記事を書いたので、必要があれば参考にしていただきたい
+
+<ul>
+<li><a href="https://qiita.com/inuscript/items/3568690b5da29ab034dc" class="autolink" id="reference-80caa5b1e66f0ab1df02">https://qiita.com/inuscript/items/3568690b5da29ab034dc</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Cronは普通にcrontab形式。ただし <strong>UTC</strong> なので注意。</li>
+<li>記述を間違うと、失敗通知すら来ず無視されるのつらい</li>
+</ul>

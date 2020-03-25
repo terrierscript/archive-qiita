@@ -1,0 +1,10 @@
+<blockquote>
+<p>一体何なんだこれはと思っていたがおそらくdataSourceの参照先が開放されてしまっているのだろう。</p>
+</blockquote>
+
+<p>で合っていると思います。<br>
+UITableViewのdataSourceは弱参照のようですので、ほかに強参照がなければ解放されてしまいます。<br>
+こういうケースは定義を見れば一発ですね。</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="kd">unowned(unsafe)</span> <span class="k">var</span> <span class="nv">dataSource</span><span class="p">:</span> <span class="kt">UITableViewDataSource</span><span class="p">?</span>
+</pre></div></div>

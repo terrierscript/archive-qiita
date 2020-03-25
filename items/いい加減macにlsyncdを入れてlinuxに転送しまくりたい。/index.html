@@ -1,0 +1,113 @@
+<p>のっぴきならない事情でLinuxのリモートマシンで作業をしないといけないことがある。<br>
+とはいえ作業は手元のmacでやりたい（source tree使いたい！atom使いたい！）</p>
+
+<p>ということで今までgruntでwatchしてrsync・・・みたいな力技でちょろまかしていたけど、ちょっと人に伝授する機会があって今まで何度か挫折してたlsyncdを導入してみた。</p>
+
+<p>今回の要件としてはこんな感じ</p>
+
+<ul>
+<li>なるべくセットアップを簡易に</li>
+<li>遅延はなるべく無く</li>
+<li>転送は片方向だけでよしとする（ mac -&gt; linux )</li>
+<li>sshの鍵設定はしているものとする
+
+<ul>
+<li>してないと転送のたびにパスワード聞かれてしまった。</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="install" class="fragment"></span><a href="#install"><i class="fa fa-link"></i></a>install</h1>
+
+<p>今回はrsyncを使った転送をするので、rsync、あとはatomあたりでハイライトするようにluaも入れておく。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>brew update
+brew install homebrew/dupes/rsync
+brew install lsyncd lua
+</pre></div></div>
+
+<h2>
+<span id="lsyncconf" class="fragment"></span><a href="#lsyncconf"><i class="fa fa-link"></i></a>lsync.conf</h2>
+
+<p>今回デザイナーさんなどに伝授するにあたり、設定ファイルを分離するとかちょっとだけ複雑なことをした。</p>
+
+<p>まず設定ファイルだけ外にまとめとく。<br>
+ここだけいじれば大丈夫よ的な感じに。</p>
+
+<div class="code-frame" data-lang="lua">
+<div class="code-lang"><span class="bold">conf.lua</span></div>
+<div class="highlight"><pre><span class="k">return</span> <span class="p">{</span>
+  <span class="n">user</span>   <span class="o">=</span> <span class="s2">"your.name"</span><span class="p">,</span>
+  <span class="n">host</span>   <span class="o">=</span> <span class="s2">"0.0.0.0"</span><span class="p">,</span>
+  <span class="n">source</span> <span class="o">=</span> <span class="s2">"/path/to/source"</span><span class="p">,</span>
+  <span class="n">dest</span>   <span class="o">=</span> <span class="s2">"/path/to/dest"</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>あと本筋のlsync.confの方がこんな感じ。</p>
+
+<div class="code-frame" data-lang="lua">
+<div class="code-lang"><span class="bold">lsync.conf.lua</span></div>
+<div class="highlight"><pre><span class="c1">-- variables</span>
+<span class="kd">local</span> <span class="n">conf</span> <span class="o">=</span> <span class="nb">dofile</span><span class="p">(</span><span class="s2">"conf.lua"</span><span class="p">)</span>
+
+<span class="kd">local</span> <span class="n">homeDir</span> <span class="o">=</span> <span class="nb">os.getenv</span><span class="p">(</span><span class="s2">"HOME"</span><span class="p">)</span>
+<span class="kd">local</span> <span class="n">target</span> <span class="o">=</span> <span class="n">conf</span><span class="p">.</span><span class="n">user</span><span class="o">..</span><span class="s2">"@"</span><span class="o">..</span> <span class="n">conf</span><span class="p">.</span><span class="n">host</span><span class="o">..</span><span class="s2">":"</span><span class="o">..</span> <span class="n">conf</span><span class="p">.</span><span class="n">dest</span>
+
+<span class="c1">-- lsyncd</span>
+<span class="n">settings</span><span class="p">{</span>
+  <span class="n">logfile</span>     <span class="o">=</span> <span class="s2">"/tmp/lsyncd.log"</span><span class="p">,</span>
+  <span class="n">statusFile</span>  <span class="o">=</span> <span class="s2">"/tmp/lsyncd.status"</span><span class="p">,</span>
+  <span class="n">insist</span>      <span class="o">=</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="n">nodaemon</span>    <span class="o">=</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="n">delay</span>       <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="n">statusInterval</span>  <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+  <span class="n">maxProcesses</span>    <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">sync</span><span class="p">{</span>
+  <span class="n">default</span><span class="p">.</span><span class="n">rsync</span><span class="p">,</span>
+  <span class="n">delete</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span>
+  <span class="n">source</span> <span class="o">=</span> <span class="n">conf</span><span class="p">.</span><span class="n">source</span><span class="p">,</span>
+  <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="p">,</span>
+  <span class="n">exclude</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">".DS_Store"</span><span class="p">,</span> <span class="s2">".sass-cache/**/*"</span><span class="p">},</span>
+  <span class="n">rsync</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">binary</span> <span class="o">=</span> <span class="s2">"/usr/local/bin/rsync"</span><span class="p">,</span>
+    <span class="n">archive</span> <span class="o">=</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="n">compress</span> <span class="o">=</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="n">rsh</span> <span class="o">=</span> <span class="s2">"/usr/bin/ssh -i "</span><span class="o">..</span><span class="n">homeDir</span><span class="o">..</span><span class="s2">"/.ssh/id_rsa"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>なんか注釈としてはこんな感じ</p>
+
+<ul>
+<li>
+<code>dofile</code>とかでファイル読み込んでる。</li>
+<li>sshの鍵ファイル特定を怠けるのに<code>$HOME</code>を<code>getenv</code>で読み込んでる</li>
+<li>delayがデフォルト15ぐらいになっていて即時反映されなくて困るのでここは変えておく</li>
+<li>excludeは適当に設定。</li>
+</ul>
+
+<h1>
+<span id="起動" class="fragment"></span><a href="#%E8%B5%B7%E5%8B%95"><i class="fa fa-link"></i></a>起動</h1>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>sudo lsyncd lsync.conf.lua
+</pre></div></div>
+
+<p>なんかwarnが出るのだが仕方なさそう。挙動は今のところ問題なし<br>
+<a href="https://github.com/axkibe/lsyncd/issues/291" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/axkibe/lsyncd/issues/291</a></p>
+
+<h3>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h3>
+
+<p>lsyncdについてわりとmacでの情報はなさ気だった。<br>
+けど割りと普通に使えた。<br>
+lua楽しい。</p>
+
+<p>とりあえず今回作ったのはここに置いた。<br>
+<a href="https://github.com/suisho/lsyncd-boilerplate" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/suisho/lsyncd-boilerplate</a></p>

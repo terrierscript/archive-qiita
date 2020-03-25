@@ -1,0 +1,61 @@
+<p>UITableViewのDataSourceやDelegateを分離しようとしてうまくいかなかった話。</p>
+
+<h2>
+<span id="delegateになるにはnsobjectを継承している必要がある" class="fragment"></span><a href="#delegate%E3%81%AB%E3%81%AA%E3%82%8B%E3%81%AB%E3%81%AFnsobject%E3%82%92%E7%B6%99%E6%89%BF%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E5%BF%85%E8%A6%81%E3%81%8C%E3%81%82%E3%82%8B"><i class="fa fa-link"></i></a>DelegateになるにはNSObjectを継承している必要がある</h2>
+
+<p>UIKitのDelegateはそれぞれNSObjectProtocol継承であるっぽい。<br>
+なので</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="kd">class</span> <span class="kt">MyTableViewDataSource</span> <span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">UITableViewDataSource</span><span class="p">{</span>
+
+<span class="p">}</span>
+</pre></div></div>
+
+<p>といった具合で継承されてないとうまくいかない</p>
+
+<h2>
+<span id="delegateはメンバ変数化しておく" class="fragment"></span><a href="#delegate%E3%81%AF%E3%83%A1%E3%83%B3%E3%83%90%E5%A4%89%E6%95%B0%E5%8C%96%E3%81%97%E3%81%A6%E3%81%8A%E3%81%8F"><i class="fa fa-link"></i></a>Delegateはメンバ変数化しておく</h2>
+
+<p>これは完全にswiftから入ったがゆえかなあと思った。</p>
+
+<p>例えばさくっとこんな感じで書いたとすると</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="kd">class</span> <span class="kt">TableViewController</span><span class="p">:</span> <span class="kt">UITableViewController</span> <span class="p">{</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">viewDidLoad</span><span class="p">()</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">tableView</span><span class="o">.</span><span class="n">dataSource</span> <span class="o">=</span> <span class="kt">TableViewDataSource</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">numberOfSectionsInTableView</span><span class="p">(</span><span class="nv">tableView</span><span class="p">:</span> <span class="kt">UITableView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="p">}</span>
+
+    <span class="c1">// DataSourceの件数そのまま出すといいだろうーみたいな感覚</span>
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">tableView</span><span class="p">(</span><span class="nv">tableView</span><span class="p">:</span> <span class="kt">UITableView</span><span class="p">,</span> <span class="n">numberOfRowsInSection</span> <span class="nv">section</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="nf">return</span>  <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">tableView</span><span class="o">.</span><span class="n">dataSource</span> <span class="k">as</span> <span class="kt">TableViewDataSource</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">count</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>みたいなことをしていると<code>EXC_BAD_ACCESS</code>に見舞われる。<br>
+一体何なんだこれはと思っていたがおそらくdataSourceの参照先が開放されてしまっているのだろう。</p>
+
+<p>なので下記のようにViewControllerのメンバーにしておく必要がある模様。</p>
+
+<div class="code-frame" data-lang="swift"><div class="highlight"><pre><span class="kd">class</span> <span class="kt">TableViewController</span><span class="p">:</span> <span class="kt">UITableViewController</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">dataSource</span> <span class="p">:</span> <span class="kt">TableViewDataSource</span> <span class="o">=</span> <span class="kt">TableViewDataSource</span><span class="p">()</span>
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">viewDidLoad</span><span class="p">()</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">tableView</span><span class="o">.</span><span class="n">dataSource</span> <span class="o">=</span> <span class="n">dataSource</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">numberOfSectionsInTableView</span><span class="p">(</span><span class="nv">tableView</span><span class="p">:</span> <span class="kt">UITableView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">tableView</span><span class="p">(</span><span class="nv">tableView</span><span class="p">:</span> <span class="kt">UITableView</span><span class="p">,</span> <span class="n">numberOfRowsInSection</span> <span class="nv">section</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">dataSource</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">count</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>

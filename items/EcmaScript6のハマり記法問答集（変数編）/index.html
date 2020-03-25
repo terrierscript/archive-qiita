@@ -1,0 +1,111 @@
+<p>Reactで開発的なことをしてみたら、わりとReactそのものよりES6の記法的な質問がそれなりにあったのを感じたので雑多に問答集</p>
+
+<h1>
+<span id="q-varとletとconstって何が違うの" class="fragment"></span><a href="#q-var%E3%81%A8let%E3%81%A8const%E3%81%A3%E3%81%A6%E4%BD%95%E3%81%8C%E9%81%95%E3%81%86%E3%81%AE"><i class="fa fa-link"></i></a>Q. <code>var</code>と<code>let</code>と<code>const</code>って何が違うの？</h1>
+
+<p>A. ざっくり言えばこう</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">a</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">hoge</span><span class="dl">"</span> <span class="c1">// もう忘れていい</span>
+<span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">fuga</span><span class="dl">"</span> <span class="c1">// 変更できる値。mutable</span>
+<span class="kd">const</span> <span class="nx">c</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span> <span class="c1">// 変更できない値。immutable</span>
+</pre></div></div>
+
+<p><code>var</code>に関しては、多分使うことはもう無いはず（と僕は思っている）。ESLintでも<a href="http://eslint.org/docs/rules/no-var" rel="nofollow noopener" target="_blank">no-var</a>というルールがあるので、設定しちゃっている。</p>
+
+<h1>
+<span id="q-let-obj---hoge-っていうこれなに" class="fragment"></span><a href="#q-let-obj---hoge-%E3%81%A3%E3%81%A6%E3%81%84%E3%81%86%E3%81%93%E3%82%8C%E3%81%AA%E3%81%AB"><i class="fa fa-link"></i></a>Q. <code>let obj = { hoge }</code>っていうこれなに</h1>
+
+<p>A. <code>{hoge}</code>は<code>{hoge: hoge}</code>となる。いわゆるシュガーシンタックス的なもの</p>
+
+<p>こんな感じ。便利。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">hoge</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">fuga</span><span class="dl">"</span>
+
+<span class="kd">let</span> <span class="nx">obj</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">hoge</span>
+<span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> 
+<span class="c1">// { hoge: "fuga" }</span>
+</pre></div></div>
+
+<h1>
+<span id="q-const--hoge---objっていうこれなに" class="fragment"></span><a href="#q-const--hoge---obj%E3%81%A3%E3%81%A6%E3%81%84%E3%81%86%E3%81%93%E3%82%8C%E3%81%AA%E3%81%AB"><i class="fa fa-link"></i></a>Q. <code>const { hoge } = obj</code>っていうこれなに</h1>
+
+<p>A. さっきの逆だと思っていい。<code>let hoge = c.hoge</code>と展開する。これは割りと他の言語にありがちな記法</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="p">{</span> <span class="nx">hoge</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">obj</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">hoge</span><span class="p">)</span>
+<span class="c1">// "fuga"</span>
+</pre></div></div>
+
+<h2>
+<span id="補足さらにネストも展開できます" class="fragment"></span><a href="#%E8%A3%9C%E8%B6%B3%E3%81%95%E3%82%89%E3%81%AB%E3%83%8D%E3%82%B9%E3%83%88%E3%82%82%E5%B1%95%E9%96%8B%E3%81%A7%E3%81%8D%E3%81%BE%E3%81%99"><i class="fa fa-link"></i></a>補足：さらにネストも展開できます。</h2>
+
+<p>これだとあんまり他の言語だと見ない（気がする）<br>
+そしてこの記事書いてる時に気づいたけど展開されるのは末端の要素だけのようだ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">b</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="na">c</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">d</span><span class="dl">"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">let</span> <span class="p">{</span> <span class="na">b</span> <span class="p">:</span> <span class="p">{</span> <span class="nx">c</span> <span class="p">}</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">a</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span> <span class="c1">// "d"</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">b</span><span class="p">)</span> <span class="c1">// undefined</span>
+</pre></div></div>
+
+<h2>
+<span id="補足関数の引数にも使えるのでこんなふうに組み合わせられる" class="fragment"></span><a href="#%E8%A3%9C%E8%B6%B3%E9%96%A2%E6%95%B0%E3%81%AE%E5%BC%95%E6%95%B0%E3%81%AB%E3%82%82%E4%BD%BF%E3%81%88%E3%82%8B%E3%81%AE%E3%81%A7%E3%81%93%E3%82%93%E3%81%AA%E3%81%B5%E3%81%86%E3%81%AB%E7%B5%84%E3%81%BF%E5%90%88%E3%82%8F%E3%81%9B%E3%82%89%E3%82%8C%E3%82%8B"><i class="fa fa-link"></i></a>補足：関数の引数にも使えるのでこんなふうに組み合わせられる</h2>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">fooFn</span> <span class="o">=</span> <span class="kd">function</span><span class="p">({</span> <span class="nx">hoge</span><span class="p">,</span> <span class="nx">fuga</span> <span class="p">}){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">hoge</span><span class="p">,</span> <span class="nx">fuga</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">fooFn</span><span class="p">({</span>
+    <span class="na">hoge</span><span class="p">:</span> <span class="dl">"</span><span class="s2">aaa</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">fuga</span><span class="p">:</span> <span class="dl">"</span><span class="s2">bbb</span><span class="dl">"</span>
+<span class="p">})</span> 
+<span class="c1">// aaa, bbb</span>
+</pre></div></div>
+
+<p>javascriptだとオプションとかをobject形式で渡すこと多いのでよくつかう。</p>
+
+<h2>
+<span id="補足reactだったらこんなふうに利用する" class="fragment"></span><a href="#%E8%A3%9C%E8%B6%B3react%E3%81%A0%E3%81%A3%E3%81%9F%E3%82%89%E3%81%93%E3%82%93%E3%81%AA%E3%81%B5%E3%81%86%E3%81%AB%E5%88%A9%E7%94%A8%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>補足：reactだったらこんなふうに利用する</h2>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">foo</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span>
+<span class="kd">let</span> <span class="nx">bee</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">boo</span><span class="dl">"</span>
+<span class="nx">retrun</span> <span class="o">&lt;</span><span class="nx">Cmp</span> <span class="p">{</span> <span class="p">...{</span> <span class="nx">foo</span><span class="p">,</span> <span class="nx">bee</span> <span class="p">}</span> <span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span><span class="c1">// &lt;Cmp foo={foo} bee={bee} /&gt; と同じ</span>
+</pre></div></div>
+
+<h3>
+<span id="補足の補足の--a-b---こういうの何" class="fragment"></span><a href="#%E8%A3%9C%E8%B6%B3%E3%81%AE%E8%A3%9C%E8%B6%B3%E3%81%AE--a-b---%E3%81%93%E3%81%86%E3%81%84%E3%81%86%E3%81%AE%E4%BD%95"><i class="fa fa-link"></i></a>補足の補足：↑の<code>{ ...{ a, b } }</code> こういうの何</h3>
+
+<p><code>{a,b}</code>と一緒なのだけど、reactの記法上こう書くしか無い</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="kd">let</span> <span class="nx">c</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">a</span><span class="p">,</span> <span class="nx">b</span> <span class="p">}</span>
+<span class="kd">let</span> <span class="nx">d</span> <span class="o">=</span> <span class="p">{</span> <span class="p">...{</span> <span class="nx">a</span><span class="p">,</span> <span class="nx">b</span> <span class="p">}</span> <span class="p">}</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span> 
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> 
+<span class="c1">// どっちもこうなる{ a: 1, b:2 }</span>
+</pre></div></div>
+
+<p>詳しくは<a href="https://facebook.github.io/react/docs/jsx-spread.html#spread-attributes" rel="nofollow noopener" target="_blank">Reactのドキュメント</a>参照。ES7になったら改善しそう</p>
+
+<h1>
+<span id="q-a---b--c-っての何" class="fragment"></span><a href="#q-a---b--c-%E3%81%A3%E3%81%A6%E3%81%AE%E4%BD%95"><i class="fa fa-link"></i></a>Q. <code>a = { [b] : c }</code>っての何</h1>
+
+<p>展開した変数をキーとして使えます。<br>
+使わないようでわりとあると便利。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span>
+<span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">{</span> <span class="p">[</span><span class="nx">b</span><span class="p">]</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">baz</span><span class="dl">"</span> <span class="p">}</span>
+<span class="c1">// a = { foo: "baz" }</span>
+</pre></div></div>

@@ -1,0 +1,380 @@
+<p><a href="https://hyper.is/" rel="nofollow noopener" target="_blank">hyperなterm</a>。</p>
+
+<p>plugin作りたくて色々中身見たり、そもそもどうなってんのみたいな興味本位で読み解いたらreduxの使い方とかちょいちょい面白かったので感想とか雑感<br>
+コードはversion 0.6 ~ 7.1らへん。<br>
+<a href="https://github.com/zeit/hyperterm/tree/v0.7.1" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/zeit/hyperterm/tree/v0.7.1</a></p>
+
+<h1>
+<span id="全体感" class="fragment"></span><a href="#%E5%85%A8%E4%BD%93%E6%84%9F"><i class="fa fa-link"></i></a>全体感</h1>
+
+<ul>
+<li>Coreな所
+
+<ul>
+<li>Electron </li>
+<li>おなじみ</li>
+<li>hterm</li>
+<li>chromiumのプロダクトの一つ（？）</li>
+<li>コードは<a href="https://chromium.googlesource.com/apps/libapps/+/HEAD/hterm" rel="nofollow noopener" target="_blank">このあたり</a>
+
+<ul>
+<li>あんまりこっちは追ってない</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Electronの中で使われてる技術要素
+
+<ul>
+<li>React + Redux</li>
+<li>CSS in JS</li>
+<li>ビルドにwebpack</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="プロジェクト構成など" class="fragment"></span><a href="#%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E6%A7%8B%E6%88%90%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>プロジェクト構成など</h1>
+
+<ul>
+<li>
+<code>/</code> (root)
+
+<ul>
+<li>webpackで管理している部分</li>
+<li>libに関連するpackageはroot管理</li>
+</ul>
+</li>
+<li>
+<code>/lib</code>
+
+<ul>
+<li>hypertermの本体部分。</li>
+<li>React + Reduxなプロダクト</li>
+<li>plugin作るときとかこのへん見るパターンが多くなる</li>
+</ul>
+</li>
+<li>
+<code>/app</code>
+
+<ul>
+<li>
+<code>/lib</code>以外の色々</li>
+<li>
+<code>electron</code>に関連する部分とか
+
+<ul>
+<li>menuとかpluginとかindex.htmlとかnotify.htmlとか。</li>
+</ul>
+</li>
+<li>plugin関連だったりconfig関連だったり。</li>
+<li>libとは独立的にpackage.jsonを管理している。</li>
+<li>起動時には<code>$ electron app</code>的な事で起動している</li>
+</ul>
+</li>
+<li>
+<code>/assets</code>, <code>/build</code>
+
+<ul>
+<li>assetだったりelectron用のアイコンだったり</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="code" class="fragment"></span><a href="#code"><i class="fa fa-link"></i></a>Code</h2>
+
+<h3>
+<span id="hterm" class="fragment"></span><a href="#hterm"><i class="fa fa-link"></i></a>hterm</h3>
+
+<ul>
+<li>
+<p>そもそもterminalどうやってんだよ？という所の回答が<code>hterm</code>というのを使ってるというやつ（前述通り）</p>
+
+<ul>
+<li><a href="https://chromium.googlesource.com/apps/libapps/+/HEAD/hterm" class="autolink" rel="nofollow noopener" target="_blank">https://chromium.googlesource.com/apps/libapps/+/HEAD/hterm</a></li>
+<li>hypertermでは下記らへんでhtermが絡んでいる
+
+<ul>
+<li>
+<a href="https://github.com/zeit/hyperterm/blob/v0.7.1/lib/components/term.js#L1" rel="nofollow noopener" target="_blank">components/term.js</a>
+
+<ul>
+<li>React的なComponentとhtermを繋いでる箇所</li>
+<li>htermへの設定追加なども行っているっぽい</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/zeit/hyperterm/blob/v0.7.1/lib/hterm.js" rel="nofollow noopener" target="_blank">lib/term.js</a>
+
+<ul>
+<li>htermそのままでは動かない部分をprototype継承でパッチしたりしている。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="reduxまわり" class="fragment"></span><a href="#redux%E3%81%BE%E3%82%8F%E3%82%8A"><i class="fa fa-link"></i></a>reduxまわり</h3>
+
+<p>結構おもしろいと思った。</p>
+
+<h4>
+<span id="actionとeffect-middleware" class="fragment"></span><a href="#action%E3%81%A8effect-middleware"><i class="fa fa-link"></i></a>actionと<code>effect-middleware</code>
+</h4>
+
+<p><code>redux-thunk</code>を使っているので、関数を返して非同期処理をしている。<br>
+ちょっと面白いと思ったのが<code>effect</code>というパラメータ</p>
+
+<p><a href="https://github.com/zeit/hyperterm/blob/477e40e4338b54a6d66c557ab8f9c3638f14d948/app/lib/actions/header.js#L4" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/zeit/hyperterm/blob/477e40e4338b54a6d66c557ab8f9c3638f14d948/app/lib/actions/header.js#L4</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">export</span> <span class="kd">function</span> <span class="nx">someAction</span> <span class="p">(</span><span class="nx">uid</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="nx">dispatch</span><span class="p">,</span> <span class="nx">getState</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">dispatch</span><span class="p">({</span>
+      <span class="na">type</span><span class="p">:</span> <span class="nx">SOME_TYPE</span><span class="p">,</span>
+      <span class="nx">value</span><span class="p">,</span>
+      <span class="nx">effect</span> <span class="p">()</span> <span class="p">{</span>
+        <span class="nx">dispatch</span><span class="p">(</span><span class="nx">otherAction</span><span class="p">(</span><span class="nx">uid</span><span class="p">));</span>
+      <span class="p">}</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>これを<a href="https://github.com/zeit/hyperterm/blob/v0.7.1/lib/utils/effects.js" rel="nofollow noopener" target="_blank">effect</a>というmiddlewareで、色々処理した後に実行している。</p>
+
+<h4>
+<span id="middleware" class="fragment"></span><a href="#middleware"><i class="fa fa-link"></i></a>middleware</h4>
+
+<p><a href="https://github.com/zeit/hyperterm/blob/v0.7.1/lib/index.js#L23" rel="nofollow noopener" target="_blank">index.js</a>を見ると、<code>thunk</code> -&gt; <code>plugin.middleware</code> -&gt; <code>thunk</code> -&gt; <code>effect</code>とやっている。<br>
+thunk二回やってるのは何か辛そうなものを感じる。<br>
+<code>plugin</code>は、名の通りpluginが仕掛けるmiddleware。</p>
+
+<h4>
+<span id="reducerらへん" class="fragment"></span><a href="#reducer%E3%82%89%E3%81%B8%E3%82%93"><i class="fa fa-link"></i></a>Reducerらへん</h4>
+
+<ul>
+<li>
+<a href="https://github.com/rtfeldman/seamless-immutable" rel="nofollow noopener" target="_blank">seamless-immutable</a>でimmutable化してる
+
+<ul>
+<li>ArrayとかObject準拠なimmutable library?</li>
+</ul>
+</li>
+<li>terminalのセッションの管理には<a href="https://github.com/defunctzombie/node-uuid" rel="nofollow noopener" target="_blank"><code>uuid</code></a>が使われている
+
+<ul>
+<li>reducerでよく追加するものがある場合に<code>nextId</code>的なもので管理することとかあるけど、uuid使う方が良さそう</li>
+</ul>
+</li>
+</ul>
+
+<h4>
+<span id="container色々" class="fragment"></span><a href="#container%E8%89%B2%E3%80%85"><i class="fa fa-link"></i></a>Container色々</h4>
+
+<ul>
+<li>ReduxとReact繋いでるところ。</li>
+<li>dispatchを利用するhandler関数はContainerレイヤーで作って、viewにはdispatchを意識させないようにしているらしい</li>
+<li>reslectは<a href="https://github.com/zeit/hyperterm/blob/v0.7.1/lib/containers/header.js" rel="nofollow noopener" target="_blank">containers/header.js</a>でのみつかわれている。
+
+<ul>
+<li>若干のノリで入れてみたんじゃないだろうか感も感じてしまう</li>
+<li>reselectorとcontainerを同じファイルに書くのは結構アリかも</li>
+</ul>
+</li>
+<li>各Container
+
+<ul>
+<li>Hyperterm
+
+<ul>
+<li>いわゆるメイン</li>
+<li>キーバインドとかしてある</li>
+</ul>
+</li>
+<li>HeaderContainer
+
+<ul>
+<li>ヘッダ部分（タブとか）</li>
+</ul>
+</li>
+<li>NotificationContainer
+
+<ul>
+<li>Notification関連</li>
+<li>Electronのnotificationではなく、hyperterm内部のnotification。</li>
+</ul>
+</li>
+<li>TermsContainer
+
+<ul>
+<li>Terminal関連Container</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="react関連" class="fragment"></span><a href="#react%E9%96%A2%E9%80%A3"><i class="fa fa-link"></i></a>React関連</h3>
+
+<h4>
+<span id="component" class="fragment"></span><a href="#component"><i class="fa fa-link"></i></a>Component</h4>
+
+<ul>
+<li>hypertermで利用されているComponentは、ReactのComponentを直で使うのではなく、一つ独自にComponentを作ってwrapしている
+
+<ul>
+<li><a href="https://github.com/zeit/hyperterm/blob/v0.7.1/lib/component.js" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/zeit/hyperterm/blob/v0.7.1/lib/component.js</a></li>
+</ul>
+</li>
+<li>PureRenderMixinを利用している</li>
+<li>ほぼCSS in JSの為という印象</li>
+<li>コンポーネントは<code>render</code>ではなく、<code>template</code>メソッドに、Virtual DOMを記載する</li>
+<li>
+<code>render</code>は、CSSと<code>template</code>のvdomを組み合わせる役割をするようになっている</li>
+<li>pluginを作る時は、この辺りの勘所注意だろう</li>
+</ul>
+
+<h4>
+<span id="css-in-js" class="fragment"></span><a href="#css-in-js"><i class="fa fa-link"></i></a>CSS in JS</h4>
+
+<ul>
+<li>jsonなconfigで色設定などをできるようにしている都合もあるのだろう、CSS in JSを行っている。</li>
+<li>利用しているのは<a href="https://github.com/Khan/aphrodite" rel="nofollow noopener" target="_blank">aphrodite</a>というライブラリ
+
+<ul>
+<li>実際にはaphrodite-simpleというforkしたっぽいライブラリを使ってるようだが、コードが見当たらないので正確な違いはわからに</li>
+</ul>
+</li>
+</ul>
+
+<h4>
+<span id="component細かく" class="fragment"></span><a href="#component%E7%B4%B0%E3%81%8B%E3%81%8F"><i class="fa fa-link"></i></a>Component細かく</h4>
+
+<p>ほぼContainerと対をなしている感じ。</p>
+
+<ul>
+<li>header, tab, tabs
+
+<ul>
+<li>terminal上方のTab周り</li>
+<li>
+<code>header &gt; tabs &gt; tab</code> みたいな構成</li>
+</ul>
+</li>
+<li>notification, notifications
+
+<ul>
+<li>あんまりちゃんと見てない</li>
+</ul>
+</li>
+<li>term, terms
+
+<ul>
+<li>terminal表示部分。</li>
+<li>
+<a href="https://github.com/zeit/hyperterm/blob/v0.7.1/lib/components/term.js#L1" rel="nofollow noopener" target="_blank">term.js</a>が<code>hterm</code>と直接連携している（前述通り）</li>
+<li>termsの<code>this.terms</code>
+
+<ul>
+<li>子termの管理として、<code>this.term</code>を管理してる </li>
+<li>中身は<code>hterm</code>のインスタンスでpureなobjectではない</li>
+<li>stateやreduxのstateではなく、Componentのpropertyでの管理しているのは、多分pureなObjectじゃないから扱いづらいとかそういう感じに見える</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="plugin" class="fragment"></span><a href="#plugin"><i class="fa fa-link"></i></a>plugin</h3>
+
+<ul>
+<li>
+<a href="https://github.com/zeit/hyperterm/blob/v0.7.1/app/plugins.js#L19" rel="nofollow noopener" target="_blank">app/plugins.js</a>に、hook出来そうなplugin列挙されている</li>
+<li>ドキュメントが整備されている感じではないので、何出来るかは気持ちを察していくしかない</li>
+</ul>
+
+<h4>
+<span id="decorate" class="fragment"></span><a href="#decorate"><i class="fa fa-link"></i></a>decorate</h4>
+
+<ul>
+<li>pluginがhypertermに行う加工に関して、<code>decorator</code>とか<code>decorate</code>とか名前付けられている</li>
+<li>Componentなどを覗いたりしても、ちょこちょここの<code>Decorate</code>という話が出てくる。
+
+<ul>
+<li>Componentのdecorateは、いわゆるHocsっぽい形になっている。</li>
+</ul>
+</li>
+<li>plugin側で色々拡張させるための工夫っぽい
+
+<ul>
+<li>うまく作ってないと途端にやばくなりそうではあるワイルドさを感じる</li>
+</ul>
+</li>
+<li>objectのdecorateは単に<code>Object.assign</code>で拡張される感じ</li>
+</ul>
+
+<h3>
+<span id="rpc" class="fragment"></span><a href="#rpc"><i class="fa fa-link"></i></a>rpc</h3>
+
+<ul>
+<li>htermとelectronとhypertermの命令疎通をしている。</li>
+<li>
+<code>electron &lt;-&gt; rpc &lt;-&gt; redux(action)</code>という感じの双方向な通信</li>
+<li>EventEmitter</li>
+<li>このへん
+
+<ul>
+<li>
+<a href="https://github.com/zeit/hyperterm/blob/v0.7.1/lib/utils/rpc.js" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/zeit/hyperterm/blob/v0.7.1/lib/utils/rpc.js</a>
+
+<ul>
+<li>内部側</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/zeit/hyperterm/blob/v0.7.1/app/rpc.js" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/zeit/hyperterm/blob/v0.7.1/app/rpc.js</a>
+
+<ul>
+<li>electron側</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="config" class="fragment"></span><a href="#config"><i class="fa fa-link"></i></a>config</h3>
+
+<ul>
+<li>
+<a href="https://github.com/shama/gaze" rel="nofollow noopener" target="_blank">gaze</a>はfs.watchのwrapper。
+
+<ul>
+<li>更新監視してるっぽい</li>
+</ul>
+</li>
+<li>configファイルの評価は<code>request</code>だとか<code>JSON.stringify</code>ではなく<a href="https://nodejs.org/api/vm.html" rel="nofollow noopener" target="_blank"><code>vm.Script</code></a>とからへんを使っている模様</li>
+</ul>
+
+<h3>
+<span id="appsession" class="fragment"></span><a href="#appsession"><i class="fa fa-link"></i></a><a href="https://github.com/zeit/hyperterm/blob/v0.7.1/app/session.js" rel="nofollow noopener" target="_blank">app/session</a>
+</h3>
+
+<ul>
+<li>ptyとかttyとかあんまり詳しくないので利害が微妙。</li>
+<li>結局shellのタイトルを表示するために実行中のプロセスのコマンドを取得しているように見える</li>
+<li>titleを定期的に取得してemitしている。</li>
+<li>使っているのはこのあたりのパッケージ
+
+<ul>
+<li><a href="https://github.com/Gottox/child_pty" rel="nofollow noopener" target="_blank">child_pty</a></li>
+<li><a href="https://github.com/sindresorhus/default-shell" rel="nofollow noopener" target="_blank">default-shell</a></li>
+</ul>
+</li>
+</ul>

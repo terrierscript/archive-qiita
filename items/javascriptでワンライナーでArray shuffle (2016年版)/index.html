@@ -1,0 +1,38 @@
+<p>小ネタ</p>
+
+<p>たまに「じゃんけんする代わりぐらいなノリでワンライナーでシャッフルしたい！<br>
+rubyの<code>shuffle</code>ぐらいなやつでやりたい！でも手元にはchromeぐらいしかない！」</p>
+
+<p>という事があるが、ぐぐってみると思ったほど自分にヒットするやり方が載ってなかったのでメモる。</p>
+
+<hr>
+
+<p>※ ワンライナーでやるために<code>sort</code>を利用しているが、<a href="http://qiita.com/minodisk/items/94b6287468d0e165f6d9" id="reference-a8e052c17822a6d9ac02">Array#sort実装のshuffleは偏る</a> らしいので、<br>
+今回の方法はくじ引きの代わりぐらいに留めて、ちゃんとしたい場合はlodashなどのライブラリを利用するほうが良い。</p>
+
+<h3>
+<span id="やり方" class="fragment"></span><a href="#%E3%82%84%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>やり方</h3>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="p">[</span><span class="dl">"</span><span class="s2">apple</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">banana</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">orange</span><span class="dl">"</span><span class="p">].</span><span class="nx">sort</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c1">// 一人だけ選びたいならこんな感じ</span>
+<span class="p">[</span><span class="dl">"</span><span class="s2">apple</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">banana</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">orange</span><span class="dl">"</span><span class="p">].</span><span class="nx">sort</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1">// 複数人選びたいならこんな感じ</span>
+<span class="p">[</span><span class="dl">"</span><span class="s2">apple</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">banana</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">orange</span><span class="dl">"</span><span class="p">].</span><span class="nx">sort</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">).</span><span class="nx">splice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+</pre></div></div>
+
+<p><code>sort</code>時に<code>Math.random()</code>の返す乱数を元に <code>true / false</code>をテキトーに返す。<br>
+<code>Math.random()</code>はseedを設定したり出来ないので、再現性があるようなコードではないので、production利用用途とかならもうちょっと別な手法のほうが良いだろう。</p>
+
+<p>手元にIEしかない！という時はarrow functionやめればいける。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="p">[</span><span class="dl">"</span><span class="s2">apple</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">banana</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">orange</span><span class="dl">"</span><span class="p">].</span><span class="nx">sort</span><span class="p">(</span> <span class="kd">function</span><span class="p">(){</span> <span class="k">return</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="p">})</span>
+</pre></div></div>
+
+<p>数列をshuffleしたいならこんな感じ。魔術感出てきた。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="p">[...</span><span class="nb">Array</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="nx">keys</span><span class="p">()].</span><span class="nx">sort</span><span class="p">(</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+</pre></div></div>
+
+<p>(参考: <a href="http://rochefort.hatenablog.com/entry/2015/01/08/005043" class="autolink" rel="nofollow noopener" target="_blank">http://rochefort.hatenablog.com/entry/2015/01/08/005043</a>)</p>

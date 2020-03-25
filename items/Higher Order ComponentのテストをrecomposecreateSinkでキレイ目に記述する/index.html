@@ -1,0 +1,82 @@
+<p>Higher Order Componentは、コンポーネントというドメイン固有になりがちな部分から一歩切り離されたものなので、うまく作ればテストとの相性はだいぶ良い。（Dependency Injectionと近しい感じがあるかもしれない）</p>
+
+<p>Componentの装飾に依存しない部分などをHigher Order Componentに外出しすれば、独立的にテストが書ける。<br>
+しかしComponentのMockを作るという性質上、若干そのままテストを書こうとすると若干の気持ち悪さがあったりしたので調べた</p>
+
+<h1>
+<span id="今回用意するサンプル" class="fragment"></span><a href="#%E4%BB%8A%E5%9B%9E%E7%94%A8%E6%84%8F%E3%81%99%E3%82%8B%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB"><i class="fa fa-link"></i></a>今回用意するサンプル</h1>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// barで受け取った変数をbazにするHOC。</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">myEnhancer</span> <span class="o">=</span> <span class="p">(</span><span class="nx">Component</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">hocsProps</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">assign</span><span class="p">({},</span> <span class="p">{</span>
+      <span class="na">baz</span><span class="p">:</span> <span class="nx">props</span><span class="p">.</span><span class="nx">bar</span>
+    <span class="p">},</span> <span class="nx">props</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">Component</span> <span class="p">{...</span><span class="nx">hocsProps</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// 通常の使い方はこんな感じとしてみる。</span>
+<span class="kd">const</span> <span class="nx">Item</span> <span class="o">=</span> <span class="p">({</span><span class="nx">foo</span><span class="p">,</span> <span class="nx">baz</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">foo</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">baz</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">myEnhancer</span><span class="p">(</span><span class="nx">Item</span><span class="p">)</span>
+</pre></div></div>
+
+<p>ざっくりテスト書いてみると、こんな感じになる</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">ReactDOM</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-dom</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">myEnhancer</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./Item</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">renders </span><span class="dl">'</span><span class="p">,</span> <span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">div</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">div</span><span class="dl">'</span><span class="p">);</span>
+  <span class="c1">// 通常のItemとは別なMockItemを作る。</span>
+  <span class="kd">const</span> <span class="nx">MockItem</span> <span class="o">=</span> <span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// renderの内部でassertをする。</span>
+    <span class="nx">assert</span><span class="p">.</span><span class="nx">equal</span><span class="p">(</span><span class="nx">props</span><span class="p">.</span><span class="nx">baz</span><span class="p">,</span> <span class="dl">'</span><span class="s1">bar value</span><span class="dl">'</span><span class="p">)</span>
+    <span class="nx">done</span><span class="p">()</span>
+    <span class="c1">// returnは適当</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">noscript</span><span class="o">&gt;</span>
+  <span class="p">}</span>
+  <span class="c1">// MockItemをmyEnhancerで囲ってrenderする。</span>
+  <span class="kd">const</span> <span class="nx">Mock</span> <span class="o">=</span> <span class="nx">myEnhancer</span><span class="p">(</span><span class="nx">MockItem</span><span class="p">)</span>
+  <span class="nx">ReactDOM</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="o">&lt;</span><span class="nx">Mock</span> <span class="nx">bar</span><span class="o">=</span><span class="p">{</span><span class="dl">'</span><span class="s1">bar value</span><span class="dl">'</span><span class="p">}</span> <span class="sr">/&gt;, div</span><span class="se">)</span><span class="err">;
+</span><span class="p">});</span>
+</pre></div></div>
+
+<p>上記だと、renderするタイミングの部分でpropsをassertする形。悪くはない。</p>
+
+<h1>
+<span id="もうちょっといい感じに" class="fragment"></span><a href="#%E3%82%82%E3%81%86%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E3%81%84%E3%81%84%E6%84%9F%E3%81%98%E3%81%AB"><i class="fa fa-link"></i></a>もうちょっといい感じに</h1>
+
+<p>しかしなんかこうもうちょっといい感じにしたいという場合に <a href="https://github.com/acdlite/recompose/blob/master/docs/API.md#createsink" rel="nofollow noopener" target="_blank">recompose/createSink</a>を使うと良い。<br>
+<a href="https://github.com/acdlite/recompose/blob/master/src/packages/recompose/createSink.js" rel="nofollow noopener" target="_blank">ソースコード</a>を見ると、何もrenderしないReact Componentを返してくれる事がわかる。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm install recompose
+</pre></div></div>
+
+<p>こんな具合で書き換える。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">createSink</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">recompose/createSink</span><span class="dl">'</span>
+
+<span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">renders </span><span class="dl">'</span><span class="p">,</span> <span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">div</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">div</span><span class="dl">'</span><span class="p">);</span>
+  <span class="c1">// createSink(callback) という形で、callback内でテストを書く</span>
+  <span class="c1">// これがmockのItemになる。</span>
+  <span class="kd">const</span> <span class="nx">MockItem</span> <span class="o">=</span> <span class="nx">createSink</span><span class="p">((</span><span class="nx">props</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">assert</span><span class="p">.</span><span class="nx">equal</span><span class="p">(</span><span class="nx">props</span><span class="p">.</span><span class="nx">baz</span><span class="p">,</span> <span class="dl">'</span><span class="s1">bar value</span><span class="dl">'</span><span class="p">)</span>
+    <span class="nx">done</span><span class="p">()</span>
+  <span class="p">})</span>
+  <span class="kd">const</span> <span class="nx">Mock</span> <span class="o">=</span> <span class="nx">myEnhancer</span><span class="p">(</span><span class="nx">MockItem</span><span class="p">)</span>
+  <span class="nx">ReactDOM</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="o">&lt;</span><span class="nx">Mock</span> <span class="nx">bar</span><span class="o">=</span><span class="p">{</span><span class="dl">'</span><span class="s1">bar value</span><span class="dl">'</span><span class="p">}</span> <span class="sr">/&gt;, div</span><span class="se">)</span><span class="err">;
+</span><span class="p">});</span>
+</pre></div></div>
+
+<p>だいぶ綺麗な感じになる。良い。<br>
+<code>createSink</code>なんて何に使うんだ？と思っていたがこういう所で使えるらしい。<br>
+<code>props</code>以外のLifecycleをテストするような場合ではちょっとこれだと足らなそう</p>

@@ -1,0 +1,226 @@
+
+<h1>
+<span id="発端" class="fragment"></span><a href="#%E7%99%BA%E7%AB%AF"><i class="fa fa-link"></i></a>発端</h1>
+
+<p><a href="https://twitter.com/highwide/status/737917395730374656" class="autolink" rel="nofollow noopener" target="_blank">https://twitter.com/highwide/status/737917395730374656</a></p>
+
+<blockquote>
+<p>let hoge = (x) =&gt; x + 1<br>
+がbabelで<br>
+var hoge = function hoge(x) {x + 1;}<br>
+的にコンパイルされるので、無名関数じゃないじゃん！なんで！と駄々こねて同僚の業務時間奪ってしまった。</p>
+</blockquote>
+
+<p>という話をされて、「なるほど、まあ確かに。」と思ったので調べた。</p>
+
+<h1>
+<span id="結論" class="fragment"></span><a href="#%E7%B5%90%E8%AB%96"><i class="fa fa-link"></i></a>結論</h1>
+
+<ul>
+<li>
+<code>arrow-function</code>のそのものの機能 / 仕様ではない。</li>
+<li>
+<code>function.name</code>のための変換によって変換がされてるっぽい
+
+<ul>
+<li>function.name の詳細は<a href="http://js-next.hatenablog.com/entry/2016/04/19/190006" rel="nofollow noopener" target="_blank">こちらの記事</a>が有益。</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="おためし" class="fragment"></span><a href="#%E3%81%8A%E3%81%9F%E3%82%81%E3%81%97"><i class="fa fa-link"></i></a>おためし</h1>
+
+<p>準備としてこんなコードを用意</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{}</span>       <span class="c1">// arrow function</span>
+<span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){}</span>   <span class="c1">// 普通のfunction(無名）</span>
+<span class="kd">let</span> <span class="nx">c</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">d</span><span class="p">(){}</span> <span class="c1">// 名前付きfunction</span>
+</pre></div></div>
+
+<h3>
+<span id="babel-preset-es2015でcompile" class="fragment"></span><a href="#babel-preset-es2015%E3%81%A7compile"><i class="fa fa-link"></i></a>babel-preset-es2015でcompile</h3>
+
+<p>わりといつもやるようなやり方。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% $(npm bin)/babel foo.js --presets es2015               
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="dl">"</span><span class="s2">use strict</span><span class="dl">"</span><span class="p">;</span>
+
+<span class="kd">var</span> <span class="nx">a</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">a</span><span class="p">()</span> <span class="p">{};</span>
+<span class="kd">var</span> <span class="nx">b</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">b</span><span class="p">()</span> <span class="p">{};</span>
+<span class="kd">var</span> <span class="nx">c</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">d</span><span class="p">()</span> <span class="p">{};</span>
+</pre></div></div>
+
+<p>確かに。無名関数に名前がつけられた。</p>
+
+<h3>
+<span id="transform-es2015-arrow-functionだけ使う" class="fragment"></span><a href="#transform-es2015-arrow-function%E3%81%A0%E3%81%91%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a><a href="http://babeljs.io/docs/plugins/transform-es2015-arrow-functions/" rel="nofollow noopener" target="_blank">transform-es2015-arrow-function</a>だけ使う</h3>
+
+<p>babelは各機能毎に使えるので、<code>arrow-function</code>だけ利用してみると、ちょっと面白い事になった</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="o">%</span> <span class="nx">$</span><span class="p">(</span><span class="nx">npm</span> <span class="nx">bin</span><span class="p">)</span><span class="o">/</span><span class="nx">babel</span> <span class="nx">foo</span><span class="p">.</span><span class="nx">js</span> <span class="o">--</span><span class="nx">plugins</span> <span class="nx">transform</span><span class="o">-</span><span class="nx">es2015</span><span class="o">-</span><span class="nx">arrow</span><span class="o">-</span><span class="nx">functions</span>                        
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{};</span> <span class="c1">// まだ無名！</span>
+<span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{};</span>
+<span class="kd">let</span> <span class="nx">c</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">d</span><span class="p">()</span> <span class="p">{};</span>
+</pre></div></div>
+
+<p>関数に変換されるだけで名前はつけられてない状態になった。</p>
+
+<h3>
+<span id="transform-es2015-function-nameだけ使う" class="fragment"></span><a href="#transform-es2015-function-name%E3%81%A0%E3%81%91%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a><a href="http://babeljs.io/docs/plugins/transform-es2015-function-name/" rel="nofollow noopener" target="_blank">transform-es2015-function-name</a>だけ使う</h3>
+
+<p>で、問題のfunction.nameの話。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% $(npm bin)/babel foo.js --plugins transform-es2015-function-name                          
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{};</span>
+<span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">b</span><span class="p">()</span> <span class="p">{};</span> <span class="c1">// 名前がついた！</span>
+<span class="kd">let</span> <span class="nx">c</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">d</span><span class="p">()</span> <span class="p">{};</span>
+</pre></div></div>
+
+<p>arrow functionは当然変換されないのだが、bに注目してみると、<code>function b()</code>と名前がついているのが確認出来る。この２つのtransformによってarrow functionに名前が付くようになっていることがわかる。</p>
+
+<h3>
+<span id="このふたつをどっちも使う" class="fragment"></span><a href="#%E3%81%93%E3%81%AE%E3%81%B5%E3%81%9F%E3%81%A4%E3%82%92%E3%81%A9%E3%81%A3%E3%81%A1%E3%82%82%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>このふたつをどっちも使う</h3>
+
+<p>やるまでもないけど、一応</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% $(npm bin)/babel foo.js --plugins transform-es2015-function-name,transform-es2015-arrow-functions
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">let</span> <span class="nx">a</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">a</span><span class="p">()</span> <span class="p">{};</span>
+<span class="kd">let</span> <span class="nx">b</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">b</span><span class="p">()</span> <span class="p">{};</span>
+<span class="kd">let</span> <span class="nx">c</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">d</span><span class="p">()</span> <span class="p">{};</span>
+</pre></div></div>
+
+<h2>
+<span id="functionnameとは" class="fragment"></span><a href="#functionname%E3%81%A8%E3%81%AF"><i class="fa fa-link"></i></a><code>function.name</code>とは？</h2>
+
+<p>function.nameプロパティは、ざっくり言えば、関数の名前を取得する機能になる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// Function Statements</span>
+<span class="kd">function</span> <span class="nx">fn</span> <span class="p">()</span> <span class="p">{}</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">fn</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span> <span class="c1">// "fn"</span>
+
+<span class="c1">// variables</span>
+<span class="kd">const</span> <span class="nx">a</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){}</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">a</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span> <span class="c1">// "a"</span>
+<span class="kd">const</span> <span class="nx">b</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{}</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span> <span class="c1">// "b"</span>
+</pre></div></div>
+
+<p>ここで、各環境でのサポート具合がわかる <a href="http://kangax.github.io/compat-table/es6/#test-function_name_property" rel="nofollow noopener" target="_blank">Compatibility table </a> を参考にすると、それなりにこの機能をサポートしてないブラウザが多い。</p>
+
+<p>サポートしてないブラウザの場合は、<a href="https://github.com/zloirock/core-js" rel="nofollow noopener" target="_blank">core-js</a>がpolyfillしてくれている。<br>
+そこで更にcore-jsが<a href="https://github.com/zloirock/core-js/blob/master/modules/es6.function.name.js" rel="nofollow noopener" target="_blank">何をやっているのかを見ると</a>、だいたいこんな感じで処理している。<br>
+（core-jsのソースが読みづらい場合は<a href="http://stackoverflow.com/questions/2648293/javascript-get-function-name" rel="nofollow noopener" target="_blank">Stack Overflowの類似記事</a>らへんを眺めると良いかもしれない）</p>
+
+<ol>
+<li>functionをstringに変換して、関数の内容を文字列として取得する(<code>'' + that</code>)<sup id="fnref1"><a href="#fn1" rel="footnote" title="自分の記憶が確かなら、functionをstring変換すると文字列になるというのは、特に明確な仕様ではなく、「だいたいのブラウザがそう実装している」という類のものだったはず。">1</a></sup>
+</li>
+<li>
+<code>/^\s*function ([^ (]*)/</code>という正規表現で、名前の部分を取得する</li>
+<li>取得できた値を、Function.prototype.nameで返せるようにしている。</li>
+</ol>
+
+<p><code>transform-es2015-function-name</code>が<code>let a = function(){}</code>を<code>let a = function a(){}</code>にしてくれることによって、core-jsがここまで処理を出来る、といった具合になる。</p>
+
+<h3>
+<span id="余談じゃあfunctionnameって何に使えるのか" class="fragment"></span><a href="#%E4%BD%99%E8%AB%87%E3%81%98%E3%82%83%E3%81%82functionname%E3%81%A3%E3%81%A6%E4%BD%95%E3%81%AB%E4%BD%BF%E3%81%88%E3%82%8B%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>余談：じゃあ<code>function.name</code>って何に使えるのか？</h3>
+
+<p>主観だが、基本的にはデバッグ向けぐらいじゃないかなーと思っている。</p>
+
+<p>本格的に使わなければならない状況に陥ったとすると、無理のある実装をしている可能性を疑うだろう。</p>
+
+<p>ただし、例えばデバッグの場合だったら、こんな場合とかで使えるだろう（あんまりいいコードの例が思いつかなかった）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">function</span> <span class="nx">hogeFunctionGenerator</span><span class="p">(</span><span class="nx">someFlag</span><span class="p">,</span> <span class="nx">defaultCallback</span><span class="p">){</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">someFlag</span><span class="p">){</span>
+    <span class="k">return</span> <span class="kd">function</span> <span class="nx">someFlagFn</span><span class="p">(){}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">defaultCallback</span>
+<span class="p">}</span>
+
+<span class="c1">// どの関数が結局コールされるのか知りたい場合</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">hogeFunctionGenerator</span><span class="p">(</span><span class="kc">true</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(){}).</span><span class="nx">name</span><span class="p">)</span> <span class="c1">// "someFlagFn"</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">hogeFunctionGenerator</span><span class="p">(</span><span class="kc">false</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(){}).</span><span class="nx">name</span><span class="p">)</span> <span class="c1">// ""</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">hogeFunctionGenerator</span><span class="p">(</span><span class="kc">false</span><span class="p">,</span> <span class="kd">function</span> <span class="nx">cb</span><span class="p">(){}).</span><span class="nx">name</span><span class="p">)</span> <span class="c1">// "cb"</span>
+</pre></div></div>
+
+<h3>
+<span id="余談のおまけbableにおいてclassのconstructorではどうなるか" class="fragment"></span><a href="#%E4%BD%99%E8%AB%87%E3%81%AE%E3%81%8A%E3%81%BE%E3%81%91bable%E3%81%AB%E3%81%8A%E3%81%84%E3%81%A6class%E3%81%AEconstructor%E3%81%A7%E3%81%AF%E3%81%A9%E3%81%86%E3%81%AA%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>余談のおまけ:bableにおいてclassのconstructorではどうなるか？</h3>
+
+<p>function.nameを利用して、<code>class</code>がどのクラスなのかというのを判定することを<code>c.consturctor.name</code>を呼び出すことでが出来るということが<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/name#Examples" rel="nofollow noopener" target="_blank">こちら</a>にて紹介されていた。</p>
+
+<p>ただし、この場合で深めの使い方をすると、babelではなかなかうまくいかなそうだ。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">class</span> <span class="nx">Hoge</span> <span class="p">{}</span>
+
+<span class="kd">function</span> <span class="nx">createClassZ</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// Z classを返す</span>
+  <span class="k">return</span> <span class="kd">class</span> <span class="nx">Z</span><span class="p">{</span> 
+    <span class="kd">constructor</span><span class="p">(){</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">function</span> <span class="nx">createAnonymousClass</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// 匿名classを返す</span>
+  <span class="k">return</span> <span class="kd">class</span> <span class="p">{</span> 
+    <span class="kd">constructor</span><span class="p">(){</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">let</span> <span class="nx">ZX</span> <span class="o">=</span> <span class="nx">createClassZ</span><span class="p">()</span>
+<span class="kd">let</span> <span class="nx">zx</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ZX</span><span class="p">()</span>
+
+<span class="kd">let</span> <span class="nx">X</span> <span class="o">=</span> <span class="nx">createAnonymousClass</span><span class="p">()</span>
+<span class="kd">let</span> <span class="nx">x</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">X</span><span class="p">()</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">zx</span><span class="dl">"</span><span class="p">,</span> <span class="nx">zx</span><span class="p">.</span><span class="kd">constructor</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">x</span><span class="dl">"</span><span class="p">,</span> <span class="nx">x</span><span class="p">.</span><span class="kd">constructor</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span>
+</pre></div></div>
+
+<p>Chrome(V8)では</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>zx Z
+x undefined
+</pre></div></div>
+
+<p>となってくれるところが、babelではclassをpolyfillしている都合でこんな感じになってしまう。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>zx Z
+x _class
+</pre></div></div>
+
+<p>このような使い方だとヤバそうなので注意したい。</p>
+
+<p>類似の問題はissueとして上がっていた。<br>
+<a href="https://phabricator.babeljs.io/T7014" class="autolink" rel="nofollow noopener" target="_blank">https://phabricator.babeljs.io/T7014</a></p>
+
+<h1>
+<span id="参考資料など" class="fragment"></span><a href="#%E5%8F%82%E8%80%83%E8%B3%87%E6%96%99%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>参考資料など</h1>
+
+<ul>
+<li><a href="http://www.ecma-international.org/ecma-262/6.0/#sec-setfunctionname" class="autolink" rel="nofollow noopener" target="_blank">http://www.ecma-international.org/ecma-262/6.0/#sec-setfunctionname</a></li>
+<li><a href="http://kangax.github.io/compat-table/es6/#test-function_name_property" class="autolink" rel="nofollow noopener" target="_blank">http://kangax.github.io/compat-table/es6/#test-function_name_property</a></li>
+<li><a href="https://bugzilla.mozilla.org/show_bug.cgi?id=883377" class="autolink" rel="nofollow noopener" target="_blank">https://bugzilla.mozilla.org/show_bug.cgi?id=883377</a></li>
+<li><a href="http://www.2ality.com/2015/09/function-names-es6.html" class="autolink" rel="nofollow noopener" target="_blank">http://www.2ality.com/2015/09/function-names-es6.html</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/name" class="autolink" rel="nofollow noopener" target="_blank">https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/name</a></li>
+<li><a href="http://stackoverflow.com/questions/2648293/javascript-get-function-name" class="autolink" rel="nofollow noopener" target="_blank">http://stackoverflow.com/questions/2648293/javascript-get-function-name</a></li>
+</ul>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>自分の記憶が確かなら、functionをstring変換すると文字列になるというのは、特に明確な仕様ではなく、「だいたいのブラウザがそう実装している」という類のものだったはず。 <a href="#fnref1">↩</a></p>
+</li>
+
+</ol>
+</div>

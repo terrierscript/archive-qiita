@@ -1,0 +1,106 @@
+<p>ここ数日、<a href="https://github.com/rails-assets/rails-assets/issues/291" rel="nofollow noopener" target="_blank">rails-assetsは終わった</a>とかいやいや<a href="http://bower.io/blog/2015/bower-alive-looking-contributors/" rel="nofollow noopener" target="_blank">bowerはまだ終わってない</a>と騒がしいですが、そんな中、最近自分もbowerを最近捨てていたので<sup id="fnref1"><a href="#fn1" rel="footnote" title="今回の騒動ありきというわけでもなく「なんか最近globalインストールした場合とそうでない場合で結果が変わる」みたいな問題があったから。何かの兆候だった気もする。">1</a></sup>そのあたりの話。</p>
+
+<h1>
+<span id="どんな環境か" class="fragment"></span><a href="#%E3%81%A9%E3%82%93%E3%81%AA%E7%92%B0%E5%A2%83%E3%81%8B"><i class="fa fa-link"></i></a>どんな環境か？</h1>
+
+<ul>
+<li>プロダクト全体ではまだbrowserifyなどは使えてない
+
+<ul>
+<li>使いたいけどなかなかそこまで手が回らず・・・</li>
+<li>browserifyとか使っているのであればbowerからの移行先は基本npmで良いだろう</li>
+</ul>
+</li>
+<li>bowerはChart.jsとかちょっとしたライブラリを持ってくるのに使っていた。</li>
+<li>bower -&gt; gulpでconcatして出力して管理していた。</li>
+</ul>
+
+<p>このぐらいな環境であれば、jsdelivrはそれなりにおすすめできる。</p>
+
+<h1>
+<span id="結果cdnで対応しよう" class="fragment"></span><a href="#%E7%B5%90%E6%9E%9Ccdn%E3%81%A7%E5%AF%BE%E5%BF%9C%E3%81%97%E3%82%88%E3%81%86"><i class="fa fa-link"></i></a>結果：CDNで対応しよう</h1>
+
+<p>ある程度有名なライブラリばかりだったので、CDNで対応するのが楽そうだった。</p>
+
+<p>CDNは色々あるが、<a href="https://www.jsdelivr.com/" rel="nofollow noopener" target="_blank">jsdelivr</a>を選定した。選定理由はこんな感じ</p>
+
+<ul>
+<li>ライブラリ数が十分に豊富
+
+<ul>
+<li>cdnjsより豊富な気がする（調べてないので体感）</li>
+<li>jquery.sticky-kitとかはjsdelivrにしかなかった。</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/jsdelivr/jsdelivr#load-multiple-files-with-single-http-request" rel="nofollow noopener" target="_blank">複数のファイルの同時呼び出し</a>に対応 <strong>(重要)</strong>
+</li>
+<li>
+<a href="https://www.jsdelivr.com/features/multi-cdn-load-balancing" rel="nofollow noopener" target="_blank">複数のCDNでBalanicing</a>しているらしい
+
+<ul>
+<li>これに関してはそこまでがっつり読み込んでない。</li>
+</ul>
+</li>
+</ul>
+
+<p>個人的には刺さったのが二番目。</p>
+
+<p>例えばjQueryとjQuery UIを取りたいなら</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>https://cdn.jsdelivr.net/g/jquery@1.11.3,jquery.ui@1.11.4
+</pre></div></div>
+
+<p>こんな具合。<br>
+形式としては</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>https://cdn.jsdelivr.net/g/パッケージ名(@version),パッケージ名...
+</pre></div></div>
+
+<p>という感じ。もっと細かい指定やカスタム指定はjsdeliverのgithubページで見てもらうと良い。</p>
+
+<p>すごく構造化されているので、例えばサーバーサイドでこのURLを構築するのもざっくりこんな具合にさっくりできる。</p>
+
+<div class="code-frame" data-lang="ruby"><div class="highlight"><pre>
+<span class="k">def</span> <span class="nf">generate_jsdelivr_url</span><span class="p">(</span><span class="n">pkgs</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">pkgs</span><span class="p">.</span><span class="nf">map</span><span class="p">{</span> <span class="o">|</span><span class="n">pkg_name</span><span class="p">,</span> <span class="n">v</span><span class="o">|</span> <span class="s2">"</span><span class="si">#{</span><span class="n">pkg_name</span><span class="si">}</span><span class="s2">@</span><span class="si">#{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span> <span class="p">}.</span><span class="nf">join</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span>
+    <span class="s2">"https://cdn.jsdelivr.net/g/</span><span class="si">#{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span>
+<span class="k">end</span>
+
+<span class="n">pkgs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"jquery"</span><span class="p">:</span> <span class="s2">"1.11.3"</span><span class="p">,</span>
+    <span class="s2">"jquery.ui"</span><span class="p">:</span> <span class="s2">"1.11.4"</span>
+<span class="p">}</span>
+
+<span class="n">generate_jsdelivr_url</span><span class="p">(</span><span class="n">pkgs</span><span class="p">)</span>
+<span class="sr">//</span> <span class="o">=&gt;</span> <span class="s2">"https://cdn.jsdelivr.net/g/jquery@1.11.3,jquery.ui@1.11.4"</span>
+</pre></div></div>
+
+<p>もしCDNでなく自前のサーバーから配信したいなどがあれば、上記のURLをwgetでもすればよいのではなかろうかと思う（良いかはわからんけど、bower捨てる手法としては使えそう）。</p>
+
+<h3>
+<span id="番外編jsdelivrに登録されてないライブラリどうするか" class="fragment"></span><a href="#%E7%95%AA%E5%A4%96%E7%B7%A8jsdelivr%E3%81%AB%E7%99%BB%E9%8C%B2%E3%81%95%E3%82%8C%E3%81%A6%E3%81%AA%E3%81%84%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E3%81%A9%E3%81%86%E3%81%99%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>番外編：jsdelivrに登録されてないライブラリどうするか？</h3>
+
+<p>順当にいけばCONTRIBUTEするのが一番。<br>
+とはいえ登録は多少面倒なところ<sup id="fnref2"><a href="#fn2" rel="footnote" title="しかも面倒な割に数日前に一回pull requestを投げてみたけどなかなか音沙汰が無い・・・">2</a></sup></p>
+
+<p>これに対して便利なのは<a href="https://npmcdn.com/" rel="nofollow noopener" target="_blank">npmcdn</a>。<br>
+npmに上がっているものは全て使えるので嬉しい。<br>
+ただ企業が運用しているしっかりとしたようなものでもないので、<br>
+polyfillなどのさほど重要でもないもの利用に留めている。<br>
+jsdelivrも自動でnpm配信やってほしい・・・</p>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p>今回の騒動ありきというわけでもなく「なんか最近globalインストールした場合とそうでない場合で結果が変わる」みたいな問題があったから。何かの兆候だった気もする。 <a href="#fnref1">↩</a></p>
+</li>
+
+<li id="fn2">
+<p>しかも面倒な割に数日前に一回<a href="https://github.com/jsdelivr/jsdelivr/pull/7768" rel="nofollow noopener" target="_blank">pull requestを投げてみた</a>けどなかなか音沙汰が無い・・・ <a href="#fnref2">↩</a></p>
+</li>
+
+</ol>
+</div>

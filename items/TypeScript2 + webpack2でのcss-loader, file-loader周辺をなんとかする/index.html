@@ -1,0 +1,287 @@
+<p>WebpackとTypeScriptの扱いについて、まだ手探りだが、今のところのプラクティスをまとめたい。</p>
+
+<h1>
+<span id="css-loader-file-loaderなどで読み込むリソースが型エラーになるのをなんとかする話" class="fragment"></span><a href="#css-loader-file-loader%E3%81%AA%E3%81%A9%E3%81%A7%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%82%80%E3%83%AA%E3%82%BD%E3%83%BC%E3%82%B9%E3%81%8C%E5%9E%8B%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AB%E3%81%AA%E3%82%8B%E3%81%AE%E3%82%92%E3%81%AA%E3%82%93%E3%81%A8%E3%81%8B%E3%81%99%E3%82%8B%E8%A9%B1"><i class="fa fa-link"></i></a>css-loader, file-loaderなどで読み込むリソースが型エラーになるのをなんとかする話</h1>
+
+<p>webpack + babel + css-loader という構成のところからwebpack + typescriptにしていくにあたって、js, ts以外のファイルの読み込みは、当然そのままだと型がエラーとなる。</p>
+
+<p>これを解決するのに、2点ほど手順が必要だった。</p>
+
+<h2>
+<span id="手順1-読み込み方法を変更" class="fragment"></span><a href="#%E6%89%8B%E9%A0%861-%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%81%BF%E6%96%B9%E6%B3%95%E3%82%92%E5%A4%89%E6%9B%B4"><i class="fa fa-link"></i></a>手順1. 読み込み方法を変更</h2>
+
+<p>file-loaderなどは<code>module.exports = "some-resource"</code>という形で吐き出しされるので、TypeScriptにあわせるのであれば、importの仕方を変える方が良い。<br>
+（Webpack2のtree shakingを利用する場合は、元のコードでも壊れず動いてしまうのだが、これについては後述）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// 元のコード</span>
+<span class="k">import</span> <span class="nx">style</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./foo.css</span><span class="dl">"</span>
+</pre></div></div>
+
+<p>これをこうしていく。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">style</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./foo.css</span><span class="dl">"</span>
+<span class="c1">// または</span>
+<span class="k">import</span> <span class="nx">style</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">./foo.css</span><span class="dl">"</span><span class="p">)</span>
+
+</pre></div></div>
+
+<h2>
+<span id="2-typing" class="fragment"></span><a href="#2-typing"><i class="fa fa-link"></i></a>2. typing</h2>
+
+<p>型定義をしないとtypescriptは落ちるので行う。<br>
+<code>tsconfg.json</code>で独自な<code>typings</code>ディレクトリを用意した上で型定義をすると良さそう。</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+    </span><span class="err">...</span><span class="w">
+    </span><span class="nl">"typeRoots"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">"typings"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"node_modules/@types/"</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+    </span><span class="err">...</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<p>型定義には<a href="https://www.typescriptlang.org/docs/handbook/modules.html#wildcard-module-declarations" rel="nofollow noopener" target="_blank">Wildcard module declaration</a>という定義方法を使う事で乗り越えられる。</p>
+
+<p>「とりあえず<code>any</code>でいいから！なんとかしたい！」という場合は、こんな具合。</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// typings/resource.d.ts</span>
+
+<span class="nx">declare</span> <span class="nx">module</span> <span class="dl">"</span><span class="s2">*.css</span><span class="dl">"</span>
+<span class="nx">declare</span> <span class="nx">module</span> <span class="dl">"</span><span class="s2">*.png</span><span class="dl">"</span>
+<span class="nx">declare</span> <span class="nx">module</span> <span class="dl">"</span><span class="s2">*.jpg</span><span class="dl">"</span>
+</pre></div></div>
+
+<p>「もうちょっと毛が生えた感じに！」という場合はこのぐらいまでならサクッと定義できる</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="c1">// typings/resource.d.ts</span>
+<span class="nx">declare</span> <span class="nx">module</span> <span class="dl">"</span><span class="s2">*.css</span><span class="dl">"</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">classes</span><span class="p">:</span> <span class="p">{[</span><span class="nx">className</span><span class="p">:</span> <span class="nx">string</span><span class="p">]:</span> <span class="nx">string</span><span class="p">}</span> <span class="c1">// css-moduleの結果をstring型のobjectに</span>
+  <span class="k">export</span> <span class="o">=</span> <span class="nx">classes</span>
+  <span class="c1">// import style from "./foo.css"で読み込みたいなら下記（後述）</span>
+  <span class="c1">// export default classes</span>
+<span class="p">}</span>
+
+<span class="nx">declare</span> <span class="nx">module</span> <span class="dl">"</span><span class="s2">*.png</span><span class="dl">"</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">content</span><span class="p">:</span> <span class="nx">string</span>
+  <span class="k">export</span> <span class="o">=</span> <span class="nx">content</span>
+  <span class="c1">// import style from "./some.png"で読み込みたいなら下記（後述）</span>
+  <span class="c1">// export default content</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>この定義はこのへんを参考にした。<br>
+* <a href="https://github.com/s-panferov/awesome-typescript-loader/issues/146#issuecomment-248808206" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/s-panferov/awesome-typescript-loader/issues/146#issuecomment-248808206</a><br>
+* <a href="https://github.com/Quramy/typed-css-modules/issues/2#issuecomment-256794347" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/Quramy/typed-css-modules/issues/2#issuecomment-256794347</a>)<br>
+* <a href="https://github.com/Microsoft/TypeScript/issues/6615#issuecomment-188593420" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/Microsoft/TypeScript/issues/6615#issuecomment-188593420</a></p>
+
+<p>「もっとちゃんと型定義したい！」という場合は、下記などを導入するのが良いだろう。</p>
+
+<ul>
+<li><a href="http://qiita.com/Quramy/items/a5d8967cdbd1b8575130" id="reference-4db649d39ab5f7e63028">TypeScript + React JSX + CSS Modules で実現するタイプセーフなWeb開発</a></li>
+</ul>
+
+<h1>
+<span id="webpackでのimport解決のされ方はtsconfigjsonのcompileroptionsmoduleによって変わるという話" class="fragment"></span><a href="#webpack%E3%81%A7%E3%81%AEimport%E8%A7%A3%E6%B1%BA%E3%81%AE%E3%81%95%E3%82%8C%E6%96%B9%E3%81%AFtsconfigjson%E3%81%AEcompileroptionsmodule%E3%81%AB%E3%82%88%E3%81%A3%E3%81%A6%E5%A4%89%E3%82%8F%E3%82%8B%E3%81%A8%E3%81%84%E3%81%86%E8%A9%B1"><i class="fa fa-link"></i></a>webpackでの<code>import</code>解決のされ方はtsconfig.jsonのcompilerOptions.moduleによって変わるという話</h1>
+
+<p><strong>TL;DR</strong><br>
+* <code>module: es2015</code>の場合、typescriptはモジュール解決に関与しない。webpackにモジュール解決が移譲されて、babelっぽく扱われる（babelと互換性が維持されるが、ESmoduleの仕様とズレるので、今後どこかで変更されるだろうと思われる）<br>
+* <code>module: commonjs</code>だと、typescriptが<code>import / export</code>を変換する。互換性は維持されない（正しいESmoduleの仕様に準拠する。babelとの互換性はなくなる）</p>
+
+<h2>
+<span id="前提と疑問" class="fragment"></span><a href="#%E5%89%8D%E6%8F%90%E3%81%A8%E7%96%91%E5%95%8F"><i class="fa fa-link"></i></a>前提（と疑問）</h2>
+
+<p>例えば<code>url-loader</code>、<code>file-loader</code>は、下記のような吐き出しをする</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="cm">/******/</span> <span class="p">([</span>
+<span class="cm">/* 0 */</span>
+<span class="cm">/***/</span> <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">,</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">data:text/plain;base64,aGVsbG8=</span><span class="dl">"</span>
+
+<span class="cm">/***/</span> <span class="p">}),</span>
+</pre></div></div>
+
+<p>ESmoduleの読み方で言えば<code>import * as foo from "foo"</code>という読み方でないと読み込めない理屈になる。<br>
+しかし、自分の手元で正しく動いていたので、「これは何故だろう？」という疑問が出てきた。</p>
+
+<h2>
+<span id="実験" class="fragment"></span><a href="#%E5%AE%9F%E9%A8%93"><i class="fa fa-link"></i></a>実験</h2>
+
+<p>まずこんなTypeScriptファイルを用意</p>
+
+<div class="code-frame" data-lang="ts"><div class="highlight"><pre><span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">txt1</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./foo.txt</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">txt2</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./foo.txt</span><span class="dl">"</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">import * as txt1</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">=&gt;</span><span class="dl">"</span><span class="p">,</span> <span class="nx">txt1</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">import txt2</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">=&gt;</span><span class="dl">"</span><span class="p">,</span> <span class="nx">txt2</span><span class="p">)</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">)</span>
+</pre></div></div>
+
+<p>Webpack設定を用意。<br>
+今回は、外から<code>compilerOptions.module</code>を変更できるようにする。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">(</span> <span class="nx">env</span> <span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">moduleType</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">env</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="na">entry</span><span class="p">:</span> <span class="dl">'</span><span class="s1">./src/index.ts</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">path</span><span class="p">:</span> <span class="s2">`output/</span><span class="p">${</span><span class="nx">moduleType</span><span class="p">}</span><span class="s2">`</span><span class="p">,</span>
+      <span class="na">filename</span><span class="p">:</span> <span class="dl">'</span><span class="s1">bundle.js</span><span class="dl">'</span>
+    <span class="p">},</span>
+    <span class="na">resolve</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">extensions</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">.ts</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">.js</span><span class="dl">'</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="na">module</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">rules</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="na">test</span><span class="p">:</span> <span class="sr">/</span><span class="se">\.</span><span class="sr">txt$/</span><span class="p">,</span> <span class="na">use</span><span class="p">:</span> <span class="dl">'</span><span class="s1">url-loader</span><span class="dl">'</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="na">test</span><span class="p">:</span> <span class="sr">/</span><span class="se">\.</span><span class="sr">ts$/</span><span class="p">,</span> <span class="na">use</span><span class="p">:</span> <span class="p">[{</span>
+          <span class="na">loader</span><span class="p">:</span> <span class="dl">'</span><span class="s1">ts-loader</span><span class="dl">'</span><span class="p">,</span>
+          <span class="na">options</span><span class="p">:</span> <span class="p">{</span>
+            <span class="na">compilerOptions</span><span class="p">:</span> <span class="p">{</span>
+              <span class="c1">// tsconfig.jsonのmoduleを上書き</span>
+              <span class="na">module</span><span class="p">:</span> <span class="nx">moduleType</span>
+            <span class="p">}</span>
+          <span class="p">}</span>
+        <span class="p">}]},</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>そしてビルド→実行をする</p>
+
+<p>まずcommonjsの場合</p>
+
+<div class="code-frame" data-lang="sh"><div class="highlight"><pre><span class="nv">$ </span>webpack <span class="nt">--env</span>.moduleType<span class="o">=</span>commonjs
+<span class="nv">$ </span>node output/commonjs/bundle.js
+<span class="o">===========</span>
+import <span class="k">*</span> as txt1
+<span class="o">=&gt;</span> data:text/plain<span class="p">;</span><span class="nb">base64</span>,aGVsbG8<span class="o">=</span>
+<span class="o">===========</span>
+<span class="o">===========</span>
+import txt2
+<span class="o">=&gt;</span> undefined
+<span class="o">===========</span>
+</pre></div></div>
+
+<p>結果：<code>import txt2 from "./foo.txt"</code>は<code>undefined</code>になる。</p>
+
+<p>次にes2015</p>
+
+<div class="code-frame" data-lang="sh"><div class="highlight"><pre><span class="nv">$ </span>webpack <span class="nt">--env</span>.moduleType<span class="o">=</span>es2015
+<span class="nv">$ </span>node output/es2015/bundle.js
+<span class="o">===========</span>
+import <span class="k">*</span> as txt1
+<span class="o">=&gt;</span> data:text/plain<span class="p">;</span><span class="nb">base64</span>,aGVsbG8<span class="o">=</span>
+<span class="o">===========</span>
+<span class="o">===========</span>
+import txt2
+<span class="o">=&gt;</span> data:text/plain<span class="p">;</span><span class="nb">base64</span>,aGVsbG8<span class="o">=</span>
+<span class="o">===========</span>
+</pre></div></div>
+
+<p>結果：<code>import * as txt1 from "./foo.txt"</code>、<code>import txt2 from "./foo.txt"</code>、どちらもstringが取得できる。</p>
+
+<h2>
+<span id="解説" class="fragment"></span><a href="#%E8%A7%A3%E8%AA%AC"><i class="fa fa-link"></i></a>解説</h2>
+
+<h3>
+<span id="commonjsの場合の話" class="fragment"></span><a href="#commonjs%E3%81%AE%E5%A0%B4%E5%90%88%E3%81%AE%E8%A9%B1"><i class="fa fa-link"></i></a>commonjsの場合の話</h3>
+
+<p>Typescript(ts-loader)の段階で、<code>import module from "./module"</code>は下記のような感じで変換される</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">module_1</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">./module</span><span class="dl">"</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">a</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="nx">module_1</span><span class="p">[</span><span class="dl">"</span><span class="s2">default</span><span class="dl">"</span><span class="p">]();</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p>最終的にこんな感じに変換される。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">txt1</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">foo_txt_1</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span> <span class="c1">// txt2として読み込んだもの</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">import * as txt1</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">=&gt;</span><span class="dl">"</span><span class="p">,</span> <span class="nx">txt1</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">import txt2</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">=&gt;</span><span class="dl">"</span><span class="p">,</span> <span class="nx">foo_txt_1</span><span class="p">.</span><span class="k">default</span><span class="p">);</span> <span class="c1">// .defaultにアクセスしてる</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">);</span>
+</pre></div></div>
+
+<p>file-loaderは<code>module.exports.default</code>に何も吐き出してないので、<code>commonjs</code>モードで<code>import foo from "./foo"</code>と読み込むと、undefinedになってしまう。</p>
+
+<h3>
+<span id="es2015の場合の話" class="fragment"></span><a href="#es2015%E3%81%AE%E5%A0%B4%E5%90%88%E3%81%AE%E8%A9%B1"><i class="fa fa-link"></i></a>es2015の場合の話</h3>
+
+<p>TypeScriptは<code>import / export</code>構文をいじらず、そのまま吐き出す。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">mod</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./module</span><span class="dl">"</span>
+<span class="kd">const</span> <span class="nx">a</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">mod</span><span class="p">()</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>これをwebpackが受け取り処理する。</p>
+
+<p>webpackのloaderはbabel同様、<code>__esModule</code>フラグを利用した後方互換維持の処理をしている。（これを ESM interopと呼んでるそうだ）<br>
+<a href="https://github.com/webpack/webpack/blob/93ac8e9c3699bf704068eaccaceec57b3dd45a14/lib/MainTemplate.js#L143-L151" rel="nofollow noopener" target="_blank">source</a></p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="cm">/******/</span>    <span class="c1">// getDefaultExport function for compatibility with non-harmony modules</span>
+<span class="cm">/******/</span>    <span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">n</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">module</span><span class="p">)</span> <span class="p">{</span>
+<span class="cm">/******/</span>        <span class="kd">var</span> <span class="nx">getter</span> <span class="o">=</span> <span class="nx">module</span> <span class="o">&amp;&amp;</span> <span class="nx">module</span><span class="p">.</span><span class="nx">__esModule</span> <span class="p">?</span>
+<span class="cm">/******/</span>            <span class="kd">function</span> <span class="nx">getDefault</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">module</span><span class="p">[</span><span class="dl">'</span><span class="s1">default</span><span class="dl">'</span><span class="p">];</span> <span class="p">}</span> <span class="p">:</span>
+<span class="cm">/******/</span>            <span class="kd">function</span> <span class="nx">getModuleExports</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">module</span><span class="p">;</span> <span class="p">};</span>
+<span class="cm">/******/</span>        <span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">d</span><span class="p">(</span><span class="nx">getter</span><span class="p">,</span> <span class="dl">'</span><span class="s1">a</span><span class="dl">'</span><span class="p">,</span> <span class="nx">getter</span><span class="p">);</span>
+<span class="cm">/******/</span>        <span class="k">return</span> <span class="nx">getter</span><span class="p">;</span>
+<span class="cm">/******/</span>    <span class="p">};</span>
+</pre></div></div>
+
+<p>最終的にはこんな感じになっている。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="dl">"</span><span class="s2">use strict</span><span class="dl">"</span><span class="p">;</span>
+<span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">__webpack_exports__</span><span class="p">,</span> <span class="dl">"</span><span class="s2">__esModule</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span> <span class="na">value</span><span class="p">:</span> <span class="kc">true</span> <span class="p">});</span>
+<span class="cm">/* harmony import */</span> <span class="kd">var</span> <span class="nx">__WEBPACK_IMPORTED_MODULE_0__foo_txt__</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="cm">/* harmony import */</span> <span class="kd">var</span> <span class="nx">__WEBPACK_IMPORTED_MODULE_0__foo_txt___default</span> <span class="o">=</span> <span class="nx">__webpack_require__</span><span class="p">.</span><span class="nx">n</span><span class="p">(</span><span class="nx">__WEBPACK_IMPORTED_MODULE_0__foo_txt__</span><span class="p">);</span>
+
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">import * as txt1</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">=&gt;</span><span class="dl">"</span><span class="p">,</span> <span class="nx">__WEBPACK_IMPORTED_MODULE_0__foo_txt__</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">import txt2</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">=&gt;</span><span class="dl">"</span><span class="p">,</span> <span class="nx">__WEBPACK_IMPORTED_MODULE_0__foo_txt___default</span><span class="p">.</span><span class="nx">a</span><span class="p">);</span> <span class="c1">// .defaultへのアクセスではなく、Object.definePropertyのgetterとしてアクセスするように変換されている</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">===========</span><span class="dl">"</span><span class="p">);</span>
+
+</pre></div></div>
+
+<p>これによって、結果的に`import foo from "foo.css"でも読み出せるようになってる模様。</p>
+
+<p>この後方互換は今後どうするかは議論対象になっている様なので、ある程度注意はしたほうが良さそう（とはいえ、議論を軽く追ってみるとwebpack2の間に突然消える、のようなことが起きることはなさそうに思える）</p>
+
+<ul>
+<li><a href="https://github.com/webpack/webpack/issues/4170" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/webpack/webpack/issues/4170</a></li>
+<li><a href="https://github.com/airbnb/babel-plugin-dynamic-import-webpack/pull/14#issuecomment-275159815" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/airbnb/babel-plugin-dynamic-import-webpack/pull/14#issuecomment-275159815</a></li>
+</ul>
+
+<p>Webpack2(babel)の仕様に併せて<a href="https://www.reddit.com/r/javascript/comments/5rikrz/why_airbnb_will_never_use_webpack_2/dd7qihm/" rel="nofollow noopener" target="_blank">importが壊れるケースもある</a>らしいので注意</p>
+
+<h2>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h2>
+
+<ul>
+<li>webpackのtree shakingな読み方はbabelと同じ事やってるので、<code>es2015</code>にすればloader系がいきなりぶっ壊れたりはしない。</li>
+<li>可能なら、型によって読み出しを制御しつつ、TypeScriptの手法に併せていった方が無難と思われる。</li>
+<li>「どうせloader使ってるならwebpackに併せてしまえばいいのでは？」という判断とかもありえるが、そこらへんは自己判断で。</li>
+<li>commonjsにして変な読み出しをさせないようにする、というのも無くはなさそうだが、型で防ぐでも十分には思える</li>
+<li>webpackもそのうちこの辺の読み出しに動きがあると思われるので、何処かでは書き換えが発生するものと考えたほうが良いだろう。</li>
+</ul>

@@ -1,0 +1,182 @@
+
+<h1>
+<span id="mocha--nycのころ" class="fragment"></span><a href="#mocha--nyc%E3%81%AE%E3%81%93%E3%82%8D"><i class="fa fa-link"></i></a>mocha + nycのころ</h1>
+
+<h2>
+<span id="プロジェクト構成など" class="fragment"></span><a href="#%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E6%A7%8B%E6%88%90%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>プロジェクト構成など</h2>
+
+<p>package.jsonはこんな感じ。</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"test"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NODE_ENV=test mocha test/"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"coverage"</span><span class="p">:</span><span class="w"> </span><span class="s2">"nyc -c npm test"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<ul>
+<li>/srcにソースディレクトリ</li>
+<li>/testにテストディレクトリ</li>
+<li>MISC
+
+<ul>
+<li>
+<a href="https://github.com/rstacruz/jsdom-global" rel="nofollow noopener" target="_blank">jsdom-global</a>使って色々小細工していた。</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="mocha---jestにするモチベーション" class="fragment"></span><a href="#mocha---jest%E3%81%AB%E3%81%99%E3%82%8B%E3%83%A2%E3%83%81%E3%83%99%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3"><i class="fa fa-link"></i></a>mocha -&gt; jestにするモチベーション</h2>
+
+<ul>
+<li>興味本位</li>
+<li>Jestがv15.0.0でAutomockingを捨てて本気を出してきたのでちょっと使ってみたかった気持ち</li>
+<li>Railsプロジェクトにjavascriptプロジェクトを混ぜようとしたとき、mochaのテストディレクトリに悩んでしまうぐらいなら、Jestのテストフでやってみようかと思った
+
+<ul>
+<li>jestでは、/srcなどのコードに対して、<code>/src/__tests__</code>というディレクトリを作るか、<code>some.test.js</code>という名前をつけるのがデフォルト設定になっている。</li>
+<li>mochaでも設定によっては可能</li>
+</ul>
+</li>
+<li>coverage周りに感じた魅力</li>
+</ul>
+
+<h1>
+<span id="jestへのmigrate" class="fragment"></span><a href="#jest%E3%81%B8%E3%81%AEmigrate"><i class="fa fa-link"></i></a>jestへのmigrate</h1>
+
+<h2>
+<span id="packagejsonまわり" class="fragment"></span><a href="#packagejson%E3%81%BE%E3%82%8F%E3%82%8A"><i class="fa fa-link"></i></a>package.jsonまわり</h2>
+
+<p>とりあえずmochaからの移動をまず考えるので、<code>test/**/*.js</code>のような感じでテストディレクトリの指定を行う。<br>
+coverage入りなので、coverageコマンドも変える</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="p">{</span><span class="w">
+  </span><span class="nl">"scripts"</span><span class="p">:{</span><span class="w">
+    </span><span class="nl">"test"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NODE_PATH=${npm_package_config_resolve} jest "</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"coverage"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npm test -- --coverage"</span><span class="p">,</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"jest"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"testRegex"</span><span class="p">:</span><span class="w"> </span><span class="s2">"test/.*.js"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+   </span><span class="err">:</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<p><code>test/mock</code>みたいなところに非テストデータ入れてるならignorePatternを設定</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="w">  </span><span class="err">jest</span><span class="s2">": {
+    "</span><span class="err">testPathIgnorePatterns</span><span class="s2">": ["</span><span class="err">node_modules</span><span class="s2">", "</span><span class="err">test/mock</span><span class="s2">"],
+  }
+</span></pre></div></div>
+
+<h2>
+<span id="テストのskip" class="fragment"></span><a href="#%E3%83%86%E3%82%B9%E3%83%88%E3%81%AEskip"><i class="fa fa-link"></i></a><del>テストのskip</del>
+</h2>
+
+<p><strong>2016/10/14追記：いつのまにか<code>.skip</code>が実装されていたようです。</strong><br>
+<a href="https://facebook.github.io/jest/docs/api.html#basic-testing" class="autolink" rel="nofollow noopener" target="_blank">https://facebook.github.io/jest/docs/api.html#basic-testing</a><br>
+<a href="https://github.com/facebook/jest/pull/1632" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/facebook/jest/pull/1632</a></p>
+
+<p>mochaだと<code>.skip</code>だった</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">describe</span><span class="p">(</span><span class="dl">'</span><span class="s1">some test</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">.</span><span class="nx">skip</span><span class="p">(</span><span class="dl">'</span><span class="s1">skip</span><span class="dl">'</span><span class="p">)</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<p>jestだと<code>xit</code>や<code>xdescribe</code>になる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">xdescribe</span><span class="p">(</span><span class="dl">'</span><span class="s1">some test</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">xit</span><span class="p">(</span><span class="dl">'</span><span class="s1">skip</span><span class="dl">'</span><span class="p">)</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="空ファイルはエラーになる" class="fragment"></span><a href="#%E7%A9%BA%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AF%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AB%E3%81%AA%E3%82%8B"><i class="fa fa-link"></i></a>空ファイルはエラーになる</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Your test suite must contain at least one test.
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">xdescribe</span><span class="p">(</span><span class="dl">"</span><span class="s2">todo</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">xit</span><span class="p">(</span><span class="dl">"</span><span class="s2">todo</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">it</span><span class="p">(</span><span class="dl">"</span><span class="s2">todo</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{}</span>
+</pre></div></div>
+
+<h2>
+<span id="jsdomは消せる" class="fragment"></span><a href="#jsdom%E3%81%AF%E6%B6%88%E3%81%9B%E3%82%8B"><i class="fa fa-link"></i></a>jsdomは消せる</h2>
+
+<p>jestにして嬉しいポイント</p>
+
+<p>mochaだと色々頑張っていたが、既に入っているので気にしなくて良くなる<br>
+<a href="http://facebook.github.io/jest/docs/api.html#testenvironment-string" class="autolink" rel="nofollow noopener" target="_blank">http://facebook.github.io/jest/docs/api.html#testenvironment-string</a></p>
+
+<h2>
+<span id="assertとexpect" class="fragment"></span><a href="#assert%E3%81%A8expect"><i class="fa fa-link"></i></a>assertとexpect</h2>
+
+<p>標準では<code>expect</code>というmatcherが用意されており、そちらに重点が置かれている。<br>
+個人的には<code>assert</code>を使っていきたいので、ちょっと不満ポイント。</p>
+
+<p>assertも使えないわけではない。普通にthrowされればエラーとなる。</p>
+
+<p>ただし、expect(foo) で書くとエラー時の表示がきれいになる。</p>
+
+<p>このぐらい違う。<br>
+無理に全部置き換えるまででもないかなと思ったが、郷に入れば郷に従えで今後はexpectに置き換えていくだろうなと思う。</p>
+
+<p><code>addMatchers</code>などあるのでもしかするとなんとかならないかなと思っているが未調査。</p>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F825f40dd-6056-ef6c-6df9-44ede54e41f5.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=fdfb0c195fb2ad807b14d643dd699ad8" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F825f40dd-6056-ef6c-6df9-44ede54e41f5.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=fdfb0c195fb2ad807b14d643dd699ad8" alt="6__npm_run_test__node_.png" title="6__npm_run_test__node_.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/825f40dd-6056-ef6c-6df9-44ede54e41f5.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F825f40dd-6056-ef6c-6df9-44ede54e41f5.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=e6081b50a36d6c2ee24ba563af09487f 1x" loading="lazy"></a></p>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F2539883c-87fb-08d6-9fbb-a572952c0827.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=b3911c1593bb4949aa874ceef4e06fd2" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F2539883c-87fb-08d6-9fbb-a572952c0827.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=b3911c1593bb4949aa874ceef4e06fd2" alt="6__npm_run_test__node_.png" title="6__npm_run_test__node_.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/2539883c-87fb-08d6-9fbb-a572952c0827.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F2539883c-87fb-08d6-9fbb-a572952c0827.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=59982aaca33c6fe307430ab0b0051948 1x" loading="lazy"></a></p>
+
+<h2>
+<span id="watchモード" class="fragment"></span><a href="#watch%E3%83%A2%E3%83%BC%E3%83%89"><i class="fa fa-link"></i></a>watchモード</h2>
+
+<p>jestにちょっと不満ポイント２。</p>
+
+<p>mochaだと<code>-w</code>で良かった</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ mocha -w
+</pre></div></div>
+
+<p>jestは<code>--watch</code>。<br>
+ちなみに<code>-w</code>は<code>--maxWorkers</code>という値の省略になってしまっている。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ jest --watch
+</pre></div></div>
+
+<p>しかしwatchモードの挙動自体は結構イケてる</p>
+
+<h1>
+<span id="感想" class="fragment"></span><a href="#%E6%84%9F%E6%83%B3"><i class="fa fa-link"></i></a>感想</h1>
+
+<ul>
+<li>移植自体は簡単</li>
+<li>やはりReactとは相性がとても良い。</li>
+<li>シンプルさというよりはフルスタックさに振っている感じがある</li>
+<li>並列でテストを走らせてくれているっぽい。</li>
+<li>React以外のプロジェクトで普段使いするかというと、うーんという感じ。</li>
+<li>無理して移植するほどのメリットがあるかというと、そんな強くもない
+
+<ul>
+<li>とはいえ、そもそも移植コスト掛かってないので、興味があったらやってみてもいいと思う</li>
+</ul>
+</li>
+<li>Snapshotテストとか手出し始めたらまた感想変わるかも</li>
+<li>なぜかCircle-CIでテストが遅くなっているので調査中</li>
+<li>そこそこ大規模なReactプロジェクトで「テスト入れるぞ！」となったときの選択肢としては全然アリ
+
+<ul>
+<li>mochaでちょっとしんどかったjsdomまわり気にしなくていいのも大きい </li>
+</ul>
+</li>
+</ul>

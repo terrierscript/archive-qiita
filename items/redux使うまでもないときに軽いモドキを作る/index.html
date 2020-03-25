@@ -1,0 +1,105 @@
+<p>「最初からreduxいれんのめんどくさいな〜。かといって後でcomponent書き換えるのもだるいんだよなー」みたいな微妙な感じの時にこんなの考えた。</p>
+
+<h1>
+<span id="考え方" class="fragment"></span><a href="#%E8%80%83%E3%81%88%E6%96%B9"><i class="fa fa-link"></i></a>考え方</h1>
+
+<ul>
+<li>結局<code>actions</code>を通じてなんかstateが変更される関数である</li>
+<li>componentsは<code>actions</code>のことを基本的に気にしていれば良い</li>
+<li>データとしてのpropsは、親元のstateを受け取れば良い</li>
+</ul>
+
+<h1>
+<span id="コード" class="fragment"></span><a href="#%E3%82%B3%E3%83%BC%E3%83%89"><i class="fa fa-link"></i></a>コード</h1>
+
+<p>だいたい３つで動いた。<br>
+メインは<code>App.jsx</code></p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">index.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">App</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./containers/App.jsx</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="nx">React</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">App</span> <span class="o">/&gt;</span><span class="p">,</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">'</span><span class="s1">root</span><span class="dl">'</span><span class="p">)</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="jsx">
+<div class="code-lang"><span class="bold">containers/App.jsx</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">Counter</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">../components/Counter.jsx</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="p">{</span>
+  <span class="kd">constructor</span><span class="p">(){</span>
+    <span class="k">super</span><span class="p">()</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="na">counter</span><span class="p">:</span> <span class="mi">0</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="kd">get</span> <span class="nx">actions</span><span class="p">(){</span>
+    <span class="c1">// actionCreator + reducerでやってることをさらっとやる。</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">increment</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+          <span class="na">counter</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">counter</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="p">})</span>
+      <span class="p">},</span> 
+      <span class="na">decrement</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+          <span class="na">counter</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">counter</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="p">})</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="kd">let</span> <span class="nx">props</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="na">counter</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">counter</span><span class="p">,</span>
+      <span class="p">...</span><span class="k">this</span><span class="p">.</span><span class="nx">actions</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">&lt;</span><span class="nc">Counter</span> <span class="err">{</span> <span class="p">...</span><span class="nt">props</span> <span class="err">}</span><span class="p">/&gt;</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+
+<p>Counterはreduxのサンプルから拝借</p>
+
+<div class="code-frame" data-lang="jsx">
+<div class="code-lang"><span class="bold">components/Counter.jsx</span></div>
+<div class="highlight"><pre><span class="nx">mport</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span><span class="p">,</span> <span class="nx">PropTypes</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">class</span> <span class="nx">Counter</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">increment</span><span class="p">,</span> <span class="nx">decrement</span><span class="p">,</span> <span class="nx">counter</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>
+        Clicked: <span class="si">{</span><span class="nx">counter</span><span class="si">}</span> times
+        <span class="si">{</span><span class="dl">'</span><span class="s1"> </span><span class="dl">'</span><span class="si">}</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">increment</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+        <span class="si">{</span><span class="dl">'</span><span class="s1"> </span><span class="dl">'</span><span class="si">}</span>
+        <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="nx">decrement</span><span class="si">}</span><span class="p">&gt;</span>-<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">Counter</span><span class="p">;</span>
+</pre></div>
+</div>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<p>サンプル: <a href="http://inuscript.github.io/example-modoki-redux/" class="autolink" rel="nofollow noopener" target="_blank">http://inuscript.github.io/example-modoki-redux/</a><br>
+ソース: <a href="https://github.com/inuscript/example-modoki-redux" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/inuscript/example-modoki-redux</a></p>
+
+<h2>
+<span id="感想" class="fragment"></span><a href="#%E6%84%9F%E6%83%B3"><i class="fa fa-link"></i></a>感想</h2>
+
+<ul>
+<li>そんなに悪くない</li>
+<li>とはいえ場当たり的。わりと早い段階でめんどくさくなる。</li>
+<li>actionだけ通じてstateの変更するってことだけ考えるのはシンプルで良いかもしれない</li>
+</ul>

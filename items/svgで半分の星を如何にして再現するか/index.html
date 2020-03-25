@@ -1,0 +1,137 @@
+<p>よくあるsvgで星が半分塗られた状態を再現する方法を考える</p>
+
+<h2>
+<span id="方法1-半分の星の状態を用意する" class="fragment"></span><a href="#%E6%96%B9%E6%B3%951-%E5%8D%8A%E5%88%86%E3%81%AE%E6%98%9F%E3%81%AE%E7%8A%B6%E6%85%8B%E3%82%92%E7%94%A8%E6%84%8F%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>方法1. 半分の星の状態を用意する</h2>
+
+<p>とても素直。作れるならそれで良い気がします。</p>
+
+<h2>
+<span id="方法2-viewboxをずらして色を半々で重ねる" class="fragment"></span><a href="#%E6%96%B9%E6%B3%952-viewbox%E3%82%92%E3%81%9A%E3%82%89%E3%81%97%E3%81%A6%E8%89%B2%E3%82%92%E5%8D%8A%E3%80%85%E3%81%A7%E9%87%8D%E3%81%AD%E3%82%8B"><i class="fa fa-link"></i></a>方法2. viewBoxをずらして色を半々で重ねる</h2>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fda04d784-7803-642e-edc0-d482b170a6da.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=9b5e6d21f48a43b547430d20127cbd3b" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fda04d784-7803-642e-edc0-d482b170a6da.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=9b5e6d21f48a43b547430d20127cbd3b" alt="2-color.png" title="127_0_0_1_8080.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/da04d784-7803-642e-edc0-d482b170a6da.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fda04d784-7803-642e-edc0-d482b170a6da.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=55d3efbe2a17a69df291a91d5b9faea3 1x" loading="lazy"></a></p>
+
+<p>結構望んでいたやつ。左右で配置する。</p>
+
+<div class="code-frame" data-lang="xml">
+<div class="code-lang"><span class="bold">star.svg.xml</span></div>
+<div class="highlight"><pre><span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"16"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">viewBox=</span><span class="s">"0 0 16 16"</span><span class="nt">&gt;</span>
+  <span class="c">&lt;!-- left --&gt;</span>
+  <span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"8"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">viewBox=</span><span class="s">"0 0 8 16"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;use</span> <span class="na">xlink:href=</span><span class="s">"star.svg#star"</span> <span class="na">fill=</span><span class="s">"orange"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/svg&gt;</span>
+  <span class="c">&lt;!-- right --&gt;</span>
+  <span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"8"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">viewBox=</span><span class="s">"0 0 8 16"</span> <span class="na">x=</span><span class="s">8</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;use</span> <span class="na">x=</span><span class="s">"-8"</span> <span class="na">xlink:href=</span><span class="s">"star.svg#star"</span> <span class="na">fill=</span><span class="s">"#ddd"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/svg&gt;</span>
+<span class="nt">&lt;/svg&gt;</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="応用strokeで一部塗りつぶしっぽくする" class="fragment"></span><a href="#%E5%BF%9C%E7%94%A8stroke%E3%81%A7%E4%B8%80%E9%83%A8%E5%A1%97%E3%82%8A%E3%81%A4%E3%81%B6%E3%81%97%E3%81%A3%E3%81%BD%E3%81%8F%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>応用：strokeで一部塗りつぶしっぽくする</h3>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F55bc4b5b-f114-1088-47ea-f9b5dc49c3bd.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=edb935f267e95bffd9d912c35411de97" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F55bc4b5b-f114-1088-47ea-f9b5dc49c3bd.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=edb935f267e95bffd9d912c35411de97" alt="stroke.png" title="127_0_0_1_8080.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/55bc4b5b-f114-1088-47ea-f9b5dc49c3bd.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F55bc4b5b-f114-1088-47ea-f9b5dc49c3bd.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=35d720adfa913ffc8c5a414ee2bc56cf 1x" loading="lazy"></a><br>
+strokeだけしている右側を作る。stroke分1pxずつずらしたり細工する</p>
+
+<div class="code-frame" data-lang="xml">
+<div class="code-lang"><span class="bold">star.svg.xml</span></div>
+<div class="highlight"><pre><span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"16"</span> <span class="na">height=</span><span class="s">"16"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"8"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">viewBox=</span><span class="s">"0 0 9 18"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;use</span> <span class="na">x=</span><span class="s">"1"</span> <span class="na">y=</span><span class="s">"1"</span> <span class="na">xlink:href=</span><span class="s">"star.svg#star"</span> <span class="na">fill=</span><span class="s">"orange"</span> <span class="na">stroke=</span><span class="s">"orange"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/svg&gt;</span>
+  <span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"8"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">viewBox=</span><span class="s">"0 0 9 18"</span> <span class="na">x=</span><span class="s">"8"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;use</span> <span class="na">y=</span><span class="s">1</span> <span class="na">x=</span><span class="s">"-8"</span> <span class="na">xlink:href=</span><span class="s">"star.svg#star"</span> <span class="na">fill=</span><span class="s">"transparent"</span> <span class="na">stroke=</span><span class="s">"orange"</span><span class="nt">/&gt;</span>
+  <span class="nt">&lt;/svg&gt;</span>
+<span class="nt">&lt;/svg&gt;</span>
+</pre></div>
+</div>
+
+<h3>
+<span id="方法2のボツ案" class="fragment"></span><a href="#%E6%96%B9%E6%B3%952%E3%81%AE%E3%83%9C%E3%83%84%E6%A1%88"><i class="fa fa-link"></i></a>方法2のボツ案</h3>
+
+<p>片方をviewboxでずらさずに上に引くやり方だとコード量は減るが、ジャギが出てしまってイマイチな感じになるが、参考までに掲載<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fd60de55d-e9ef-7170-a074-b93de9fd8608.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=6d030f45172045ea52c96ef11a3ab8c3" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fd60de55d-e9ef-7170-a074-b93de9fd8608.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=6d030f45172045ea52c96ef11a3ab8c3" alt="ボツ.png" title="127_0_0_1_8080.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/d60de55d-e9ef-7170-a074-b93de9fd8608.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fd60de55d-e9ef-7170-a074-b93de9fd8608.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=b23c99d28210118b7c0f5290e5dd5b17 1x" loading="lazy"></a></p>
+
+<div class="code-frame" data-lang="xml">
+<div class="code-lang"><span class="bold">ボツ案.svg.xml</span></div>
+<div class="highlight"><pre>    <span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"16"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">viewBox=</span><span class="s">"0 0 16 16"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;use</span> <span class="na">xlink:href=</span><span class="s">"star.svg#star"</span> <span class="na">fill=</span><span class="s">"orange"</span> <span class="nt">/&gt;</span>
+      <span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"8"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">viewBox=</span><span class="s">"0 0 8 16"</span> <span class="na">x=</span><span class="s">8</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;use</span> <span class="na">x=</span><span class="s">"-8"</span> <span class="na">xlink:href=</span><span class="s">"star.svg#star"</span> <span class="na">fill=</span><span class="s">"#ddd"</span> <span class="nt">/&gt;</span>
+      <span class="nt">&lt;/svg&gt;</span>
+    <span class="nt">&lt;/svg&gt;</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="方法3-preserveaspectratioを使って半分塗りつぶす" class="fragment"></span><a href="#%E6%96%B9%E6%B3%953-preserveaspectratio%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%A6%E5%8D%8A%E5%88%86%E5%A1%97%E3%82%8A%E3%81%A4%E3%81%B6%E3%81%99"><i class="fa fa-link"></i></a>方法3. preserveAspectRatioを使って半分塗りつぶす</h2>
+
+<p>方法2のほうがスマートだが、preserveAspectRatioを使っても再現できる<br>
+（書いた後に気づいたがどうもIE11でうまくいかなそう・・・）</p>
+
+<div class="code-frame" data-lang="xml">
+<div class="code-lang"><span class="bold">star.svg.xml</span></div>
+<div class="highlight"><pre><span class="nt">&lt;svg</span> <span class="na">width=</span><span class="s">"16"</span> <span class="na">height=</span><span class="s">"16"</span> <span class="na">viewBox=</span><span class="s">"0 0 16 16"</span><span class="nt">&gt;</span>
+  <span class="c">&lt;!-- left --&gt;</span>
+  <span class="nt">&lt;svg</span> 
+    <span class="na">width=</span><span class="s">"8"</span> <span class="na">height=</span><span class="s">"16"</span>
+    <span class="na">preserveAspectRatio=</span><span class="s">"slice xMinYMin"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;use</span> <span class="na">xlink:href=</span><span class="s">"star.svg#star"</span> <span class="na">fill=</span><span class="s">"orange"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/svg&gt;</span>
+  <span class="c">&lt;!-- right --&gt;</span>
+  <span class="nt">&lt;svg</span> 
+    <span class="na">x=</span><span class="s">"8"</span>
+    <span class="na">width=</span><span class="s">"8"</span> <span class="na">height=</span><span class="s">"16"</span>
+    <span class="na">preserveAspectRatio=</span><span class="s">"slice xMaxYMax"</span><span class="nt">&gt;</span>
+    <span class="c">&lt;!-- x位置をずらす --&gt;</span>
+    <span class="nt">&lt;use</span> <span class="na">x=</span><span class="s">"-8"</span> <span class="na">xlink:href=</span><span class="s">"star.svg#star"</span> <span class="na">fill=</span><span class="s">"#ddd"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;/svg&gt;</span>
+<span class="nt">&lt;/svg&gt;</span>
+</pre></div>
+</div>
+
+<h2>
+<span id="方法4-colorとfillを使う" class="fragment"></span><a href="#%E6%96%B9%E6%B3%954-color%E3%81%A8fill%E3%82%92%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>方法4. colorとfillを使う</h2>
+
+<p><a href="http://tympanus.net/codrops/2015/07/16/styling-svg-use-content-css/" rel="nofollow noopener" target="_blank">こちらの記事</a>を参考に、<code>currentColor</code>を利用してハックする。<br>
+この方法の場合、方法2,3のように単純なpathではなく、元々のsvgのpathを分ける</p>
+
+<div class="code-frame" data-lang="svg">
+<div class="code-lang"><span class="bold">star.svg</span></div>
+<div class="highlight"><pre>&lt;svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"&gt;
+    &lt;defs&gt;
+        &lt;svg id="star" viewBox="0 0 16 16" &gt;
+            &lt;path class="star-left" d="M-右半分のpath"/&gt;
+            &lt;path class="star-right"
+                fill="currentColor" d="M-左半分のpath"/&gt;
+        &lt;/svg&gt;
+    &lt;/defs&gt;
+&lt;/svg&gt;
+</pre></div>
+</div>
+
+<p>呼び出しはこんな感じ</p>
+
+<div class="code-frame" data-lang="svg">
+<div class="code-lang"><span class="bold">usage.svg</span></div>
+<div class="highlight"><pre>&lt;svg class="rating-star" width="20" height="20"&gt; 
+  &lt;use class="half" xlink:href="star.svg#star"&gt;
+&lt;/svg&gt;
+</pre></div>
+</div>
+
+<p>そしてcssで、fillとcolorを指定する。</p>
+
+<div class="code-frame" data-lang="css"><div class="highlight"><pre><span class="nc">.rating-star</span> <span class="nc">.half</span><span class="p">{</span>
+  <span class="py">fill</span><span class="p">:</span> <span class="no">orange</span><span class="p">;</span>
+  <span class="nl">color</span><span class="p">:</span> <span class="no">gray</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h2>
+<span id="その他方法" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E6%96%B9%E6%B3%95"><i class="fa fa-link"></i></a>その他方法</h2>
+
+<p>コメント欄より:</p>
+
+<p>GradientやPatternを利用した方法を教えていただきました<br>
+参考: <a href="http://okiru.net/misc/20160214/" rel="nofollow noopener" target="_blank">SVGで半分だけ塗られた星を再現する</a></p>

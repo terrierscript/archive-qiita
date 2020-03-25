@@ -1,0 +1,114 @@
+<p><a href="https://github.com/eslint/typescript-eslint-parser" rel="nofollow noopener" target="_blank">typescript-eslint-parser</a> を入れようとしてちょいちょいハマった<br>
+やんごとなき事情でJavaScriptとTypeScriptが混ざっている場合前提なので、TypeScriptオンリーであればここまで困らないと考えられる</p>
+
+<h1>
+<span id="tldr" class="fragment"></span><a href="#tldr"><i class="fa fa-link"></i></a>TL;DR</h1>
+
+<ul>
+<li>jsとtsが混在している場合、に<code>--ext .js .ts</code>みたいにjsファイルも一緒に食わせると色々コケて上手く使えない
+
+<ul>
+<li>typescript用のコマンドにして、configを別途渡そう</li>
+</ul>
+</li>
+<li>一部のルールは上手く動かない
+
+<ul>
+<li>仕方ないけどdisableしよう</li>
+</ul>
+</li>
+<li>
+<code>// eslint-disable-line</code>とか<code>// eslint-disable-next-line</code>行単位の無効化が上手く動いてない
+
+<ul>
+<li>ファイル先頭での指定に切り替えていこう</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="詳細" class="fragment"></span><a href="#%E8%A9%B3%E7%B4%B0"><i class="fa fa-link"></i></a>詳細</h1>
+
+<h2>
+<span id="typescript用に別途設定ファイルを用意する" class="fragment"></span><a href="#typescript%E7%94%A8%E3%81%AB%E5%88%A5%E9%80%94%E8%A8%AD%E5%AE%9A%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%82%92%E7%94%A8%E6%84%8F%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>Typescript用に別途設定ファイルを用意する</h2>
+
+<p>だいたいこんな感じで<code>.eslintrc.js</code>があると思う。これをTypescriptオンリーなプロジェクトならこれを<code>typescript-eslint-parser</code>にしちゃうで良いが、混在のピロジェクトだとjsファイルを<code>typescript-eslint-parser</code>が上手くパースできず色々なルールでコケる（コケないルールもある）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// .eslintrc.js </span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="p">:</span>
+  <span class="dl">"</span><span class="s2">parser</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">babel-eslint</span><span class="dl">"</span><span class="p">,</span>
+  <span class="p">:</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>そのため、<code>.eslintrc</code>をextendしたconfigを別途作ると良い（typescriptとルール共有しなくていいなら別に化粧とかさせなくてもいだろう）</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// .eslintrc.typescript.js</span>
+<span class="kd">const</span> <span class="nx">baseConfig</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">./.eslintrc.js</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">overrideConfig</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">parser</span><span class="p">:</span> <span class="dl">"</span><span class="s2">typescript-eslint-parser</span><span class="dl">"</span>
+<span class="p">}</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">assign</span><span class="p">({},</span> <span class="nx">baseConfig</span><span class="p">,</span> <span class="nx">overrideConfig</span><span class="p">)</span>
+</pre></div></div>
+
+<p>当然package.jsonでの起動も別途設定になる。<code>-c</code>オプションでconfigを渡し直す</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="err">//</span><span class="w"> </span><span class="err">package.json</span><span class="w">
+</span><span class="p">{</span><span class="w">
+    </span><span class="nl">"lint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eslint javascripts/ --ext .js --fix"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"lint:ts"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eslint javascripts/ -c .eslintrc.typescript.js --ext .ts --fix"</span><span class="p">,</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<p><a href="https://github.com/eslint/eslint/issues/3611" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/eslint/eslint/issues/3611</a><br>
+こちらの機能が実装されれば分割しなくてよくなりそうとのこと（ <a href="/mysticatea" class="user-mention js-hovercard" title="mysticatea" data-hovercard-target-type="user" data-hovercard-target-name="mysticatea">@mysticatea</a> さんに教えていただきました！情報ありがとうございます！）</p>
+
+<h2>
+<span id="一部のルールは上手く動かないので除外する必要がある" class="fragment"></span><a href="#%E4%B8%80%E9%83%A8%E3%81%AE%E3%83%AB%E3%83%BC%E3%83%AB%E3%81%AF%E4%B8%8A%E6%89%8B%E3%81%8F%E5%8B%95%E3%81%8B%E3%81%AA%E3%81%84%E3%81%AE%E3%81%A7%E9%99%A4%E5%A4%96%E3%81%99%E3%82%8B%E5%BF%85%E8%A6%81%E3%81%8C%E3%81%82%E3%82%8B"><i class="fa fa-link"></i></a>一部のルールは上手く動かないので除外する必要がある</h2>
+
+<p>ESLintのルールは当然Typescriptを考慮したものでないので、幾つか不都合のあるルールが存在するとのこと</p>
+
+<p><a href="https://github.com/eslint/typescript-eslint-parser/issues/77" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/eslint/typescript-eslint-parser/issues/77</a></p>
+
+<p>このへんは惜しいが必要に応じてdisableにしていくしかない。自分の場合は<code>no-unused-vars</code>, <code>no-undef</code>をdisableする必要があった（インターフェース周りでどうしてもうまくいかない）<br>
+先ほどのeslintrc上書きを使って、ruleを打ち消してもいいかもしれない</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// .eslintrc.typescript.js</span>
+<span class="kd">const</span> <span class="nx">baseConfig</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">./.eslintrc.js</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">overrideConfig</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">parser</span><span class="p">:</span> <span class="dl">"</span><span class="s2">typescript-eslint-parser</span><span class="dl">"</span>
+  <span class="na">rules</span><span class="p">:</span> <span class="p">{</span>
+   <span class="dl">"</span><span class="s2">no-unused-var</span><span class="dl">"</span><span class="p">:</span> <span class="mi">0</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">assign</span><span class="p">({},</span> <span class="nx">baseConfig</span><span class="p">,</span> <span class="nx">overrideConfig</span><span class="p">)</span>
+</pre></div></div>
+
+<p>ちなみに、typescript-eslint-parserのreadmeには<a href="https://github.com/eslint/typescript-eslint-parser#reporting-bugs" rel="nofollow noopener" target="_blank">ESLintのルールのバグはこっちには報告しないでね</a>とあるのでバグ報告する場合は注意</p>
+
+<h2>
+<span id="eslint-disable-lineとかが動いてない" class="fragment"></span><a href="#eslint-disable-line%E3%81%A8%E3%81%8B%E3%81%8C%E5%8B%95%E3%81%84%E3%81%A6%E3%81%AA%E3%81%84"><i class="fa fa-link"></i></a>eslint-disable-lineとかが動いてない</h2>
+
+<p>バグな模様</p>
+
+<p><a href="https://github.com/eslint/typescript-eslint-parser/issues/5" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/eslint/typescript-eslint-parser/issues/5</a></p>
+
+<p>こういうのが動かない。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">console</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="nx">message</span><span class="p">)</span> <span class="c1">// eslint-disable-line</span>
+</pre></div></div>
+
+<p>ファイル先頭に書く場合は動くので、そっちで代用</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="cm">/* eslint-disable no-console */</span>
+ <span class="p">:</span>
+ <span class="p">:</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="nx">message</span><span class="p">)</span>
+</pre></div></div>
+
+<p>ちょっと不便だが致し方なし</p>

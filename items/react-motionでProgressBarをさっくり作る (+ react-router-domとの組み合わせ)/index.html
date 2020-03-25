@@ -1,0 +1,150 @@
+<p>reactのアニメーション関連で結構メジャーっぽいreact-motionが意外ととっつきにくかったので、簡易なProgressバー作って素振りした。</p>
+
+<h1>
+<span id="生成物" class="fragment"></span><a href="#%E7%94%9F%E6%88%90%E7%89%A9"><i class="fa fa-link"></i></a>生成物</h1>
+
+<p><a href="https://inuscript.github.io/example-motion-routing/" class="autolink" rel="nofollow noopener" target="_blank">https://inuscript.github.io/example-motion-routing/</a></p>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F37b7bb6f-c60b-ec06-3603-3007cc77d1d8.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=5e5d6742c0abd83b3d74d09314ce989c" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F37b7bb6f-c60b-ec06-3603-3007cc77d1d8.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=5e5d6742c0abd83b3d74d09314ce989c" alt="Kapture 2017-04-20 at 0.09.01.gif" title="Kapture 2017-04-20 at 0.09.01.gif" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/37b7bb6f-c60b-ec06-3603-3007cc77d1d8.gif" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F37b7bb6f-c60b-ec06-3603-3007cc77d1d8.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=dcdc99244e1e9be21a6c613f1a937139 1x" loading="lazy"></a></p>
+
+<h1>
+<span id="作り方" class="fragment"></span><a href="#%E4%BD%9C%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>作り方</h1>
+
+<p>まずAnimationの基となるComponentを作る。<br>
+css周りは<code>styled-components</code>を使った。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">styled</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">styled-components</span><span class="dl">"</span>
+
+<span class="c1">// 不慣れであれば&lt;div className="BarContainer" /&gt;みたいに読み替えてもらえると良い。</span>
+<span class="kd">const</span> <span class="nx">BarContainer</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  width:500px;
+  position: relative;
+  height: 20px;
+  background: lightgray;
+`</span>
+<span class="kd">const</span> <span class="nx">BarInnter</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  display: block;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  width: 0;
+  background-color: darkslateblue;
+`</span>
+
+<span class="c1">// 外から`width`を受け取って`style`によってwidthが変わるようなComponentを作る</span>
+<span class="kd">const</span> <span class="nx">Bar</span> <span class="o">=</span> <span class="p">({</span><span class="nx">width</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">BarContainer</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">BarInnter</span> <span class="nx">style</span><span class="o">=</span><span class="p">{</span> <span class="p">{</span><span class="na">width</span><span class="p">:</span> <span class="s2">`</span><span class="p">${</span><span class="nx">width</span><span class="p">}</span><span class="s2">%`</span><span class="p">}</span> <span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/BarContainer</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>ここらへんから<code>react-motion</code>の出番。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span> <span class="nx">Motion</span><span class="p">,</span> <span class="nx">spring</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">react-motion</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">class</span> <span class="nx">ProgressBar</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">shouldComponentUpdate</span><span class="p">(</span><span class="nx">nextProps</span><span class="p">){</span>
+    <span class="c1">// 不正な値が来たら更新を無視する</span>
+    <span class="c1">// (ただ動かすだけであれば不要だが、あったほうが良い）</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">progress</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">nextProps</span>
+    <span class="k">return</span> <span class="o">!</span><span class="nb">isNaN</span><span class="p">(</span><span class="nb">parseInt</span><span class="p">(</span><span class="nx">progress</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+  <span class="p">}</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">progress</span> <span class="o">=</span> <span class="nb">parseInt</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">progress</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">Motion</span> <span class="nx">defaultStyle</span><span class="o">=</span><span class="p">{{</span><span class="na">p</span><span class="p">:</span> <span class="mi">0</span><span class="p">}}</span> <span class="nx">style</span><span class="o">=</span><span class="p">{{</span><span class="na">p</span><span class="p">:</span> <span class="nx">spring</span><span class="p">(</span><span class="nx">progress</span><span class="p">)}}</span><span class="o">&gt;</span><span class="p">{</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nb">Math</span><span class="p">.</span><span class="nx">ceil</span><span class="p">(</span><span class="nx">value</span><span class="p">.</span><span class="nx">p</span><span class="p">)}</span><span class="o">%&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>        <span class="o">&lt;</span><span class="nx">Bar</span> <span class="nx">width</span><span class="o">=</span><span class="p">{</span><span class="nx">value</span><span class="p">.</span><span class="nx">p</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="p">}}</span><span class="o">&lt;</span><span class="sr">/Motion</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><code>&lt;Motion&gt;</code>のchildrenがFunctionになっており、そこにanimationに従った値が入ってくる。</p>
+
+<h3>
+<span id="spring" class="fragment"></span><a href="#spring"><i class="fa fa-link"></i></a>spring??</h3>
+
+<p><code>spring</code>はanimationの動きを調整する関数。<code>spring(変更後の値, option)</code>という感じ。今回は外から渡される<code>progress</code>の値まで動かすという形にしている。</p>
+
+<p>試しに<code>spring(progress, {stiffness: 400, damping: 5}</code>とかしてみるとびよんびよんする。楽しい<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F52bb00e0-81fc-83fa-09d5-d8ee90513532.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=71ceacfe10c5abb956a3b53598f4f90f" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F52bb00e0-81fc-83fa-09d5-d8ee90513532.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=71ceacfe10c5abb956a3b53598f4f90f" alt="spring" title="Kapture 2017-04-20 at 0.01.21.gif" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/52bb00e0-81fc-83fa-09d5-d8ee90513532.gif" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2F52bb00e0-81fc-83fa-09d5-d8ee90513532.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=ce90b93027aa08f5a78b0933c453d56a 1x" loading="lazy"></a></p>
+
+<h3>
+<span id="複数のanimation値設定" class="fragment"></span><a href="#%E8%A4%87%E6%95%B0%E3%81%AEanimation%E5%80%A4%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>複数のanimation値設定</h3>
+
+<p>styleの値はobjectなので、複数の値でそれぞれ<code>spring</code>のアニメーションを変えるのも可能。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// 例えば色も変わるprogressにしてみる</span>
+<span class="kd">const</span> <span class="nx">Bar</span> <span class="o">=</span> <span class="p">({</span><span class="nx">width</span><span class="p">,</span> <span class="nx">color</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">BarContainer</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">BarInnter</span> <span class="nx">style</span><span class="o">=</span><span class="p">{</span> <span class="p">{</span><span class="na">width</span><span class="p">:</span> <span class="s2">`</span><span class="p">${</span><span class="nx">width</span><span class="p">}</span><span class="s2">%`</span><span class="p">,</span> <span class="na">backgroundColor</span><span class="p">:</span> <span class="nx">color</span><span class="p">}</span> <span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/BarContainer</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">class</span> <span class="nx">ProgressBar</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+  <span class="p">:</span>
+  <span class="p">:</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">progress</span> <span class="o">=</span> <span class="nb">parseInt</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">progress</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">Motion</span> <span class="nx">defaultStyle</span><span class="o">=</span><span class="p">{{</span><span class="na">p</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="na">color</span><span class="p">:</span> <span class="mi">0</span><span class="p">}}</span> <span class="nx">style</span><span class="o">=</span><span class="p">{{</span>
+      <span class="na">p</span><span class="p">:</span> <span class="nx">spring</span><span class="p">(</span><span class="nx">progress</span><span class="p">),</span> 
+      <span class="na">color</span><span class="p">:</span> <span class="nx">spring</span><span class="p">(</span><span class="nx">progress</span><span class="p">,</span> <span class="p">{</span><span class="na">stiffness</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="na">damping</span><span class="p">:</span> <span class="mi">5</span><span class="p">}</span> <span class="p">)</span>
+    <span class="p">}}</span><span class="o">&gt;</span><span class="p">{</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nb">Math</span><span class="p">.</span><span class="nx">ceil</span><span class="p">(</span><span class="nx">value</span><span class="p">.</span><span class="nx">p</span><span class="p">)}</span><span class="o">%&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>        <span class="o">&lt;</span><span class="nx">Bar</span> <span class="nx">width</span><span class="o">=</span><span class="p">{</span><span class="s2">`</span><span class="p">${</span><span class="nx">value</span><span class="p">.</span><span class="nx">p</span><span class="p">}</span><span class="s2">`</span><span class="p">}</span> <span class="nx">color</span><span class="o">=</span><span class="p">{</span><span class="s2">`hsl(</span><span class="p">${</span><span class="nx">value</span><span class="p">.</span><span class="nx">color</span><span class="o">*</span><span class="mi">2</span><span class="p">}</span><span class="s2">, 50%, 50%)`</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="p">}}</span><span class="o">&lt;</span><span class="sr">/Motion</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc354405e-ddb5-2b44-dc48-a83cc1f06877.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=bf5dd573111f4401326e252eff2b5256" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc354405e-ddb5-2b44-dc48-a83cc1f06877.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=bf5dd573111f4401326e252eff2b5256" alt="Kapture 2017-04-20 at 0.44.00.gif" title="Kapture 2017-04-20 at 0.44.00.gif" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/c354405e-ddb5-2b44-dc48-a83cc1f06877.gif" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc354405e-ddb5-2b44-dc48-a83cc1f06877.gif?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=82980e8c89eaf234953563aa9987988a 1x" loading="lazy"></a></p>
+
+<p>色アニメーションだけ変える需要はなさそうだけど、使い所はありそう</p>
+
+<h1>
+<span id="react-routerv4と組合わせる" class="fragment"></span><a href="#react-routerv4%E3%81%A8%E7%B5%84%E5%90%88%E3%82%8F%E3%81%9B%E3%82%8B"><i class="fa fa-link"></i></a>react-router(v4)と組合わせる</h1>
+
+<p><a href="https://reacttraining.com/react-router/web/example/animated-transitions" rel="nofollow noopener" target="_blank">公式サンプル</a>だとcss-transition-groupを利用しているので、違いを知る意味で素振りしてみる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="p">{</span>
+  <span class="nx">BrowserRouter</span><span class="p">,</span>
+  <span class="nx">Route</span>
+<span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-router-dom</span><span class="dl">'</span>
+
+<span class="c1">// gh-pages向けにbaseUrlある設定にしている</span>
+<span class="kd">const</span> <span class="nx">baseUrl</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">/example-motion-routing</span><span class="dl">"</span> 
+
+<span class="kd">const</span> <span class="nx">App</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">BrowserRouter</span> <span class="nx">basename</span><span class="o">=</span><span class="p">{</span><span class="nx">baseUrl</span><span class="p">}</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="dl">"</span><span class="s2">App</span><span class="dl">"</span><span class="o">&gt;</span>
+      <span class="err">　</span><span class="p">{</span><span class="cm">/*どこにも該当しない時用のredirect*/</span><span class="p">}</span>
+        <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">exact</span> <span class="nx">path</span><span class="o">=</span><span class="dl">"</span><span class="s2">/</span><span class="dl">"</span> <span class="nx">render</span><span class="o">=</span><span class="p">{()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+          <span class="o">&lt;</span><span class="nx">Redirect</span> <span class="nx">to</span><span class="o">=</span><span class="dl">"</span><span class="s2">/40</span><span class="dl">"</span><span class="o">/&gt;</span>
+        <span class="p">)}</span><span class="sr">/</span><span class="err">&gt;
+</span>        <span class="o">&lt;</span><span class="nx">Route</span> <span class="nx">path</span><span class="o">=</span><span class="p">{</span><span class="s2">`/:progress`</span><span class="p">}</span> <span class="nx">component</span><span class="o">=</span><span class="p">{</span><span class="nx">ProgressRoute</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>        <span class="o">&lt;</span><span class="nx">Links</span> <span class="o">/&gt;</span>
+      <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/BrowserRouter</span><span class="err">&gt;
+</span>  <span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// Routingを受けるComponent。</span>
+<span class="c1">// parmeterをProgressBarへ引き渡す</span>
+<span class="kd">const</span> <span class="nx">ProgressRoute</span> <span class="o">=</span> <span class="p">({</span><span class="nx">match</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">progress</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">match</span><span class="p">.</span><span class="nx">params</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">ProgressBar</span> <span class="nx">progress</span><span class="o">=</span><span class="p">{</span><span class="nx">progress</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>基本的な思想は変わらない。URLパラメータを受け取り、それをreact-motionを使っているComponentへ渡している。<br>
+結果としては結構すっきりした。react-routerとreact-motionは割と相性良いかもしれない。</p>

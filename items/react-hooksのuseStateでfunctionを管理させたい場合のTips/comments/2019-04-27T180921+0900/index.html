@@ -1,0 +1,9 @@
+<p>すでにどこかにありそうですが<br>
+functional updateを使わないという条件付きですが、これをやると直感的に書けて便利でした。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">function</span> <span class="nx">useFunction</span><span class="p">(</span><span class="nx">initialFn</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">state</span><span class="p">,</span> <span class="nx">setState</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">({</span> <span class="na">fn</span><span class="p">:</span> <span class="nx">initialFn</span> <span class="p">});</span>
+  <span class="kd">const</span> <span class="nx">setFn</span> <span class="o">=</span> <span class="nx">fn</span> <span class="o">=&gt;</span> <span class="nx">setState</span><span class="p">({</span> <span class="nx">fn</span> <span class="p">});</span>
+  <span class="k">return</span> <span class="p">[</span><span class="nx">state</span><span class="p">.</span><span class="nx">fn</span><span class="p">,</span> <span class="nx">setFn</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div></div>

@@ -1,0 +1,76 @@
+
+<h1>
+<span id="構成" class="fragment"></span><a href="#%E6%A7%8B%E6%88%90"><i class="fa fa-link"></i></a>構成</h1>
+
+<p>よくあるRaspberry PiとArduinoつないだやつ。</p>
+
+<ul>
+<li>Raspberry PiとArduino Unoに接続</li>
+<li>Arduinoはjohnny-fiveの手順どおりStandardFirmataをUpload </li>
+<li>Raspbian側でcrontabを回して、johnny-fiveを利用したスクリプトを実行</li>
+</ul>
+
+<h1>
+<span id="ハマった話" class="fragment"></span><a href="#%E3%83%8F%E3%83%9E%E3%81%A3%E3%81%9F%E8%A9%B1"><i class="fa fa-link"></i></a>ハマった話</h1>
+
+<p>温度をとるためにこんなスクリプトを書いた</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">five</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">johnny-five</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">board</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">five</span><span class="p">.</span><span class="nx">Board</span><span class="p">()</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">cb</span><span class="p">){</span>
+  <span class="nx">board</span><span class="p">.</span><span class="nx">once</span><span class="p">(</span><span class="dl">"</span><span class="s2">ready</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="kd">var</span> <span class="nx">temperature</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">five</span><span class="p">.</span><span class="nx">Temperature</span><span class="p">({</span>
+      <span class="na">controller</span><span class="p">:</span> <span class="dl">"</span><span class="s2">LM35</span><span class="dl">"</span><span class="p">,</span>
+      <span class="na">pin</span><span class="p">:</span> <span class="dl">"</span><span class="s2">A0</span><span class="dl">"</span>
+    <span class="p">})</span>
+
+    <span class="nx">temperature</span><span class="p">.</span><span class="nx">once</span><span class="p">(</span><span class="dl">"</span><span class="s2">data</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">data</span><span class="p">){</span>      
+      <span class="k">if</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+      <span class="p">}</span>
+      <span class="nx">cb</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">data</span><span class="p">.</span><span class="nx">celsius</span><span class="p">)</span>
+    <span class="p">})</span>
+  <span class="p">})</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p>で、crontabをこんな感じにした</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ sudo crontab -l
+* * * * * /usr/local/bin/node /path/to/script.js
+</pre></div></div>
+
+<p>が、どうも思った通りにデータを送信してくれない。<br>
+ログを見たりしていると、cronが回っているが出力がうまくいってないらしい。</p>
+
+<h2>
+<span id="ログを吐かせてみる" class="fragment"></span><a href="#%E3%83%AD%E3%82%B0%E3%82%92%E5%90%90%E3%81%8B%E3%81%9B%E3%81%A6%E3%81%BF%E3%82%8B"><i class="fa fa-link"></i></a>ログを吐かせてみる</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>* * * * * /usr/local/bin/node /path/to/script.js &gt; /home/pi/c1 2&gt;/home/pi/c2
+</pre></div></div>
+
+<p>こんな調子でログを吐かせてみるとざっくりこんなエラーが出てた（timestampとかは削っている）</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Device(s) /dev/ttyACM0
+Connected /dev/ttyACM0
+Repl Initialized
+Board Closing.
+</pre></div></div>
+
+<p>クロージングってなんでだよ。</p>
+
+<h2>
+<span id="解決編" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA%E7%B7%A8"><i class="fa fa-link"></i></a>解決編</h2>
+
+<p>散々悩んだ挙句、デフォルトがreplになっていて、それが起動してしまうことでうまく回ってくれなかったらしいことがわかった。</p>
+
+<p>ということでこんな感じにしてやっと動いた。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">five</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">johnny-five</span><span class="dl">"</span><span class="p">)</span>
+<span class="kd">var</span> <span class="nx">board</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">five</span><span class="p">.</span><span class="nx">Board</span><span class="p">({</span>
+  <span class="na">repl</span><span class="p">:</span> <span class="kc">false</span>
+<span class="p">})</span>
+</pre></div></div>

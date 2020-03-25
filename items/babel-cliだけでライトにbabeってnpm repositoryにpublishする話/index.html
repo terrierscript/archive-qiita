@@ -1,0 +1,287 @@
+<p>先日、npmから<code>const</code>など一部ブラウザが対応してないコードが入ってしまって<a href="http://qiita.com/inuscript/items/2dd2221d032c777dab29" id="reference-9c56303bb6a924ea60e2">ハマっ</a>たが、逆にpublishする側になったら以外と「これどうしようか？」と思って調べた。</p>
+
+<hr>
+
+<h1>
+<span id="目的" class="fragment"></span><a href="#%E7%9B%AE%E7%9A%84"><i class="fa fa-link"></i></a>目的</h1>
+
+<ul>
+<li>npmにpublishするためのビルドがしたい</li>
+<li>なるべく簡易に、ミニマムに。</li>
+<li>うっかりbrowser対応されてないようなコードで利用者が不幸になるのなるべく防止したい。ぐらいな心持ち</li>
+<li>「えっbabel-cilって同名ファイル吐き出してるだけじゃん。これ何に使うの」という疑問の解消</li>
+</ul>
+
+<h3>
+<span id="目的外のこと" class="fragment"></span><a href="#%E7%9B%AE%E7%9A%84%E5%A4%96%E3%81%AE%E3%81%93%E3%81%A8"><i class="fa fa-link"></i></a>目的外のこと</h3>
+
+<ul>
+<li>積極的にbabelっていく話
+
+<ul>
+<li>
+<code>.babelrc</code>次第でどんどん使えますが、そこ自体は目的にしてません。お好みで。</li>
+</ul>
+</li>
+<li>node.js向けオンリーのnpmパッケージの事
+
+<ul>
+<li>用途次第で、ブラウザが対象外なものなら、複雑化させずにそのままpublishしていいんじゃないか派です。</li>
+</ul>
+</li>
+<li>module 解決したり結果bundleしたりminifyしたりする話
+
+<ul>
+<li>しません。browserify、webpack、rollupらへん使いましょう</li>
+</ul>
+</li>
+<li>umdなども吐く話 
+
+<ul>
+<li>しません。browserify、webpack、rollupらへん使いましょう</li>
+<li>なんとなく著名パッケージ眺めると良いかもしれません（後述）</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="方法babel-cliを使う" class="fragment"></span><a href="#%E6%96%B9%E6%B3%95babel-cli%E3%82%92%E4%BD%BF%E3%81%86"><i class="fa fa-link"></i></a>方法：babel-cliを使う</h1>
+
+<h2>
+<span id="babel-cliはそもそも何をしてくれるのか" class="fragment"></span><a href="#babel-cli%E3%81%AF%E3%81%9D%E3%82%82%E3%81%9D%E3%82%82%E4%BD%95%E3%82%92%E3%81%97%E3%81%A6%E3%81%8F%E3%82%8C%E3%82%8B%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>babel-cliはそもそも何をしてくれるのか？</h2>
+
+<p>単純に<code>babel</code>というコマンドで、引数として与えられたディレクトリのファイルを変換する。<br>
+単体で使った場合には、純粋にコードの静的変換だけをしている。<br>
+当然、Webpackやbrowserifyを使った時のように、<code>require</code>や<code>import/export</code>の解決をしたりはしない。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% npm run build
+
+&gt; sample@0.0.1 build /path/to/project
+&gt; babel src --out-dir lib
+
+src/index.js -&gt; lib/index.js
+src/some-module.js -&gt; lib/some-module.js
+</pre></div></div>
+
+<p>通常のWeb開発だと<code>browserify</code>や<code>webpack</code>と組み合わせてbundleするので、あんまり使い所ないのでは？と思っていたが、npmにpublishするときは逆にbundleせずにバラバラに変換するだけ、というのが都合が良い。</p>
+
+<h2>
+<span id="setup" class="fragment"></span><a href="#setup"><i class="fa fa-link"></i></a>Setup</h2>
+
+<p><code>babel-cli</code>と<code>babel-preset-es2015</code>入れておく</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm i -D babel-cli babel-preset-es2015
+</pre></div></div>
+
+<p>お好みで<code>rimraf</code>。ビルド前にディレクトリクリーンしておくのに便利</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm i -D rimraf
+</pre></div></div>
+
+<h2>
+<span id="ディレクトリ構成" class="fragment"></span><a href="#%E3%83%87%E3%82%A3%E3%83%AC%E3%82%AF%E3%83%88%E3%83%AA%E6%A7%8B%E6%88%90"><i class="fa fa-link"></i></a>ディレクトリ構成</h2>
+
+<p>だいたいこんな感じ。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>├── src // ビルド前のファイル
+│   ├── some-module.js
+│   └── index.js
+├── test // テスト
+├── lib // ビルド後ファイル。
+│   ├── some-module.js
+│   └── index.js
+├── README.md
+└── package.json
+</pre></div></div>
+
+<h2>
+<span id="packagejson" class="fragment"></span><a href="#packagejson"><i class="fa fa-link"></i></a>package.json</h2>
+
+<p><code>babel-cli</code>をディレクトリごと<code>lib/</code>に出力して、公開対象を<code>lib/</code>にする。</p>
+
+<p>package.jsonはこんな感じになる。</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="p">{</span><span class="w">
+   </span><span class="err">:</span><span class="w">
+  </span><span class="nl">"main"</span><span class="p">:</span><span class="w"> </span><span class="s2">"lib/index.js"</span><span class="p">,</span><span class="w"> </span><span class="err">//</span><span class="w"> </span><span class="err">重要</span><span class="w">
+  </span><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"prebuild"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rimraf lib"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"build"</span><span class="p">:</span><span class="w"> </span><span class="s2">"babel src --out-dir lib"</span><span class="p">,</span><span class="w"> </span><span class="err">//</span><span class="w"> </span><span class="err">重要</span><span class="w">
+    </span><span class="nl">"preversion"</span><span class="p">:</span><span class="w"> </span><span class="s2">"npm run build"</span><span class="p">,</span><span class="w">
+     </span><span class="err">:</span><span class="w">
+     </span><span class="err">:</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"files"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> 
+    </span><span class="s2">"lib"</span><span class="w"> </span><span class="err">//</span><span class="w"> </span><span class="err">重要</span><span class="w">
+  </span><span class="p">],</span><span class="w">
+  </span><span class="nl">"devDependencies"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+     </span><span class="err">:</span><span class="w">
+    </span><span class="nl">"babel-cli"</span><span class="p">:</span><span class="w"> </span><span class="s2">"^6.14.0"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"babel-preset-es2015"</span><span class="p">:</span><span class="w"> </span><span class="s2">"^6.14.0"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"rimraf"</span><span class="p">:</span><span class="w"> </span><span class="nl">"^2.5.4"</span><span class="w">
+     </span><span class="p">:</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<ul>
+<li>
+<code>main</code>フィールドは<code>lib/main</code>
+</li>
+<li>同様、<code>file</code>には<code>["lib"]</code>と指定。</li>
+<li>
+<code>npm run build</code>で<code>babel src --out-dir lib</code> で src -&gt; lib と吐き出す。</li>
+<li>他のscriptsは単なる便利化。
+
+<ul>
+<li>
+<code>pre</code>,<code>post</code>をつけておけば自動的にビルド実行してくれる。<code>npm version</code>、<code>npm publish</code>時に漏れないようにbuildしておく。</li>
+<li>
+<code>prebuild</code>で<code>rimraf</code>を使ってディレクトリクリーンしておく。</li>
+</ul>
+</li>
+</ul>
+
+<p>もし<code>src</code>で<code>import/export</code>を利用して、Webpack 2系やrollupのtree shakingを使いたいと思っているのであれば、下記を記載しておいても良い。</p>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="p">{</span><span class="w">
+    </span><span class="err">:</span><span class="w">
+  </span><span class="nl">"main"</span><span class="p">:</span><span class="w"> </span><span class="s2">"lib/index.js"</span><span class="p">,</span><span class="w"> 
+  </span><span class="nl">"module"</span><span class="p">:</span><span class="w"> </span><span class="s2">"src/index.js"</span><span class="p">,</span><span class="w"> </span><span class="err">//</span><span class="w"> </span><span class="err">for</span><span class="w"> </span><span class="err">webpack</span><span class="w"> </span><span class="mi">2</span><span class="w">
+  </span><span class="nl">"jsnext:main"</span><span class="p">:</span><span class="w"> </span><span class="s2">"src/index.js"</span><span class="p">,</span><span class="w"> </span><span class="err">//</span><span class="w"> </span><span class="err">for</span><span class="w"> </span><span class="err">rollup</span><span class="w">
+    </span><span class="err">:</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<p>Tree shakingについて詳しく知りたい場合は下記あたりが詳しめなので参照のこと。<br>
+* <a href="http://qiita.com/cognitom/items/e3ac0da00241f427dad6#tree-shaking" class="autolink" id="reference-b279d33dbfdec98c83e8">http://qiita.com/cognitom/items/e3ac0da00241f427dad6#tree-shaking</a><br>
+* <a href="http://chuckwebtips.hatenablog.com/entry/2016/01/26/020235" class="autolink" rel="nofollow noopener" target="_blank">http://chuckwebtips.hatenablog.com/entry/2016/01/26/020235</a></p>
+
+<h2>
+<span id="gitignore" class="fragment"></span><a href="#gitignore"><i class="fa fa-link"></i></a>.gitignore</h2>
+
+<p>生成ターゲットは基本ignoreしといていいはず。</p>
+
+<div class="code-frame" data-lang="gitignore"><div class="highlight"><pre>lib/
+</pre></div></div>
+
+<h2>
+<span id="babelrc" class="fragment"></span><a href="#babelrc"><i class="fa fa-link"></i></a>.babelrc</h2>
+
+<p>あんまり特殊な事は無いが、最低限これ入れておけば大丈夫だろう、ぐらいなチョイスとして<code>preset-es2015</code>を入れた。<sup id="fnref1"><a href="#fn1" rel="footnote" title="preset-latestでも良いかなとも思っているが、まだちゃんと調べられてないので保留した。">1</a></sup></p>
+
+<p><code>loose</code>オプションを<code>true</code>にすべきかなど悩ましいが、<a href="https://github.com/reactjs/redux/blob/0e80e7a61489cbf5b746c922d6f3b98fa3ea711a/.babelrc" rel="nofollow noopener" target="_blank">redux</a>あたりを参考に<code>true</code>にした。</p>
+
+<div class="code-frame" data-lang="babelrc"><div class="highlight"><pre>{
+  "presets": [
+    ["es2015", { "loose": true }]
+  ]
+}
+</pre></div></div>
+
+<h4>
+<span id="欄外メモbabelrcのenvとbabel_env" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96%E3%83%A1%E3%83%A2babelrc%E3%81%AEenv%E3%81%A8babel_env"><i class="fa fa-link"></i></a>欄外メモ：.babelrcのenvと<code>BABEL_ENV</code>
+</h4>
+
+<p><a href="https://github.com/reactjs/redux/blob/master/.babelrc" rel="nofollow noopener" target="_blank">reduxのbabelrc</a>を覗くと、<code>env</code>というオプションが設定されている。</p>
+
+<div class="code-frame" data-lang="babelrc"><div class="highlight"><pre>{
+  "plugins": [
+    :
+    :
+  ],
+  "env": {
+    "commonjs": {
+      "plugins": [
+        ["transform-es2015-modules-commonjs", { "loose": true }]
+      ]
+    }
+  }
+}
+</pre></div></div>
+
+<p>これは特定の場合だけに特定のpresetオプションを効かせたい場合に使えるらしい。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ BABEL_ENV=commonjs babel src --out-dir lib
+</pre></div></div>
+
+<p>とすると、<code>env.commonjs</code>に記載したpresetを追加で効かせる、という効果。<br>
+普通そんなに使わなそうだなと思ったが、<a href="https://babeljs.io/docs/usage/babelrc/#env-option" rel="nofollow noopener" target="_blank">bablejs.io</a>によると、このような特定bundle向けの他に、「developmentの時だけ特定のpluginを効かせたい」というようなことも利用想定としているようだ。</p>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<h2>
+<span id="参考にした-packagejson" class="fragment"></span><a href="#%E5%8F%82%E8%80%83%E3%81%AB%E3%81%97%E3%81%9F-packagejson"><i class="fa fa-link"></i></a>参考にした package.json</h2>
+
+<h4>
+<span id="npm向けはbabel-cliにしてるパッケージ" class="fragment"></span><a href="#npm%E5%90%91%E3%81%91%E3%81%AFbabel-cli%E3%81%AB%E3%81%97%E3%81%A6%E3%82%8B%E3%83%91%E3%83%83%E3%82%B1%E3%83%BC%E3%82%B8"><i class="fa fa-link"></i></a>npm向けはbabel-cliにしてるパッケージ</h4>
+
+<p>今回取った手法 + webpack的な感じ。<br>
+webpack併用しているのが多いが、npm用というよりumd配布など向けっぽい</p>
+
+<ul>
+<li><a href="https://github.com/reactjs/redux/blob/5da0f7abeaaa31fc453ae343c2bafe99ecdbcca6/package.json#L26" rel="nofollow noopener" target="_blank">redux</a></li>
+<li><a href="https://github.com/Khan/aphrodite/blob/de0bd50dc9901a22a04f8dd48fec796e58ff136c/package.json#L10-L25" rel="nofollow noopener" target="_blank">aphrodite</a></li>
+<li><a href="https://github.com/mjackson/history/blob/master/package.json#L15" rel="nofollow noopener" target="_blank">history</a></li>
+<li><a href="https://github.com/redux-observable/redux-observable/blob/master/package.json#L9" rel="nofollow noopener" target="_blank">redux-observable</a></li>
+<li><a href="https://github.com/paularmstrong/normalizr/blob/master/package.json" rel="nofollow noopener" target="_blank">normalizr</a></li>
+</ul>
+
+<h4>
+<span id="grunt使ってビルド" class="fragment"></span><a href="#grunt%E4%BD%BF%E3%81%A3%E3%81%A6%E3%83%93%E3%83%AB%E3%83%89"><i class="fa fa-link"></i></a>Grunt使ってビルド</h4>
+
+<ul>
+<li>
+<a href="https://github.com/facebook/react/blob/7d7defe30f9e8124185676fa7e2c841ffee17ed5/package.json#L81" rel="nofollow noopener" target="_blank">react</a>
+
+<ul>
+<li>gruntからbrowserifyっぽい</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/mzabriskie/axios/blob/master/package.json#L9" rel="nofollow noopener" target="_blank">axios</a>
+
+<ul>
+<li>gruntからwebpackっぽい</li>
+</ul>
+</li>
+</ul>
+
+<h4>
+<span id="rollup派" class="fragment"></span><a href="#rollup%E6%B4%BE"><i class="fa fa-link"></i></a>rollup派</h4>
+
+<p>思ったよりパラパラ見てたらrollup派がいた。</p>
+
+<ul>
+<li><a href="https://github.com/vuejs/vue/blob/dev/package.json" rel="nofollow noopener" target="_blank">vue.js</a></li>
+<li><a href="https://github.com/developit/preact/blob/master/package.json" rel="nofollow noopener" target="_blank">preact</a></li>
+<li><a href="https://github.com/pakastin/redom/blob/3421a2000ed4b0cc1167f7985369cd886962df02/package.json#10" rel="nofollow noopener" target="_blank">redom</a></li>
+<li><a href="https://github.com/d3/d3/blob/master/package.json" rel="nofollow noopener" target="_blank">d3</a></li>
+</ul>
+
+<h2>
+<span id="雑感" class="fragment"></span><a href="#%E9%9B%91%E6%84%9F"><i class="fa fa-link"></i></a>雑感</h2>
+
+<ul>
+<li>babel-cli今までデバッグ用ぐらいにしか使えない子だと思っててごめんなさい</li>
+<li>webpackとかbrowserifyナシで全然いけるのはだいぶ楽</li>
+<li>umdとか結構配布しているけど、需要どれだけあるんだろう？と思った。</li>
+</ul>
+
+<div class="footnotes">
+<hr>
+<ol>
+
+<li id="fn1">
+<p><a href="http://babeljs.io/docs/plugins/preset-latest/" rel="nofollow noopener" target="_blank"><code>preset-latest</code></a>でも良いかなとも思っているが、まだちゃんと調べられてないので保留した。 <a href="#fnref1">↩</a></p>
+</li>
+
+</ol>
+</div>

@@ -1,0 +1,21 @@
+<p>こんにちは、上記の記事の例で子コンポーネントにspanタグをもたせていますので、親のcontentタグは不要ではないでしょうか？（v0.11.4で以下で動きます。）</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"sample"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">v-repeat=</span><span class="s">"items"</span> <span class="na">v-component=</span><span class="s">"item"</span><span class="nt">&gt;&lt;/div&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"item"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;span&gt;</span>baz<span class="nt">&lt;/span&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+</pre></div></div>
+
+<p>もしcontentタグを使う場合は、親で受け取ったノードを子コンポーネントの特定の位置にinjectするものだと思いますので、以下のようになるかと思います。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"sample"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">v-repeat=</span><span class="s">"items"</span> <span class="na">v-component=</span><span class="s">"item"</span><span class="nt">&gt;</span>
+          <span class="nt">&lt;span&gt;</span>baz<span class="nt">&lt;/span&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"item"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;content&gt;&lt;/content&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+</pre></div></div>

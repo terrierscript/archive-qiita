@@ -1,0 +1,17 @@
+<p>xcodeをアップデートしたりすると</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>Apple LLVM error
+</pre></div></div>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>fatal error: file '/Applications/ ~~~~~~~~~ .pch' was built
+</pre></div></div>
+
+<p>みたいなエラーで、cocoapodsでインストールしたやつらでコケてはまって対処忘れるのでメモ</p>
+
+<h2>
+<span id="対処法" class="fragment"></span><a href="#%E5%AF%BE%E5%87%A6%E6%B3%95"><i class="fa fa-link"></i></a>対処法</h2>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>rm ~/Library/Developer/Xcode/DerivedData/ModuleCache/*
+</pre></div></div>
+
+<p>以上</p>

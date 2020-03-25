@@ -1,0 +1,249 @@
+
+<h1>
+<span id="最初思ってたこと-vs-現実" class="fragment"></span><a href="#%E6%9C%80%E5%88%9D%E6%80%9D%E3%81%A3%E3%81%A6%E3%81%9F%E3%81%93%E3%81%A8-vs-%E7%8F%BE%E5%AE%9F"><i class="fa fa-link"></i></a>最初思ってたこと vs 現実</h1>
+
+<ul>
+<li>思ってたこと：なんか軽量？
+
+<ul>
+<li>現実：誤解だった。割りと作ってくと大きめになってくる。軽量感は無い</li>
+<li>が、redux本体のコードは結構薄い。本当に関数群だけ提供しているイメージ</li>
+</ul>
+</li>
+<li>思ってたこと：他のfluxと圧倒的に違う？
+
+<ul>
+<li>現実：これも誤解。構成としては色々作りこむと最終的には一般的なfluxと同じ感じになる（flummoxとかmartyあたりと体感一緒になる）</li>
+<li>ActionとかActionCreatorとかその辺が一緒になってくる。</li>
+</ul>
+</li>
+<li>思ってたこと：ES6で圧倒的に書ける？
+
+<ul>
+<li>現実：正解。圧倒的にES6を前提にしている。</li>
+</ul>
+</li>
+<li>思ってたこと：React用のもの？
+
+<ul>
+<li>現実：別にそうでもない。<code>react-redux</code>を使うことでreactで使えるようになる。</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="詰まった所など" class="fragment"></span><a href="#%E8%A9%B0%E3%81%BE%E3%81%A3%E3%81%9F%E6%89%80%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>詰まった所など</h1>
+
+<h2>
+<span id="用語編" class="fragment"></span><a href="#%E7%94%A8%E8%AA%9E%E7%B7%A8"><i class="fa fa-link"></i></a>用語編</h2>
+
+<p>割りと初めて見たりする用語に出会った</p>
+
+<ul>
+<li>ActionCreator
+
+<ul>
+<li>martyあたりにもあった。<code>{type: "HOGE", name: "fuga"}</code>みたいな<code>action</code>を返すためのwrapper関数とでも考えるとよさそう</li>
+</ul>
+</li>
+<li>Reducers
+
+<ul>
+<li>前はStoresと呼ばれていた。</li>
+<li>
+<code>(previousState, action) =&gt; newState</code>をするやつ
+
+<ul>
+<li>といわれるだけだと謎だが、実際そうだった。</li>
+</ul>
+</li>
+<li>Store関連の話と併せて後述するので参照されたい。</li>
+</ul>
+</li>
+<li>containers
+
+<ul>
+<li>これは用語としていいのかわからない。俗語に近い気がする</li>
+<li>
+<a href="https://github.com/rackt/redux/tree/master/examples" rel="nofollow noopener" target="_blank">examples</a>に結構出てくる</li>
+<li>reactの起点ポイントをcontainerとしているっぽく見える</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="storeの色々編" class="fragment"></span><a href="#store%E3%81%AE%E8%89%B2%E3%80%85%E7%B7%A8"><i class="fa fa-link"></i></a>Storeの色々編</h2>
+
+<h3>
+<span id="storeとreducer" class="fragment"></span><a href="#store%E3%81%A8reducer"><i class="fa fa-link"></i></a>StoreとReducer</h3>
+
+<p>普通のfluxのことを思い浮かべると、Storeはこんな感じでリソースに対して記述するよなものをイメージしていた。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">class</span> <span class="nx">UsersStore</span> <span class="kd">extends</span> <span class="nx">Marty</span><span class="p">.</span><span class="nx">Store</span> <span class="p">{</span>
+  <span class="kd">constructor</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">super</span><span class="p">(</span><span class="nx">options</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">state</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">handlers</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="na">addUser</span><span class="p">:</span> <span class="nx">Constants</span><span class="p">.</span><span class="nx">RECEIVE_USER</span>
+    <span class="p">};</span>
+  <span class="p">}</span>
+  <span class="nx">addUser</span><span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">user</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">hasChanged</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>が、reduxだとこうならない。<br>
+Storeは結構隠蔽されている感じで、利用者は<code>reducer</code>というのだけを記述する（このへんからreducerの話）</p>
+
+<p>reducerは例えばこんな感じ。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">function</span> <span class="nx">someReducer</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">case</span> <span class="nx">SOME_ACTION</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">assign</span><span class="p">({},</span> <span class="nx">state</span><span class="p">,</span> <span class="p">{</span>
+      <span class="na">some</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">someValue</span>
+    <span class="p">});</span>
+  <span class="nl">default</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nx">state</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>初見で「どういうこと？」ってなったが、stateが他のFluxの例でのstoreの内部管理されていたような保持される変数だと思えば良い。これが<code>(previousState, action) =&gt; newState</code>している部分になる。<br>
+Reducerは <strong>actionに応じてstateを変更する関数</strong>　だと思えば良さそう。</p>
+
+<h3>
+<span id="ハマりどころreducerはstateを変更しないと変更が通知されない" class="fragment"></span><a href="#%E3%83%8F%E3%83%9E%E3%82%8A%E3%81%A9%E3%81%93%E3%82%8Dreducer%E3%81%AFstate%E3%82%92%E5%A4%89%E6%9B%B4%E3%81%97%E3%81%AA%E3%81%84%E3%81%A8%E5%A4%89%E6%9B%B4%E3%81%8C%E9%80%9A%E7%9F%A5%E3%81%95%E3%82%8C%E3%81%AA%E3%81%84"><i class="fa fa-link"></i></a>ハマりどころ：reducerは<code>state</code>を変更しないと変更が通知されない</h3>
+
+<p>先ほどのサンプルで、わざわざ<code>Object.assign({},state, {someProps})</code> のような小めんどくさいことをしている。</p>
+
+<p>これは理由がある。<br>
+例えばこんなreducerの場合、viewが変更されない。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">動かないパターン.js</span></div>
+<div class="highlight"><pre><span class="kd">function</span> <span class="nx">someReducer</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">case</span> <span class="nx">SOME_ACTION</span><span class="p">:</span>
+    <span class="nx">state</span><span class="p">.</span><span class="nx">someValue</span> <span class="o">=</span> <span class="nx">action</span><span class="p">.</span><span class="nx">someValue</span>
+    <span class="k">return</span> <span class="nx">state</span><span class="p">;</span>
+  <span class="nl">default</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nx">state</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>stateを新規に作らないと更新されない。<br>
+正直どういう仕組でこうなっているのかちゃんと追えてない。追いたい。</p>
+
+<h2>
+<span id="細かい関数色々出ていて焦る編" class="fragment"></span><a href="#%E7%B4%B0%E3%81%8B%E3%81%84%E9%96%A2%E6%95%B0%E8%89%B2%E3%80%85%E5%87%BA%E3%81%A6%E3%81%84%E3%81%A6%E7%84%A6%E3%82%8B%E7%B7%A8"><i class="fa fa-link"></i></a>細かい関数色々出ていて焦る編</h2>
+
+<p>色々出てきてビビる。が、一個一個は別に大したことをしていない。逆に言うとReduxはここに挙げる関数が全てだった（コード読んでみると結構小さい）</p>
+
+<p>ざっくりと何やってるかを早見表的に。<br>
+詳細は<a href="http://rackt.github.io/redux/" rel="nofollow noopener" target="_blank">APIリファレンス</a>を参照のこと。</p>
+
+<h3>
+<span id="redux編" class="fragment"></span><a href="#redux%E7%B7%A8"><i class="fa fa-link"></i></a>redux編</h3>
+
+<ul>
+<li>createStore
+
+<ul>
+<li>container層で使う。</li>
+<li>
+<code>reducer</code>の関数群から<code>store</code>を生成する。</li>
+<li>
+<code>store</code>に直接お目にかかれるのはこのあたり。</li>
+</ul>
+</li>
+<li>bindActionCreators
+
+<ul>
+<li>
+<code>export function</code>で定義した関数群の<code>actionCreator</code>と<code>dispatcher</code>をbindしてくれる。わりと名前通り</li>
+<li>Componentの一部で、<code>store</code>から取り出した<code>dispatch</code>とactionCreatorをつなぐ利用イメージ</li>
+</ul>
+</li>
+<li>applyMiddleware
+
+<ul>
+<li>いわゆるplugin機構。</li>
+<li>redux自体が薄めに作られているので、各関数に手をいれるような事はmiddlewareで行う</li>
+<li>例えばasyncなactionを扱う機能なども本体ではなく、middlewareとして切りだされている。</li>
+<li>結構この仕組みのお陰でredux本体がコンパクトになっているように見える。</li>
+</ul>
+</li>
+<li>combineReducers
+
+<ul>
+<li>複数のreducerをまとめて一つのreducerにしてくれる</li>
+<li>全く関連のないような<code>reducer</code>が一個のファイルにあるみたいな状態だと肥大化する一方なので、そういう時に分割しとけば便利</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="react-redux編" class="fragment"></span><a href="#react-redux%E7%B7%A8"><i class="fa fa-link"></i></a>react-redux編</h3>
+
+<p>結構「なにそれー」ってなった。<br>
+くわしくは<a href="http://rackt.github.io/redux/docs/basics/UsageWithReact.html" rel="nofollow noopener" target="_blank">こちら</a></p>
+
+<ul>
+<li>connect
+
+<ul>
+<li>reduxから渡されるstateと、React.Componentのpropsのマッピングをする部分。</li>
+<li>マッピングの定義は第一引数で関数として渡す。</li>
+</ul>
+</li>
+</ul>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">connectの例.js</span></div>
+<div class="highlight"><pre><span class="kd">function</span> <span class="nx">mapStateToProps</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="na">todos</span><span class="p">:</span> <span class="nx">state</span><span class="p">.</span><span class="nx">todos</span> <span class="p">};</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">)(</span><span class="nx">TodoApp</span><span class="p">);</span>
+</pre></div>
+</div>
+
+<ul>
+<li>
+<code>&lt;Provider&gt;</code>
+
+<ul>
+<li>あえてタグ形式で書いたのは、<code>React.Component</code>継承なもののため。</li>
+<li>使うときには下記のような何か魔術的な記載をする（ここも深く追ってない）</li>
+<li>下記の例の<code>&lt;App/&gt;</code>部分は、<code>connect</code>でstoreと連結されている必要がある（でないとうまく動かぬ）</li>
+</ul>
+</li>
+</ul>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">Provierの例.js</span></div>
+<div class="highlight"><pre><span class="o">&lt;</span><span class="nx">Provider</span> <span class="nx">store</span><span class="o">=</span><span class="p">{</span><span class="nx">store</span><span class="p">}</span><span class="o">&gt;</span>
+  <span class="p">{()</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">App</span><span class="o">/&gt;</span><span class="p">}</span>
+<span class="o">&lt;</span><span class="sr">/Provider</span><span class="err">&gt;
+</span></pre></div>
+</div>
+
+<h1>
+<span id="参考" class="fragment"></span><a href="#%E5%8F%82%E8%80%83"><i class="fa fa-link"></i></a>参考</h1>
+
+<ul>
+<li><a href="http://rackt.github.io/redux/" class="autolink" rel="nofollow noopener" target="_blank">http://rackt.github.io/redux/</a></li>
+<li><a href="https://gist.github.com/yosuke-furukawab8acfbb1b2bfb0b3c23c" class="autolink" rel="nofollow noopener" target="_blank">https://gist.github.com/yosuke-furukawab8acfbb1b2bfb0b3c23c</a></li>
+<li>action補助らしい
+
+<ul>
+<li><a href="https://github.com/insin/redux-action-utils" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/insin/redux-action-utils</a></li>
+<li><a href="https://github.com/acdlite/redux-actions" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/acdlite/redux-actions</a></li>
+</ul>
+</li>
+</ul>

@@ -1,0 +1,127 @@
+<p><a href="http://qiita.com/suisho/items/62f9572bb40c3c3ea378" id="reference-559a9446aae0012ecb90">vue.js@0.11.2以上ではrepeatするcomponentをtemplate化しないとけない</a>ということがわかったので子要素をtemplate化したはいいものの、svgをtemplateにしたことでまた微妙な問題を踏んでしまった。</p>
+
+<h1>
+<span id="imageがimgにされるよ" class="fragment"></span><a href="#image%E3%81%8Cimg%E3%81%AB%E3%81%95%E3%82%8C%E3%82%8B%E3%82%88"><i class="fa fa-link"></i></a><code>&lt;image&gt;</code>が<code>&lt;img&gt;</code>にされるよ！</h1>
+
+<p><code>&lt;svg&gt;</code>と<code>&lt;image&gt;</code>を使うようなコンポーネントを作りたかったのでこんな感じでやると</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;svg</span> <span class="na">id=</span><span class="s">"sample"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;g</span> <span class="na">v-repeat=</span><span class="s">"items"</span> <span class="na">v-component=</span><span class="s">"item"</span><span class="nt">&gt;&lt;/g&gt;</span>
+    <span class="nt">&lt;/svg&gt;</span>
+    <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"item"</span> <span class="nt">&gt;</span>
+      <span class="nt">&lt;image</span> <span class="na">width=</span><span class="s">50</span> <span class="na">height=</span><span class="s">50</span> <span class="na">v-attr=</span><span class="s">"'xlink:href': v"</span><span class="nt">&gt;&lt;/image&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"build.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">Vue</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">vue</span><span class="dl">"</span><span class="p">)</span>
+<span class="nx">Vue</span><span class="p">.</span><span class="nx">component</span><span class="p">(</span><span class="dl">"</span><span class="s2">item</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>  
+  <span class="na">template</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">#item</span><span class="dl">"</span><span class="p">,</span>
+<span class="p">})</span>
+
+<span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Vue</span><span class="p">({</span>
+  <span class="na">data</span><span class="p">:</span> <span class="p">{</span>   
+    <span class="na">items</span> <span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span><span class="na">v</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">http://cdn.qiita.com/assets/siteid-reverse-cd0519106e5814e34d402b3e821820cf.png</span><span class="dl">"</span><span class="p">},</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="na">methods</span><span class="p">:</span> <span class="p">{</span>
+  <span class="p">}</span>
+<span class="p">})</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">$mount</span><span class="p">(</span><span class="dl">"</span><span class="s2">#sample</span><span class="dl">"</span><span class="p">)</span>
+
+</pre></div></div>
+
+<p>↓こんな感じになってしまった。</p>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">output.html</span></div>
+<div class="highlight"><pre><span class="nt">&lt;g&gt;</span>
+  <span class="nt">&lt;img</span> <span class="na">width=</span><span class="s">"50"</span> <span class="na">height=</span><span class="s">"50"</span> <span class="na">xmlns:xlink=</span><span class="s">"http://www.w3.org/1999/xlink"</span> <span class="na">xlink:href=</span><span class="s">"http://cdn.qiita.com/assets/siteid-reverse-cd0519106e5814e34d402b3e821820cf.png"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/g&gt;</span><span class="c">&lt;!--v-repeat--&gt;</span>
+
+</pre></div>
+</div>
+
+<p>ぶへ。なんでー。<br>
+となったが割りとさっくり解決できた。</p>
+
+<h3>
+<span id="解法1-templateに直接stringで書く" class="fragment"></span><a href="#%E8%A7%A3%E6%B3%951-template%E3%81%AB%E7%9B%B4%E6%8E%A5string%E3%81%A7%E6%9B%B8%E3%81%8F"><i class="fa fa-link"></i></a>解法1: templateに直接stringで書く</h3>
+
+<p>いや。これはちょっと個人的には微妙。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">Vue</span><span class="p">.</span><span class="nx">component</span><span class="p">(</span><span class="dl">"</span><span class="s2">item</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>  
+  <span class="na">template</span> <span class="p">:</span> <span class="dl">'</span><span class="s1">"&lt;image width=50 height=50 v-attr="</span><span class="se">\'</span><span class="s1">xlink:href</span><span class="se">\'</span><span class="s1">: v"&gt;&lt;/image&gt;"</span><span class="dl">'</span><span class="p">,</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h3>
+<span id="解法2-scriptタグで書く" class="fragment"></span><a href="#%E8%A7%A3%E6%B3%952-script%E3%82%BF%E3%82%B0%E3%81%A7%E6%9B%B8%E3%81%8F"><i class="fa fa-link"></i></a>解法2: scriptタグで書く。</h3>
+
+<p>というかやっていてそもそも&lt;template&gt;を使うとかいきがったことをしているから悪かった。<br>
+(そもそも&lt;template&gt;使うのいいんだっけ？となったけど<a href="https://github.com/yyx990803/vue/issues/335" rel="nofollow noopener" target="_blank">このPull Request</a>で取り込まれているので問題なさそう）</p>
+
+<p>なので&lt;script&gt;で記述すれば問題なかった。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"x-template"</span> <span class="na">id=</span><span class="s">"item"</span> <span class="nt">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">image</span> <span class="nx">width</span><span class="o">=</span><span class="mi">50</span> <span class="nx">height</span><span class="o">=</span><span class="mi">50</span> <span class="nx">v</span><span class="o">-</span><span class="nx">attr</span><span class="o">=</span><span class="dl">"</span><span class="s2">'xlink:href': v</span><span class="dl">"</span><span class="o">&gt;&lt;</span><span class="sr">/image</span><span class="err">&gt;
+</span>    <span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<h3>
+<span id="解法3-templateの親要素をsvgにする" class="fragment"></span><a href="#%E8%A7%A3%E6%B3%953-template%E3%81%AE%E8%A6%AA%E8%A6%81%E7%B4%A0%E3%82%92svg%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>解法3: templateの親要素をsvgにする</h3>
+
+<p>他には親要素をsvgにすればちゃんと出てくれる</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;svg</span> <span class="na">id=</span><span class="s">"item"</span> <span class="nt">&gt;</span><span class="c">&lt;!-- display:noneはサンプルなので省略 --&gt;</span>　
+   <span class="nt">&lt;image</span> <span class="na">width=</span><span class="s">50</span> <span class="na">height=</span><span class="s">50</span> <span class="na">v-attr=</span><span class="s">"'xlink:href': v"</span><span class="nt">&gt;&lt;/image&gt;</span>
+<span class="nt">&lt;/svg&gt;</span>
+
+</pre></div></div>
+
+<h3>
+<span id="解法4-templateにnamespaceをつける" class="fragment"></span><a href="#%E8%A7%A3%E6%B3%954-template%E3%81%ABnamespace%E3%82%92%E3%81%A4%E3%81%91%E3%82%8B"><i class="fa fa-link"></i></a>解法4: templateにnamespaceをつける</h3>
+
+<p>更にこんなんでもOKそう。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"item"</span> <span class="na">xmlns=</span><span class="s">"http://www.w3.org/2000/svg"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;image</span> <span class="na">width=</span><span class="s">50</span> <span class="na">height=</span><span class="s">50</span> <span class="na">v-attr=</span><span class="s">"'xlink:href': v"</span><span class="nt">&gt;&lt;/image&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+</pre></div></div>
+
+<h2>
+<span id="どういうことか" class="fragment"></span><a href="#%E3%81%A9%E3%81%86%E3%81%84%E3%81%86%E3%81%93%E3%81%A8%E3%81%8B"><i class="fa fa-link"></i></a>どういうことか。</h2>
+
+<p>これはvueの話ではなくブラウザ側の挙動の問題の模様。<br>
+(chromeで調査したので他だとどうなるかは未調査です)</p>
+
+<p>こんなサンプルを用意すると、以下のような出力がされる。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"foo"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;image&gt;&lt;/image&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;script&gt;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#foo</span><span class="dl">"</span><span class="p">).</span><span class="nx">innerHTML</span><span class="p">)</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="output"><div class="highlight"><pre>&lt;img&gt;
+</pre></div></div>
+
+<p>つまりvueがこれと同じようなことをしていて、chromeさんがparseする段にsvgとみなせないような<code>&lt;image&gt;</code>タグを<code>&lt;img&gt;</code>として扱ったということだろう</p>
+
+<p>ちゃんとした検証はしていないが解法2が一番カバー率が高いのではと思っている。</p>
+
+<h2>
+<span id="ちなみにxlinkhrefのはなし" class="fragment"></span><a href="#%E3%81%A1%E3%81%AA%E3%81%BF%E3%81%ABxlinkhref%E3%81%AE%E3%81%AF%E3%81%AA%E3%81%97"><i class="fa fa-link"></i></a>ちなみにxlink:hrefのはなし。</h2>
+
+<p>「あれ、v-attrにxlink:hrefって使えなくね？」って思ったけど<br>
+<a href="https://github.com/yyx990803/vue/pull/354" rel="nofollow noopener" target="_blank">このissue</a>にすでに上がっていて<code>v-attr="'xlink:href':url</code>にすればよいよーと言われていた。</p>
+
+<p>助かった。</p>

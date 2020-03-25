@@ -1,0 +1,339 @@
+
+<h1>
+<span id="導入reactのchildren" class="fragment"></span><a href="#%E5%B0%8E%E5%85%A5react%E3%81%AEchildren"><i class="fa fa-link"></i></a>導入：Reactの<code>children</code>
+</h1>
+
+<p>Reactのchildrenを使うことで、子要素をwrapするような子要素を記述することが出来る。railsのviewで言えばyieldみたいなもの。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">SomeLabel</span> <span class="o">=</span> <span class="p">({</span><span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">children</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="c1">// 呼び出し側</span>
+<span class="o">&lt;</span><span class="nx">SomeLabel</span><span class="o">&gt;</span>
+  <span class="c1">// 子要素の拡張に対して、`SomeLabel`は関心を持たなくて良い。</span>
+  <span class="o">&lt;</span><span class="nx">SomeDecoration</span><span class="o">&gt;</span><span class="nx">Hello</span><span class="o">&lt;</span><span class="sr">/SomeDecoration</span><span class="err">&gt;
+</span><span class="o">&lt;</span><span class="nx">SomeLabel</span><span class="o">&gt;</span>
+</pre></div></div>
+
+<p>これを覚えるとだいぶReactをきれいに書きやすくなるイメージがある。</p>
+
+<h1>
+<span id="本題複数の子要素を柔軟に扱いたいときにどう考えるか" class="fragment"></span><a href="#%E6%9C%AC%E9%A1%8C%E8%A4%87%E6%95%B0%E3%81%AE%E5%AD%90%E8%A6%81%E7%B4%A0%E3%82%92%E6%9F%94%E8%BB%9F%E3%81%AB%E6%89%B1%E3%81%84%E3%81%9F%E3%81%84%E3%81%A8%E3%81%8D%E3%81%AB%E3%81%A9%E3%81%86%E8%80%83%E3%81%88%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>本題：複数の子要素を柔軟に扱いたいときにどう考えるか？</h1>
+
+<p>例えば何かtitle, author,bodyを貰って記事を表示するような<code>&lt;Post&gt;</code>を考える。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">Post</span> <span class="nx">title</span><span class="o">=</span><span class="p">{</span><span class="dl">"</span><span class="s2">aaa</span><span class="dl">"</span><span class="p">}</span> <span class="nx">author</span><span class="o">=</span><span class="p">{</span><span class="dl">"</span><span class="s2">bob</span><span class="dl">"</span><span class="p">}</span> <span class="nx">body</span><span class="o">=</span><span class="p">{</span><span class="dl">"</span><span class="s2">ほげほげ</span><span class="dl">"</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span></pre></div></div>
+
+<p>ここでは一番単位の大きそうな<code>body</code>をメインの<code>children</code>とすること考えてみる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">Post</span> <span class="nx">title</span><span class="o">=</span><span class="p">{</span><span class="dl">"</span><span class="s2">aaa</span><span class="dl">"</span><span class="p">}</span> <span class="nx">author</span><span class="o">=</span><span class="p">{</span><span class="dl">"</span><span class="s2">bob</span><span class="dl">"</span><span class="p">}</span> <span class="o">&gt;</span>
+  <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="err">ほげほげ</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span></pre></div></div>
+
+<p>このままだと、bodyの部分は加工がしやすくなったが、<code>title</code>を加工するならどうするか？ということを考える。</p>
+
+<h2>
+<span id="手法1-そのままにpropsでelementを定義する" class="fragment"></span><a href="#%E6%89%8B%E6%B3%951-%E3%81%9D%E3%81%AE%E3%81%BE%E3%81%BE%E3%81%ABprops%E3%81%A7element%E3%82%92%E5%AE%9A%E7%BE%A9%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>手法1. そのままにpropsでElementを定義する</h2>
+
+<p>一番ライトな手法。</p>
+
+<p>呼び出し側は若干辛いが、そのままでも加工は出来る。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">MyPost</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Post</span> <span class="nx">title</span><span class="o">=</span><span class="p">{</span><span class="o">&lt;</span><span class="nx">BazDecorate</span><span class="o">&gt;</span><span class="nx">Title</span><span class="err">ですよ</span><span class="o">&lt;</span><span class="sr">/BazDecorate&gt;} author="bob"</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">FooDecorate</span><span class="o">&gt;</span><span class="err">ほげ</span><span class="o">&lt;</span><span class="sr">/FooDecorate</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Post</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">,</span> <span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="p">:</span> <span class="p">{</span><span class="nx">author</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">children</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>titleの部分を切り出す事で多少見栄えはマシになる。<br>
+パフォーマンスは悪そう。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">MyPost</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">titleNode</span> <span class="o">=</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">BazDecorate</span><span class="o">&gt;</span><span class="nx">Title</span><span class="err">ですよ</span><span class="o">&lt;</span><span class="sr">/BazDecorate&gt;</span><span class="err">)
+</span>  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">Post</span> <span class="nx">title</span><span class="o">=</span><span class="p">{</span><span class="nx">titleNode</span><span class="p">}</span> <span class="nx">author</span><span class="o">=</span><span class="dl">"</span><span class="s2">bob</span><span class="dl">"</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">FooDecorate</span><span class="o">&gt;</span><span class="err">ほげ</span><span class="o">&lt;</span><span class="sr">/FooDecorate</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="手法2-childrenの配列を展開する" class="fragment"></span><a href="#%E6%89%8B%E6%B3%952-children%E3%81%AE%E9%85%8D%E5%88%97%E3%82%92%E5%B1%95%E9%96%8B%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>手法2. childrenの配列を展開する</h3>
+
+<p>要素が管理しきれる場合であれば、childrenの配列を展開するやり方もある。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">MyPost</span> <span class="o">=</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Post</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">BazDecorate</span><span class="o">&gt;</span><span class="nx">Title</span><span class="err">ですよ</span><span class="o">&lt;</span><span class="sr">/BazDecorate</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">BazDecorate</span><span class="o">&gt;</span><span class="nx">bob</span><span class="o">&lt;</span><span class="sr">/BazDecorate</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">FooDecorate</span><span class="o">&gt;</span><span class="err">ほげ</span><span class="o">&lt;</span><span class="sr">/FooDecorate</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<p>コンポーネント側はこんな感じ</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Post</span> <span class="o">=</span> <span class="p">({</span><span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+<span class="c1">// 多分propTypes書いとかないと破綻しがち</span>
+<span class="nx">Post</span><span class="p">.</span><span class="nx">propTypes</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">children</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">PropTypes</span><span class="p">.</span><span class="nx">arrayOf</span><span class="p">(</span><span class="nx">React</span><span class="p">.</span><span class="nx">PropTypes</span><span class="p">.</span><span class="nx">node</span><span class="p">),</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>Spread記法を利用するともう少しきれいに書ける。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// Objectの中のarrayを展開するのでちょっと記法が奇抜かも。</span>
+<span class="kd">const</span> <span class="nx">Post</span> <span class="o">=</span> <span class="p">({</span> <span class="na">children</span><span class="p">:</span> <span class="p">[</span> <span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">,</span> <span class="nx">body</span> <span class="p">]</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">author</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">body</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>保守性の面であまり良く無いかもしれないが、そこそこには使える可能性がある。</p>
+
+<h3>
+<span id="手法2-2-keyで抽出" class="fragment"></span><a href="#%E6%89%8B%E6%B3%952-2-key%E3%81%A7%E6%8A%BD%E5%87%BA"><i class="fa fa-link"></i></a>手法2-2. keyで抽出</h3>
+
+<p>配列順序ではなく<code>key</code>を利用して組み立てる。<br>
+react-addons-css-transition-groupなどは<code>key</code>を利用してアニメーションをさせているところから思いついた。</p>
+
+<p>そこそこにハックしている方法なので、多分あまりやらないほうが良いと思われる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Post</span> <span class="o">=</span> <span class="p">({</span><span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">title</span> <span class="o">=</span> <span class="nx">children</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span> <span class="p">(</span><span class="nx">item</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">item</span><span class="p">.</span><span class="nx">key</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">title</span><span class="dl">"</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">body</span> <span class="o">=</span> <span class="nx">children</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span> <span class="p">(</span><span class="nx">item</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">item</span><span class="p">.</span><span class="nx">key</span> <span class="o">===</span> <span class="dl">"</span><span class="s2">body</span><span class="dl">"</span><span class="p">)</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">body</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+<span class="kd">const</span> <span class="nx">MyPost</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Post</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">key</span><span class="o">=</span><span class="dl">"</span><span class="s2">title</span><span class="dl">"</span><span class="o">&gt;</span><span class="nx">title</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">key</span><span class="o">=</span><span class="dl">"</span><span class="s2">body</span><span class="dl">"</span><span class="o">&gt;</span><span class="nx">body</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<h2>
+<span id="手法3-render関数またはcomponent指定として外に持たせる" class="fragment"></span><a href="#%E6%89%8B%E6%B3%953-render%E9%96%A2%E6%95%B0%E3%81%BE%E3%81%9F%E3%81%AFcomponent%E6%8C%87%E5%AE%9A%E3%81%A8%E3%81%97%E3%81%A6%E5%A4%96%E3%81%AB%E6%8C%81%E3%81%9F%E3%81%9B%E3%82%8B"><i class="fa fa-link"></i></a>手法3. render関数、またはcomponent指定として外に持たせる</h2>
+
+<p>手法2だけではカバーできない複雑さの場合には、関数やComponentそのものを渡す、という解法がある。<br>
+かなり複雑になってくるが、汎用性だけは高い。</p>
+
+<p>例えばtitleは<code>author</code>と<code>title</code>を受け取ってTitle部分として描画したいという場合を考えてみると、この方法が有益になってくる。</p>
+
+<p><code>title</code>のレンダリングを<code>titleRender</code>というpropsにする。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">MyPost</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Post</span> <span class="nx">author</span><span class="o">=</span><span class="dl">"</span><span class="s2">bob</span><span class="dl">"</span>
+    <span class="nx">title</span><span class="o">=</span><span class="dl">"</span><span class="s2">hoge</span><span class="dl">"</span>
+    <span class="nx">titleRender</span><span class="o">=</span><span class="p">{({</span><span class="nx">author</span><span class="p">,</span> <span class="nx">title</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="p">({</span><span class="nx">author</span><span class="p">}</span><span class="err">さんが書きました</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/div&gt;} </span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">FooDecorate</span><span class="o">&gt;</span><span class="err">ほげ</span><span class="o">&lt;</span><span class="sr">/FooDecorate</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Post</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">,</span> <span class="nx">children</span><span class="p">,</span> <span class="nx">titleRender</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="c1">// titleRenderを関数として呼び出し返す。</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span> <span class="nx">titleRender</span><span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">)</span> <span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span> <span class="nx">children</span> <span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="c1">// titleRenderのデフォルトを設定しておきたければdefaultPorps</span>
+<span class="nx">Post</span><span class="p">.</span><span class="nx">defaultProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">titleRender</span> <span class="p">:</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="p">{</span><span class="nx">author</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">)
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>titleRenderに渡す部分は、Stateless Functional Componentになっているので、別途Component定義してしまっても良い。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">SomeTitle</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="p">(</span><span class="na">author</span><span class="p">:</span> <span class="p">{</span><span class="nx">author</span><span class="p">})</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+<span class="kd">const</span> <span class="nx">MyPost</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Post</span> <span class="nx">author</span><span class="o">=</span><span class="dl">"</span><span class="s2">myname</span><span class="dl">"</span>
+    <span class="nx">title</span><span class="o">=</span><span class="dl">"</span><span class="s2">hoge</span><span class="dl">"</span>
+    <span class="nx">titleRender</span><span class="o">=</span><span class="p">{</span><span class="nx">SomeTitle</span><span class="p">}</span> <span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">FooDecorate</span><span class="o">&gt;</span><span class="err">ほげ</span><span class="o">&lt;</span><span class="sr">/FooDecorate</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<p>Class Componentを渡さなければいけない、という場合なら<code>titleComponent</code>としてComponentを渡すのが良い</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// jsxの仕組み上、Componentで記載するためにPascalCaseにする</span>
+<span class="kd">const</span> <span class="nx">Post</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">,</span> <span class="nx">children</span><span class="p">,</span> <span class="na">titleComponent</span><span class="p">:</span> <span class="nx">TitleComponent</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="c1">// コンポーネントをjsxとして再記載。</span>
+      <span class="o">&lt;</span><span class="nx">TitleComponent</span> <span class="p">{...{</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">}}</span> <span class="sr">/</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">children</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="c1">// 利用側</span>
+<span class="kd">class</span> <span class="nx">SomeTitleClassCmp</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="p">{</span>
+  <span class="nx">render</span><span class="p">(){</span>
+    <span class="kd">const</span> <span class="p">{</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="p">(</span><span class="na">author</span><span class="p">:</span> <span class="p">{</span><span class="nx">author</span><span class="p">})</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">MyPost</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Post</span> <span class="nx">author</span><span class="o">=</span><span class="dl">"</span><span class="s2">myname</span><span class="dl">"</span>
+    <span class="nx">title</span><span class="o">=</span><span class="dl">"</span><span class="s2">hoge</span><span class="dl">"</span>
+    <span class="nx">titleComponent</span><span class="o">=</span><span class="p">{</span><span class="nx">SomeTitleClassCmp</span><span class="p">}</span> <span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">FooDecorate</span><span class="o">&gt;</span><span class="err">ほげ</span><span class="o">&lt;</span><span class="sr">/FooDecorate</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<p>この方法は<a href="https://github.com/ReactTraining/react-router/tree/v4/" rel="nofollow noopener" target="_blank">React Router@v4</a>のソースなどからヒントを得た。<br>
+React Routerでは<code>&lt;Match&gt;</code>コンポーネントなどで利用されている。</p>
+
+<p>ライブラリを作る場合でもなければここまでの手法は不要かもしれない</p>
+
+<h3>
+<span id="欄外childrenをstateless-functionで扱う" class="fragment"></span><a href="#%E6%AC%84%E5%A4%96children%E3%82%92stateless-function%E3%81%A7%E6%89%B1%E3%81%86"><i class="fa fa-link"></i></a>欄外：ChildrenをStateless Functionで扱う</h3>
+
+<p>今回の本筋とはずれるが、<a href="https://github.com/ReactTraining/react-router/tree/v4/" rel="nofollow noopener" target="_blank">React Router@v4</a>を見ていて見つけて面白かったやり方。</p>
+
+<p>ここまで<code>titleRender</code>などをStateless Functionとしていたが、実は<code>children</code>をまるごとStateless Functionにも出来る。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">Post</span> <span class="o">=</span> <span class="p">({</span><span class="nx">children</span><span class="p">,</span> <span class="p">...</span><span class="nx">rest</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span> <span class="nx">children</span> <span class="o">==</span> <span class="dl">'</span><span class="s1">function</span><span class="dl">'</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">children</span><span class="p">(</span><span class="nx">rest</span><span class="p">)</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="p">{</span><span class="nx">children</span><span class="p">}</span>
+  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">MyPost</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span>
+  <span class="o">&lt;</span><span class="nx">Post</span> <span class="nx">author</span><span class="o">=</span><span class="dl">"</span><span class="s2">bob</span><span class="dl">"</span> <span class="nx">title</span><span class="o">=</span><span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span> <span class="nx">body</span><span class="o">=</span><span class="dl">"</span><span class="s2">hoge</span><span class="dl">"</span><span class="o">&gt;</span><span class="p">{</span> <span class="p">({</span><span class="nx">author</span><span class="p">,</span> <span class="nx">title</span><span class="p">,</span> <span class="nx">body</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">author</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">body</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span> <span class="p">}</span>
+  <span class="o">&lt;</span><span class="sr">/Post</span><span class="err">&gt;
+</span><span class="p">)</span>
+</pre></div></div>
+
+<p>この例だけでは「どこに使い所があるんだろう？」となってしまうが、React Routerでは、<a href="https://react-router.now.sh/custom-link-component" rel="nofollow noopener" target="_blank"><code>&lt;Link&gt;</code>をカスタムする場合</a>に有益になる。<br>
+(参考：React-router: <a href="https://github.com/ReactTraining/react-router/blob/v4/modules/Link.js" rel="nofollow noopener" target="_blank"><code>&lt;Link&gt;</code></a> )</p>
+
+<h2>
+<span id="手法4-割り切ってパターンを限定素して別なコンポーネントにする" class="fragment"></span><a href="#%E6%89%8B%E6%B3%954-%E5%89%B2%E3%82%8A%E5%88%87%E3%81%A3%E3%81%A6%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3%E3%82%92%E9%99%90%E5%AE%9A%E7%B4%A0%E3%81%97%E3%81%A6%E5%88%A5%E3%81%AA%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>手法4. 割り切ってパターンを限定素して別なコンポーネントにする</h2>
+
+<p>上記の<code>titleRender</code>や<code>titleComponent</code>あたりはかなり汎用性を持たせるものになっていたが、ライブラリを作っているわけでもない限りそこまでは不要な事が多く、2、3種類パターンが作れれば良いのが現実としては多い。</p>
+
+<h3>
+<span id="手法4-1-exportしないprivateなコンポーネントを定義" class="fragment"></span><a href="#%E6%89%8B%E6%B3%954-1-export%E3%81%97%E3%81%AA%E3%81%84private%E3%81%AA%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%82%92%E5%AE%9A%E7%BE%A9"><i class="fa fa-link"></i></a>手法4-1. exportしないprivateなコンポーネントを定義</h3>
+
+<p>愚直に基底となるコンポーネントを作り、<code>export</code>するのは加工をしたコンポーネントとの組み合わせたものだけにする。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// 基底となるコンポーネントはexportしない。</span>
+<span class="kd">const</span> <span class="nx">PrivatePost</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">,</span> <span class="nx">children</span><span class="p">,</span> <span class="nx">titleRender</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span> <span class="nx">titleRender</span><span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span> <span class="nx">children</span> <span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+
+<span class="c1">// 何らかの加工パターン</span>
+<span class="kd">const</span> <span class="nx">FooTitle</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Title</span><span class="p">:</span> <span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="nl">Author</span><span class="p">:</span> <span class="p">{</span><span class="nx">author</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">)
+</span>
+<span class="kd">const</span> <span class="nx">BazTitle</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span> <span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="p">(</span> <span class="p">{</span><span class="nx">author</span><span class="p">}</span> <span class="p">)</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">)
+</span>
+<span class="c1">// 加工済みコンポーネントをexportとする</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">FooPost</span> <span class="o">=</span> <span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">PrivatePost</span> <span class="p">{...</span><span class="nx">props</span><span class="p">}</span>
+    <span class="nx">titleRender</span><span class="o">=</span><span class="p">{</span><span class="nx">FooTitle</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span><span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">BazPost</span> <span class="o">=</span> <span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">PrivatePost</span> <span class="p">{...</span><span class="nx">props</span><span class="p">}</span>
+    <span class="nx">titleRender</span><span class="o">=</span><span class="p">{</span><span class="nx">BazTitle</span> <span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span><span class="p">}</span>
+</pre></div></div>
+
+<p>わかりやすくはあるが、何かの拍子で<code>PrivatePost</code>をexportされたりすると管理不全になりそうな部分は注意しないといけない。</p>
+
+<h3>
+<span id="手法4-2-higher-order-componentにする" class="fragment"></span><a href="#%E6%89%8B%E6%B3%954-2-higher-order-component%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>手法4-2. Higher Order Componentにする</h3>
+
+<p>Higher Order Componentで書くとだいぶすっきり書ける。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="c1">// titleRenderの部分を受けてComponent化するHigher Order Component</span>
+<span class="kd">const</span> <span class="nx">postItem</span> <span class="o">=</span> <span class="p">(</span><span class="nx">titleRender</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">,</span> <span class="nx">children</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span> <span class="nx">titleRender</span><span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span> <span class="nx">children</span> <span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">FooTitle</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="na">Title</span><span class="p">:</span> <span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="nl">Author</span><span class="p">:</span> <span class="p">{</span><span class="nx">author</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">)
+</span><span class="k">export</span> <span class="kd">const</span> <span class="nx">FooPost</span> <span class="o">=</span> <span class="nx">postItem</span><span class="p">(</span><span class="nx">FooTitle</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">BazTitle</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span> <span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="p">(</span> <span class="p">{</span><span class="nx">author</span><span class="p">}</span> <span class="p">)</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">)
+</span><span class="k">export</span> <span class="kd">const</span> <span class="nx">BazPost</span> <span class="o">=</span> <span class="nx">postItem</span><span class="p">(</span><span class="nx">BazTitle</span><span class="p">)</span>
+</pre></div></div>
+
+<p>手法4-1の場合、<code>PrivatePost</code>を隠蔽されるように気にする必要があったが、この方法であれば<code>postItem</code>を<code>export</code>しても問題はない。<br>
+逆に必要があればexportしてしまっても問題ない。<code>postItem</code>を単体テストするのも容易になっている。</p>
+
+<p>bodyとtitleどちらも加工するようなパターンにも拡張しやすい。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">postItem</span> <span class="o">=</span> <span class="p">(</span><span class="nx">titleRender</span><span class="p">,</span> <span class="nx">bodyRender</span> <span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">,</span> <span class="nx">body</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span> <span class="nx">titleRender</span><span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span> <span class="nx">bodyRender</span><span class="p">({</span><span class="nx">body</span><span class="p">})</span> <span class="p">}</span><span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">FooTitle</span> <span class="o">=</span> <span class="p">({</span><span class="nx">title</span><span class="p">,</span> <span class="nx">author</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="na">Title</span><span class="p">:</span> <span class="p">{</span><span class="nx">title</span><span class="p">}</span> <span class="nl">Author</span><span class="p">:</span> <span class="p">{</span><span class="nx">author</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">)
+</span><span class="kd">const</span> <span class="nx">FooBody</span> <span class="o">=</span> <span class="p">({</span><span class="nx">body</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">body</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">)
+</span><span class="k">export</span> <span class="kd">const</span> <span class="nx">FooPost</span> <span class="o">=</span> <span class="nx">postItem</span><span class="p">(</span><span class="nx">FooTitle</span><span class="p">,</span> <span class="nx">FooBody</span><span class="p">)</span>
+</pre></div></div>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>個人的なおすすめとしては手法4のHigher Order Components。</li>
+<li>手法1でも十分やれる事は多いが、可読性やパフォーマンスに難あり。</li>
+<li>更に大変なことになるなら手法3を考えてみる。</li>
+<li>手法2は多分そんなにやらない気がする。</li>
+</ul>

@@ -1,0 +1,114 @@
+<p>styled-componentsを使う上でなかなかresponsive用のmedia queryがしっくり来てなかったのを解決出来そうだったのでメモ</p>
+
+<h1>
+<span id="コンポーネントから別な場合" class="fragment"></span><a href="#%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%81%8B%E3%82%89%E5%88%A5%E3%81%AA%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>コンポーネントから別な場合</h1>
+
+<p>この場合はreact-mediaがおすすめ。</p>
+
+<p><a href="https://github.com/ReactTraining/react-media" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/ReactTraining/react-media</a></p>
+
+<p>そのままでも使えるが、もしbreakpointが決まっているならこんな関数を用意すると良いだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">withMediaComponent</span> <span class="o">=</span> <span class="p">(</span><span class="nx">DesktopComponent</span><span class="p">,</span> <span class="nx">MobileComponent</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">props</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nc">Media</span> <span class="na">query=</span><span class="s2">"(max-width: 768px)"</span><span class="p">&gt;</span>
+        <span class="si">{</span><span class="nx">matches</span> <span class="o">=&gt;</span>
+          <span class="nx">matches</span> <span class="p">?</span> <span class="p">(</span>
+            <span class="p">&lt;</span><span class="nc">MobileComponent</span> <span class="err">{</span><span class="p">...</span><span class="nt">props</span><span class="err">}</span> <span class="p">/&gt;</span>
+          <span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
+            <span class="p">&lt;</span><span class="nc">DesktopComponent</span> <span class="err">{</span><span class="p">...</span><span class="nt">props</span><span class="err">}</span> <span class="p">/&gt;</span>
+          <span class="p">)</span>
+        <span class="si">}</span>
+      <span class="p">&lt;/</span><span class="nc">Media</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">};</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p>使い方はこんな具合</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">SpItem</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">sp</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">;
+</span><span class="p">};</span>
+<span class="kd">const</span> <span class="nx">PcItem</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">pc</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">;
+</span><span class="p">};</span>
+<span class="kd">const</span> <span class="nx">Item</span> <span class="o">=</span> <span class="nx">withMediaComponent</span><span class="p">(</span><span class="nx">PcItem</span><span class="p">,</span> <span class="nx">SpItem</span><span class="p">);</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">MediaComponent</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Item</span> <span class="o">/&gt;</span>
+    <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span>  <span class="p">);</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<h1>
+<span id="コンポーネントは一緒でstyleだけ変えたい場合" class="fragment"></span><a href="#%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%81%AF%E4%B8%80%E7%B7%92%E3%81%A7style%E3%81%A0%E3%81%91%E5%A4%89%E3%81%88%E3%81%9F%E3%81%84%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>コンポーネントは一緒でstyleだけ変えたい場合</h1>
+
+<p>本当にやりたかった方。<br>
+styled-media-queryというのがある</p>
+
+<p><a href="https://github.com/morajabi/styled-media-query" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/morajabi/styled-media-query</a></p>
+
+<p>だいたいこんな感じになる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">mediaQuery</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">styled-media-query</span><span class="dl">"</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">mediaMobile</span> <span class="o">=</span> <span class="nx">mediaQuery</span><span class="p">.</span><span class="nx">lessThan</span><span class="p">(</span><span class="dl">"</span><span class="s2">medium</span><span class="dl">"</span><span class="p">);</span>
+
+<span class="kd">const</span> <span class="nx">Item</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  color: red
+  </span><span class="p">${</span><span class="nx">mediaMobile</span><span class="s2">`
+    color: blue;
+  }
+`</span>
+</pre></div></div>
+
+<p>が、syntax highlightがなかったりちょっと書き方をもうちょっとしたい</p>
+
+<p>そこでこんな関数を用意してみる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">mediaQuery</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">styled-media-query</span><span class="dl">"</span><span class="p">;</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">mediaMobile</span> <span class="o">=</span> <span class="nx">mediaQuery</span><span class="p">.</span><span class="nx">lessThan</span><span class="p">(</span><span class="dl">"</span><span class="s2">medium</span><span class="dl">"</span><span class="p">);</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">withMediaStyle</span> <span class="o">=</span> <span class="p">(</span><span class="nx">Component</span><span class="p">,</span> <span class="nx">extend</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">styled</span><span class="p">(</span><span class="nx">Component</span><span class="p">)</span><span class="s2">`
+    </span><span class="p">${</span><span class="nx">mediaMobile</span><span class="s2">`
+      </span><span class="p">${</span><span class="nx">extend</span><span class="p">}</span><span class="s2">
+    `</span><span class="p">}</span><span class="s2">;
+  `</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p>するとこんな具合に書ける。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">BaseItem</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  color: red;
+`</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">spExtend</span> <span class="o">=</span> <span class="nx">css</span><span class="s2">`
+  color: blue;
+`</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">SomeItem</span> <span class="o">=</span> <span class="nx">withMediaStyle</span><span class="p">(</span><span class="nx">BaseItem</span><span class="p">,</span> <span class="nx">spExtend</span><span class="p">);</span>
+
+<span class="kd">const</span> <span class="nx">SpSomeItem</span> <span class="o">=</span> <span class="nx">styled</span><span class="p">.</span><span class="nx">div</span><span class="s2">`
+  </span><span class="p">${</span><span class="nx">spExtend</span><span class="p">}</span><span class="s2">;
+`</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">MediaStyle</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">SomeItem</span><span class="p">&gt;</span>aaa<span class="p">&lt;/</span><span class="nc">SomeItem</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p><code>withMediaStyle(もとのコンポーネント, メディアクエリで拡張するCSS)</code>と言った感じで書ける。</p>
+
+<p><a href="https://www.styled-components.com/docs/api#css" rel="nofollow noopener" target="_blank">CSS</a>関数はコンポーネント化せずにCSS部分を扱うものになる。</p>

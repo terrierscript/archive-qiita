@@ -1,0 +1,263 @@
+<p>vue.jsでdrag and dropやりたかったけど<a href="http://codepen.io/safx/pen/dasnt" rel="nofollow noopener" target="_blank">これ</a>ぐらいしかサンプルが見つからず、割りと苦戦したのでメモ</p>
+
+<h1>
+<span id="できたもの" class="fragment"></span><a href="#%E3%81%A7%E3%81%8D%E3%81%9F%E3%82%82%E3%81%AE"><i class="fa fa-link"></i></a>できたもの</h1>
+
+<ul>
+<li>動くやつ：<a href="http://suisho.github.io/example-vuednd/" class="autolink" rel="nofollow noopener" target="_blank">http://suisho.github.io/example-vuednd/</a>
+
+<ul>
+<li>ソース：<a href="https://github.com/suisho/example-vuednd" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/suisho/example-vuednd</a>
+
+<ul>
+<li>browserifyも利用。楽しい</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>２つリストが並んでいてアイテムをリスト感で移動できるようなやつ</li>
+<li>今回は<code>item</code>と<code>list</code>というコンポーネントをつくる</li>
+</ul>
+
+<h2>
+<span id="感想" class="fragment"></span><a href="#%E6%84%9F%E6%83%B3"><i class="fa fa-link"></i></a>感想</h2>
+
+<ul>
+<li>vue.jsちょこちょこ触ってはいたけど、DnDの場合そこまで恩恵が大きくなかったかも？</li>
+<li>vueはそんなに色々めんどうみてくれるわけではないので、HTML5のふつーのDnDの知識が普通に必要</li>
+</ul>
+
+<h1>
+<span id="以下細かいところ" class="fragment"></span><a href="#%E4%BB%A5%E4%B8%8B%E7%B4%B0%E3%81%8B%E3%81%84%E3%81%A8%E3%81%93%E3%82%8D"><i class="fa fa-link"></i></a>以下細かいところ</h1>
+
+<h2>
+<span id="どんな感じで設計するか" class="fragment"></span><a href="#%E3%81%A9%E3%82%93%E3%81%AA%E6%84%9F%E3%81%98%E3%81%A7%E8%A8%AD%E8%A8%88%E3%81%99%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>どんな感じで設計するか</h2>
+
+<ul>
+<li>大きく下記３つのコンポーネントができる
+
+<ul>
+<li>item
+
+<ul>
+<li>ドラッグ対象なる要素</li>
+</ul>
+</li>
+<li>list
+
+<ul>
+<li>itemを内包するリスト。ドラッグはリストからリストになされるとする</li>
+</ul>
+</li>
+<li>app
+
+<ul>
+<li>listを内包するアプリケーション本体</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>通常のDnDのようにドラッグイベントを介してデータをやりとりするのはどうもあまりうまくいかなそうだった
+
+<ul>
+<li>dataTransfer.setDataでjsonを受け渡すのが微妙そうという理由</li>
+</ul>
+</li>
+<li>なので親となるappで、データの移動などを管理させることにした</li>
+<li>イベントも下記のように伝播させて、appで処理させる。
+
+<ul>
+<li>item -&gt; list -&gt; app </li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="テンプレート" class="fragment"></span><a href="#%E3%83%86%E3%83%B3%E3%83%97%E3%83%AC%E3%83%BC%E3%83%88"><i class="fa fa-link"></i></a>テンプレート</h2>
+
+<p>(気分でtemplateタグを使ってしまっていますが、あまり意味はありません。)</p>
+
+<h4>
+<span id="item" class="fragment"></span><a href="#item"><i class="fa fa-link"></i></a>item</h4>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"item-template"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"item"</span> <span class="na">draggable=</span><span class="s">true</span> <span class="na">v-class=</span><span class="s">"dragging : isDragging"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;span</span> <span class="na">v-text=</span><span class="s">"id"</span><span class="nt">&gt;&lt;/span&gt;</span>
+        <span class="nt">&lt;span</span> <span class="na">v-text=</span><span class="s">"name"</span><span class="nt">&gt;&lt;/span&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+
+</pre></div></div>
+
+<ul>
+<li>普通のDnDと同じように<code>draggable</code>をtrueにしとく</li>
+<li>ドラッグ中にopacityをかけたいがために<code>class= dragging: isDragging</code>をつけておく（あまり重要でない）</li>
+</ul>
+
+<h4>
+<span id="listitemを内包するやつ" class="fragment"></span><a href="#listitem%E3%82%92%E5%86%85%E5%8C%85%E3%81%99%E3%82%8B%E3%82%84%E3%81%A4"><i class="fa fa-link"></i></a>list（itemを内包するやつ）</h4>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>     <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"list-template"</span><span class="nt">&gt;</span>
+      This is {{name}} List
+      <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"items"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;div</span> <span class="na">v-repeat=</span><span class="s">"items"</span> <span class="na">v-ref=</span><span class="s">"itemView"</span>
+              <span class="na">v-component=</span><span class="s">"item"</span>
+              <span class="na">v-on=</span><span class="s">"dragstart:onDragStart,
+                    dragend:dragEnd"</span> 
+              <span class="na">v-with=</span><span class="s">"item"</span><span class="nt">&gt;&lt;/div&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+</pre></div></div>
+
+<ul>
+<li>基本はただリスト並べるだけのcomponent。</li>
+<li>itemにあたる部分に <code>v-on</code>でdragstartとdragendを仕掛けておく</li>
+</ul>
+
+<h4>
+<span id="applistを内包する奴" class="fragment"></span><a href="#applist%E3%82%92%E5%86%85%E5%8C%85%E3%81%99%E3%82%8B%E5%A5%B4"><i class="fa fa-link"></i></a>app（listを内包する奴）</h4>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"container"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"list"</span> 
+          <span class="na">v-repeat=</span><span class="s">"lists"</span>
+          <span class="na">v-with=</span><span class="s">"list"</span>
+          <span class="na">v-ref=</span><span class="s">"listView"</span>
+          <span class="na">v-component=</span><span class="s">"list"</span> 
+          <span class="na">v-on=</span><span class="s">"dragover: onDragOver, 
+                drop: onDrop"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+</pre></div></div>
+
+<ul>
+<li>listのコンポーネントには<code>v-on</code>でdragoverとdropをひかけておく</li>
+</ul>
+
+<h2>
+<span id="コンポーネント" class="fragment"></span><a href="#%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88"><i class="fa fa-link"></i></a>コンポーネント</h2>
+
+<h3>
+<span id="どんなデータ入れておくか" class="fragment"></span><a href="#%E3%81%A9%E3%82%93%E3%81%AA%E3%83%87%E3%83%BC%E3%82%BF%E5%85%A5%E3%82%8C%E3%81%A6%E3%81%8A%E3%81%8F%E3%81%8B"><i class="fa fa-link"></i></a>どんなデータ入れておくか</h3>
+
+<p>vue.jsはarrayやらobjectやらをデータとして使う。今回はこんな具合</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>
+<span class="kd">var</span> <span class="nx">loadedData</span> <span class="o">=</span> <span class="p">[{</span>
+  <span class="na">name</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">list1</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">items</span> <span class="p">:</span> <span class="p">[{</span> 
+    <span class="na">name</span><span class="p">:</span> <span class="dl">"</span><span class="s2">foo</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">id</span> <span class="p">:</span> <span class="mi">1</span>
+  <span class="p">}]</span>
+<span class="p">},</span> <span class="p">{</span>
+  <span class="na">name</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">list2</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">items</span> <span class="p">:</span> <span class="p">[]</span>
+<span class="p">}]</span>
+</pre></div></div>
+
+<h4>
+<span id="itemのcomponent" class="fragment"></span><a href="#item%E3%81%AEcomponent"><i class="fa fa-link"></i></a>itemのcomponent</h4>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>  <span class="nx">Vue</span><span class="p">.</span><span class="nx">component</span><span class="p">(</span><span class="dl">"</span><span class="s2">item</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">template</span><span class="p">:</span> <span class="dl">"</span><span class="s2">#item-template</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">data</span> <span class="p">:</span> <span class="p">{</span>
+      <span class="na">isDragging</span> <span class="p">:</span> <span class="kc">false</span>
+    <span class="p">},</span>
+    <span class="na">methods</span> <span class="p">:</span> <span class="p">{</span>
+      <span class="na">onDragStart</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+        <span class="nx">e</span><span class="p">.</span><span class="nx">dataTransfer</span><span class="p">.</span><span class="nx">dropEffect</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">move</span><span class="dl">"</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">isDragging</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">$dispatch</span><span class="p">(</span><span class="dl">"</span><span class="s2">itemDrag</span><span class="dl">"</span><span class="p">,</span> <span class="k">this</span><span class="p">)</span>
+      <span class="p">},</span>
+      <span class="na">dragEnd</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">isDragging</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">})</span>
+
+</pre></div></div>
+
+<ul>
+<li>基本dragging中を検出だけ</li>
+<li>isDraggingはcssのclass変更のため</li>
+<li>データの移動などは伝播させて親にまかせてしまう</li>
+</ul>
+
+<h4>
+<span id="listのcomponent" class="fragment"></span><a href="#list%E3%81%AEcomponent"><i class="fa fa-link"></i></a>listのcomponent</h4>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nx">Vue</span><span class="p">.</span><span class="nx">component</span><span class="p">(</span><span class="dl">"</span><span class="s2">list</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">template</span><span class="p">:</span> <span class="dl">"</span><span class="s2">#list-template</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">created</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="dl">"</span><span class="s2">itemDrag</span><span class="dl">"</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">onItemDrag</span><span class="p">)</span>
+  <span class="p">},</span>
+  <span class="na">methods</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="na">onDragOver</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+      <span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">()</span>
+    <span class="p">},</span>
+    <span class="na">onItemDrag</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">itemVM</span><span class="p">){</span>
+      <span class="c1">// 伝播されたイベントをさらに伝播</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">$dispatch</span><span class="p">(</span><span class="dl">"</span><span class="s2">listDrag</span><span class="dl">"</span><span class="p">,</span> <span class="k">this</span><span class="p">,</span> <span class="nx">itemVM</span><span class="p">)</span>
+    <span class="p">},</span>
+    <span class="na">onDrop</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+      <span class="c1">// 自身に発火されるイベントも伝播</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">$dispatch</span><span class="p">(</span><span class="dl">"</span><span class="s2">listDrop</span><span class="dl">"</span><span class="p">,</span> <span class="k">this</span><span class="p">)</span>
+    <span class="p">},</span>
+    <span class="c1">// itemに関するadd, delete処理</span>
+    <span class="na">addItem</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">){</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span>
+    <span class="p">},</span>
+    <span class="na">popItem</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">){</span>
+      <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">$index</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">})</span>
+
+</pre></div></div>
+
+<ul>
+<li>こちらも同様イベント処理は伝播させる</li>
+<li>onDragOverはちゃんとpreventDefaultしてあげないといけない</li>
+<li>addItem/popItemは、ちょっとappから直接いじるのきもいかもと思って作ったぐらいなもの。</li>
+</ul>
+
+<h3>
+<span id="app起点になるvue" class="fragment"></span><a href="#app%E8%B5%B7%E7%82%B9%E3%81%AB%E3%81%AA%E3%82%8Bvue"><i class="fa fa-link"></i></a>App（起点）になるVue</h3>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nb">window</span><span class="p">.</span><span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Vue</span><span class="p">({</span>
+    <span class="na">el</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">#container</span><span class="dl">"</span><span class="p">,</span>
+    <span class="na">data</span> <span class="p">:</span> <span class="p">{</span> 
+      <span class="c1">// 現在どのリストとitemがアクティブになっているかを保持する</span>
+      <span class="na">dragActiveList</span> <span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+      <span class="na">dragActiveItem</span> <span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+      <span class="c1">// data</span>
+      <span class="na">lists</span> <span class="p">:</span> <span class="nx">loadedData</span>
+    <span class="p">},</span>
+    <span class="na">created</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
+      <span class="c1">// 伝播されたイベントを受け取る</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="dl">"</span><span class="s2">listDrag</span><span class="dl">"</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">onListDrag</span><span class="p">)</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="dl">"</span><span class="s2">listDrop</span><span class="dl">"</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">onListDrop</span><span class="p">)</span>
+    <span class="p">},</span>
+    <span class="na">methods</span> <span class="p">:</span> <span class="p">{</span>
+      <span class="c1">// drag時に、アクティブを保持</span>
+      <span class="na">onListDrag</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">listVM</span><span class="p">,</span> <span class="nx">itemVM</span><span class="p">){</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">dragActiveList</span> <span class="o">=</span> <span class="nx">listVM</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">dragActiveUser</span> <span class="o">=</span> <span class="nx">itemVM</span>
+      <span class="p">},</span>
+      <span class="c1">// drop時にデータを移動</span>
+      <span class="na">onListDrop</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">listVM</span><span class="p">){</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">moveItem</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">dragActiveList</span><span class="p">,</span> <span class="nx">listVM</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">dragActiveUser</span> <span class="p">)</span>
+      <span class="p">},</span>
+      <span class="c1">// 移動処理</span>
+      <span class="na">moveItem</span> <span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">listFrom</span><span class="p">,</span> <span class="nx">listTo</span><span class="p">,</span> <span class="nx">item</span><span class="p">){</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">listFrom</span><span class="p">.</span><span class="nx">$index</span> <span class="o">===</span> <span class="nx">listTo</span><span class="p">.</span><span class="nx">$index</span><span class="p">)</span> <span class="k">return</span>
+        <span class="nx">item</span><span class="p">.</span><span class="nx">dragEnd</span><span class="p">()</span>
+        <span class="nx">listTo</span><span class="p">.</span><span class="nx">addItem</span><span class="p">(</span><span class="nx">listFrom</span><span class="p">.</span><span class="nx">popItem</span><span class="p">(</span><span class="nx">item</span><span class="p">))</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">})</span>
+</pre></div></div>
+
+<ul>
+<li>list / itemで伝播させてきたイベントを受け取り、データを移動する。</li>
+<li>データさえ移動しちゃえばあとはvueがやってくれるところはだいぶ恩恵を感じる部分</li>
+</ul>

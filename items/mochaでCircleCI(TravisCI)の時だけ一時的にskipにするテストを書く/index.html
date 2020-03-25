@@ -1,0 +1,40 @@
+<p>mochaを使ってテストを書いている時、branchを切ったりしているけど途中だったりするとこpushしたりすると失敗通知が結構来てうざい。かといって失敗することがわかっているテストだし消したくない・・・そんな時の話</p>
+
+<h1>
+<span id="やり方" class="fragment"></span><a href="#%E3%82%84%E3%82%8A%E6%96%B9"><i class="fa fa-link"></i></a>やり方</h1>
+
+<p>適当にskipする命名規則決めといて<br>
+<code>mocha -i skip_ci</code>とかでスキップしちゃうという手もある。</p>
+
+<p>けどこれだとskipとしても出てこないし、、、と思ったがこんなやり方を思いついた</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">test.js</span></div>
+<div class="highlight"><pre><span class="c1">// この二行</span>
+<span class="kd">var</span> <span class="nx">isCi</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">CI</span> <span class="p">?</span> <span class="kc">true</span> <span class="p">:</span> <span class="kc">false</span>
+<span class="kd">var</span> <span class="nx">itSkipIfCi</span> <span class="o">=</span> <span class="p">(</span><span class="nx">isCi</span> <span class="p">?</span> <span class="nx">it</span><span class="p">.</span><span class="nx">skip</span> <span class="p">:</span> <span class="nx">it</span><span class="p">)</span>
+
+
+<span class="c1">// あとはこんな感じ</span>
+<span class="nx">describe</span><span class="p">(</span><span class="dl">"</span><span class="s2">logic</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">"</span><span class="s2">普通のテスト </span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="p">})</span>
+  <span class="nx">itSkipIfCi</span><span class="p">(</span><span class="dl">"</span><span class="s2">まだコケるのでとばしときたいテスト </span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+
+</pre></div>
+</div>
+
+<h2>
+<span id="解説" class="fragment"></span><a href="#%E8%A7%A3%E8%AA%AC"><i class="fa fa-link"></i></a>解説</h2>
+
+<p><code>process.env.CI</code>は<a href="https://circleci.com/docs/environment-variables" rel="nofollow noopener" target="_blank">CircleCI</a>、<a href="http://docs.travis-ci.com/user/ci-environment/#Environment-variables" rel="nofollow noopener" target="_blank">Travis</a> を見ると<code>TRUE</code>が設定されているようだ。（僕はCircleCIしか使っていない）</p>
+
+<p>あとは<code>it</code>か<code>it.skip</code>かを決めるだけだがそこは下記の記事を参考にした<br>
+<a href="http://qiita.com/shoito/items/9dd99e09d0ca8eaecd4a" class="autolink" id="reference-de711a7b6c23be6f5ab1">http://qiita.com/shoito/items/9dd99e09d0ca8eaecd4a</a></p>
+
+<h2>
+<span id="その他" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96"><i class="fa fa-link"></i></a>その他</h2>
+
+<p>TravisCIの初期設定どうやるか忘れてCircleCI使ってみたけどとても良い。もうTravisに戻れない。</p>

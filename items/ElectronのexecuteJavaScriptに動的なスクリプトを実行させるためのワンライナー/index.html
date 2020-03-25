@@ -1,0 +1,87 @@
+
+<h2>
+<span id="問題" class="fragment"></span><a href="#%E5%95%8F%E9%A1%8C"><i class="fa fa-link"></i></a>問題</h2>
+
+<p>Electronの webContents.executeJavascript は、stringでjavascriptコードを受け取る。<br>
+例えば <strong>IDとパスワードを渡してログインしたい</strong> と思った時にこれがちょっと工夫が必要だった。</p>
+
+<h2>
+<span id="結論" class="fragment"></span><a href="#%E7%B5%90%E8%AB%96"><i class="fa fa-link"></i></a>結論</h2>
+
+<p>こんな関数を用意するだけでいけた！</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">wrap</span> <span class="o">=</span> <span class="p">(</span><span class="nx">fn</span><span class="p">,</span> <span class="p">...</span><span class="nx">args</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="s2">`(</span><span class="p">${</span><span class="nx">fn</span><span class="p">.</span><span class="nx">toString</span><span class="p">()}</span><span class="s2">)(</span><span class="p">${</span><span class="nx">args</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">arg</span> <span class="o">=&gt;</span> <span class="s2">`"</span><span class="p">${</span><span class="nx">arg</span><span class="p">}</span><span class="s2">"`</span> <span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="dl">'</span><span class="s1">,</span><span class="dl">'</span><span class="p">)}</span><span class="s2">)`</span>
+</pre></div></div>
+
+<h3>
+<span id="使い方はこんな具合" class="fragment"></span><a href="#%E4%BD%BF%E3%81%84%E6%96%B9%E3%81%AF%E3%81%93%E3%82%93%E3%81%AA%E5%85%B7%E5%90%88"><i class="fa fa-link"></i></a>使い方はこんな具合</h3>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">webview</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#browser</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="c1">// webviewで実行したい関数</span>
+<span class="kd">const</span> <span class="nx">input</span> <span class="o">=</span> <span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">pass</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#username</span><span class="dl">"</span><span class="p">).</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">name</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#password</span><span class="dl">"</span><span class="p">).</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">pass</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#login</span><span class="dl">"</span><span class="p">).</span><span class="nx">click</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1">// wrap!</span>
+<span class="kd">const</span> <span class="nx">scr</span> <span class="o">=</span> <span class="nx">wrap</span><span class="p">(</span><span class="nx">input</span><span class="p">,</span> <span class="dl">"</span><span class="s2">my-name</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">my-password</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="nx">webview</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="dl">'</span><span class="s1">did-finish-load</span><span class="dl">'</span><span class="p">,</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// execute!</span>
+    <span class="nx">webview</span><span class="p">.</span><span class="nx">executeJavaScript</span><span class="p">(</span><span class="nx">scr</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+     <span class="p">....</span>
+    <span class="p">})</span> 
+<span class="p">}</span>
+</pre></div></div>
+
+<h3>
+<span id="解説など" class="fragment"></span><a href="#%E8%A7%A3%E8%AA%AC%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>解説など</h3>
+
+<p>ワンライナーって言いたかっただけの理由で一行で書いてみたが、わかりやすく書くとこんな感じになる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">wrap</span> <span class="o">=</span> <span class="p">(</span><span class="nx">fn</span><span class="p">,</span> <span class="p">...</span><span class="nx">args</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">callArgs</span> <span class="o">=</span> <span class="nx">args</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span> <span class="nx">arg</span> <span class="o">=&gt;</span> <span class="s2">`"</span><span class="p">${</span><span class="nx">arg</span><span class="p">}</span><span class="s2">"`</span> <span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="dl">'</span><span class="s1">,</span><span class="dl">'</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="nx">functionString</span> <span class="o">=</span> <span class="nx">fn</span><span class="p">.</span><span class="nx">toString</span><span class="p">()</span>
+  <span class="k">return</span> <span class="s2">`(</span><span class="p">${</span><span class="nx">functionString</span><span class="p">}</span><span class="s2">)(</span><span class="p">${</span><span class="nx">callArgs</span><span class="p">}</span><span class="s2">)`</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>wrapで作られた<code>scr</code>の変数はこんな感じになっている。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="p">((</span><span class="nx">name</span><span class="p">,</span> <span class="nx">pass</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#username</span><span class="dl">"</span><span class="p">).</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">name</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#password</span><span class="dl">"</span><span class="p">).</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">pass</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">"</span><span class="s2">#login</span><span class="dl">"</span><span class="p">).</span><span class="nx">click</span><span class="p">()</span>
+<span class="p">})(</span><span class="dl">"</span><span class="s2">my-name</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">my-password</span><span class="dl">"</span><span class="p">)</span>
+</pre></div></div>
+
+<ul>
+<li>
+<code>(function(){})()</code>みたいな即時関数で囲む</li>
+<li>
+<code>Function.toString()</code>で関数の文字列を取り出している</li>
+<li>ES2015構文大活躍
+
+<ul>
+<li>
+<code>...args</code>でその後の引数をquoteで囲んで、即時関数の引数にしている。
+
+<ul>
+<li>
+<a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/Spread_operator" rel="nofollow noopener" target="_blank">spread演算子</a>で受け取っているのはわりと好み。別に第二引数を配列にしてても良かったとは思う。</li>
+</ul>
+</li>
+<li>templateリテラリ大活躍</li>
+</ul>
+</li>
+</ul>
+
+<p>下記あたりを参考に思いついた</p>
+
+<ul>
+<li><a href="http://qiita.com/FaithnhMaster/items/ead9ed07205537d53069" id="reference-2e7ee7d12ae1849ab061">electronのwebview.executeJavaScriptで書くjavascriptを見やすくしてみた</a></li>
+<li><a href="https://github.com/segmentio/nightmare/blob/443cb4439d80bebc48135e824df71f283aac3833/lib/javascript.js" rel="nofollow noopener" target="_blank">segmentio/nightmare:lib/javascript.js</a></li>
+</ul>

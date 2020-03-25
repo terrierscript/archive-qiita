@@ -1,0 +1,107 @@
+<p>CSSとHTMLでやるこういうタブの実装<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc2a04885-7240-ad5f-c527-01056fab6657.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=1db96920e84122057fbe2af8fc87554c" target="_blank" rel="nofollow noopener"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc2a04885-7240-ad5f-c527-01056fab6657.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=1db96920e84122057fbe2af8fc87554c" alt="JS_Bin.png" title="JS_Bin.png" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/c2a04885-7240-ad5f-c527-01056fab6657.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Fc2a04885-7240-ad5f-c527-01056fab6657.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=d2eabe8e9cf53e9ee220bd38ffb14cdb 1x" loading="lazy"></a></p>
+
+<p>選択されているものを<code>.active</code>などのクラスをつけて色を変えるような実装についての思いつき。</p>
+
+<h3>
+<span id="いつもやる感じのやつ" class="fragment"></span><a href="#%E3%81%84%E3%81%A4%E3%82%82%E3%82%84%E3%82%8B%E6%84%9F%E3%81%98%E3%81%AE%E3%82%84%E3%81%A4"><i class="fa fa-link"></i></a>いつもやる感じのやつ</h3>
+
+<p>普通にBootstrapを習ったやり方をするとこんな具合</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;ul</span> <span class="na">id=</span><span class="s">"list1"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;li&gt;</span>AAAA<span class="nt">&lt;/li&gt;</span>
+    <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">"active"</span><span class="nt">&gt;</span>BBBB<span class="nt">&lt;/li&gt;</span>
+    <span class="nt">&lt;li&gt;</span>CCCC<span class="nt">&lt;/li&gt;</span>
+<span class="nt">&lt;/ul&gt;</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="nn">#list1</span><span class="p">{</span>
+  <span class="nt">li</span><span class="p">{</span>
+    <span class="nl">cursor</span><span class="p">:</span> <span class="nb">pointer</span><span class="p">;</span>
+    <span class="nl">display</span><span class="p">:</span> <span class="n">inline-block</span><span class="p">;</span>
+    <span class="nl">border</span><span class="p">:</span> <span class="m">1px</span> <span class="no">gray</span> <span class="nb">solid</span><span class="p">;</span>
+    <span class="nl">border-bottom</span><span class="p">:</span> <span class="m">0px</span><span class="p">;</span>
+    <span class="nl">padding</span><span class="p">:</span> <span class="m">10px</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="nc">.active</span><span class="p">{</span>
+    <span class="nl">background</span><span class="p">:</span> <span class="mh">#ccb</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>これをサーバーサイドで何らかやろうとすると、だいたいこんな感じになると思う。今回はjadeを使って再現</p>
+
+<div class="code-frame" data-lang="jade"><div class="highlight"><pre>- var activeTab = "bbbb"
+- var tabs = ["aaaa", "bbbb", "cccc"]
+ul#list1
+  each tab,i in tabs
+    li(class=(tab == activeTab ? "active" : "" ))= tab        
+</pre></div></div>
+
+<p>だいたいこんな感じになる。</p>
+
+<h3>
+<span id="思いついたやつ" class="fragment"></span><a href="#%E6%80%9D%E3%81%84%E3%81%A4%E3%81%84%E3%81%9F%E3%82%84%E3%81%A4"><i class="fa fa-link"></i></a>思いついたやつ</h3>
+
+<p>もしかしてこれ、scssの<code>@each</code>とかある今ならもうちょっといい感じに出来たりするんじゃね？って思って考えてみた</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;ul</span> <span class="na">id=</span><span class="s">"list2"</span> <span class="na">class=</span><span class="s">"active-bbbb"</span><span class="nt">&gt;</span> <span class="c">&lt;!-- 親で指定する --&gt;</span>
+    <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">"tab-aaaa"</span><span class="nt">&gt;</span>AAAA<span class="nt">&lt;/li&gt;</span>
+    <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">"tab-bbbb"</span><span class="nt">&gt;</span>BBBB<span class="nt">&lt;/li&gt;</span>
+    <span class="nt">&lt;li</span> <span class="na">class=</span><span class="s">"tab-cccc"</span><span class="nt">&gt;</span>CCCC<span class="nt">&lt;/li&gt;</span>
+<span class="nt">&lt;/ul&gt;</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="scss"><div class="highlight"><pre><span class="nn">#list1</span><span class="p">{</span>
+  <span class="nt">li</span><span class="p">{</span>
+    <span class="nl">cursor</span><span class="p">:</span> <span class="nb">pointer</span><span class="p">;</span>
+    <span class="nl">display</span><span class="p">:</span> <span class="n">inline-block</span><span class="p">;</span>
+    <span class="nl">border</span><span class="p">:</span> <span class="m">1px</span> <span class="no">gray</span> <span class="nb">solid</span><span class="p">;</span>
+    <span class="nl">border-bottom</span><span class="p">:</span> <span class="m">0px</span><span class="p">;</span>
+    <span class="nl">padding</span><span class="p">:</span> <span class="m">10px</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="nv">$tabs</span><span class="p">:</span> <span class="n">aaaa</span><span class="o">,</span> <span class="n">bbbb</span><span class="o">,</span> <span class="n">cccc</span><span class="p">;</span> <span class="c1">// 利用するタブを並べる</span>
+  <span class="k">@each</span> <span class="nv">$tab</span> <span class="n">in</span> <span class="nv">$tabs</span><span class="p">{</span>
+    <span class="k">&amp;</span><span class="nc">.active-</span><span class="si">#{</span><span class="nv">$tab</span><span class="si">}</span><span class="p">{</span>
+      <span class="nc">.tab-</span><span class="si">#{</span><span class="nv">$tab</span><span class="si">}</span><span class="p">{</span> <span class="c1">// 親と一致したらactive化する</span>
+        <span class="nl">background</span><span class="p">:</span> <span class="mh">#ccb</span><span class="p">;</span> 
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>CSS化するとこんな感じ</p>
+
+<div class="code-frame" data-lang="css"><div class="highlight"><pre><span class="nf">#list1</span> <span class="nt">li</span> <span class="p">{</span>
+  <span class="nl">cursor</span><span class="p">:</span> <span class="nb">pointer</span><span class="p">;</span>
+  <span class="nl">display</span><span class="p">:</span> <span class="n">inline-block</span><span class="p">;</span>
+  <span class="nl">border</span><span class="p">:</span> <span class="m">1px</span> <span class="no">gray</span> <span class="nb">solid</span><span class="p">;</span>
+  <span class="nl">border-bottom</span><span class="p">:</span> <span class="m">0px</span><span class="p">;</span>
+  <span class="nl">padding</span><span class="p">:</span> <span class="m">10px</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nf">#list1</span><span class="nc">.active-aaaa</span> <span class="nc">.tab-aaaa</span> <span class="p">{</span>
+  <span class="nl">background</span><span class="p">:</span> <span class="m">#ccb</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nf">#list1</span><span class="nc">.active-bbbb</span> <span class="nc">.tab-bbbb</span> <span class="p">{</span>
+  <span class="nl">background</span><span class="p">:</span> <span class="m">#ccb</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nf">#list1</span><span class="nc">.active-cccc</span> <span class="nc">.tab-cccc</span> <span class="p">{</span>
+  <span class="nl">background</span><span class="p">:</span> <span class="m">#ccb</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>テンプレ的にはこんな感じ</p>
+
+<div class="code-frame" data-lang="jade"><div class="highlight"><pre>- var activeTab = "bbbb"
+- var tabs = ["aaaa", "bbbb", "cccc"]
+ul#list2(class="active-" + activeTab)    
+  each tab,i in tabs
+    li(class="tab-" + tab)= tab
+</pre></div></div>
+
+<p><code>&lt;li&gt;</code>でのロジックが消えてくれた。<br>
+今回の簡易な例だとあんまり恩恵が見えないが、<code>&lt;li&gt;</code>の中身が複雑で別途パーシャル化しないといけないとかの時には使えるかもしれない</p>

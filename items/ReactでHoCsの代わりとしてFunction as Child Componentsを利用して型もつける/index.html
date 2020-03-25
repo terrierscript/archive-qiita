@@ -1,0 +1,503 @@
+<p>Reactで Function as Child Component、Child Function, Function as Children と呼ばれるものがあって最近馴染んできたのでここらでまとめてみる。</p>
+
+<ul>
+<li><a href="https://reactpatterns.com/#function-as-children" rel="nofollow noopener" target="_blank">function-as-children</a></li>
+<li><a href="https://qiita.com/khatada/items/12756040f79dc6bbdfe9" id="reference-5e30e6f80ecccfae0d13">Reactのfunction as childとは何か</a></li>
+</ul>
+
+<p>以下、この記事ではFunction as Childrenという呼称を利用する</p>
+
+<p>見慣れたところで言うと<a href="https://reactjs!%5Berror%5D()%0A.org/docs/context.html" rel="nofollow noopener" target="_blank">ReactのContext</a>でも使われている手法で、<code>props.children</code>に渡される値をfunctionにする事でHoCsに似たような効果を得る事ができる手法になる。</p>
+
+<p>例えばHoCsだとこんな具合なものを想定する</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">withStaticValue</span> <span class="o">=</span> <span class="p">(</span><span class="nx">WrappedComponent</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">class</span> <span class="nx">HOC</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">(</span>
+        <span class="p">&lt;</span><span class="nc">WrappedComponent</span>
+          <span class="na">value=</span><span class="si">{</span><span class="mi">1234</span><span class="si">}</span>
+        <span class="p">/&gt;</span>
+      <span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>    
+  <span class="k">return</span> <span class="nx">HOC</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">const</span> <span class="nx">MyItem</span> <span class="o">=</span> <span class="p">({</span><span class="nx">value</span><span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">value</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">WrappedMyItem</span> <span class="o">=</span> <span class="nx">withStaticValue</span><span class="p">(</span><span class="nx">MyItem</span><span class="p">)</span>
+</pre></div></div>
+
+<p>するとこれが下記のように書ける。<br>
+HoCsでの複雑さが減る嬉しさがある。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">WithStaticValue</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">children</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">children</span><span class="p">({</span> <span class="na">value</span><span class="p">:</span> <span class="mi">1234</span> <span class="p">})</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">MyItem</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">value</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">value</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">WrappedMyItem</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">WithStaticValue</span><span class="p">&gt;</span>
+      <span class="si">{</span><span class="p">({</span> <span class="nx">value</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+        <span class="p">&lt;</span><span class="nc">MyItem</span> <span class="na">value=</span><span class="si">{</span><span class="nx">value</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">)</span><span class="si">}</span>
+    <span class="p">&lt;/</span><span class="nc">WithStaticValue</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p>効能としてはHoCsに近いので、利用箇所もHoCsと同じようなものだと思ってもらいたい。</p>
+
+<p>Childrenを関数にするという若干「ほんとにそんなのしていいの？という手法だが、下記のようなライブラリでも使われているのが確認できた</p>
+
+<ul>
+<li><a href="https://github.com/drcmda/react-spring" rel="nofollow noopener" target="_blank">react-spring</a></li>
+<li><a href="https://github.com/final-form/react-final-form" rel="nofollow noopener" target="_blank">react-final-form</a></li>
+<li><a href="https://reacttraining.com/react-router/web/api/Route/children-func" rel="nofollow noopener" target="_blank">react-router</a></li>
+<li><a href="https://github.com/renatorib/react-powerplug" rel="nofollow noopener" target="_blank">react-powerplug</a></li>
+<li><a href="https://github.com/paypal/downshift" rel="nofollow noopener" target="_blank">react-downshift</a></li>
+</ul>
+
+<h1>
+<span id="例bmiの計算ツールでstateの保持を分離していく" class="fragment"></span><a href="#%E4%BE%8Bbmi%E3%81%AE%E8%A8%88%E7%AE%97%E3%83%84%E3%83%BC%E3%83%AB%E3%81%A7state%E3%81%AE%E4%BF%9D%E6%8C%81%E3%82%92%E5%88%86%E9%9B%A2%E3%81%97%E3%81%A6%E3%81%84%E3%81%8F"><i class="fa fa-link"></i></a>例：BMIの計算ツールでStateの保持を分離していく</h1>
+
+<p>これを応用して、大きなコンポーネントからstateを分離していく例を考える。<br>
+規模感としては「redux入れるまでもないけど」ぐらいな場合だと思ってほしい。</p>
+
+<h2>
+<span id="初期段階普通に書いた場合" class="fragment"></span><a href="#%E5%88%9D%E6%9C%9F%E6%AE%B5%E9%9A%8E%E6%99%AE%E9%80%9A%E3%81%AB%E6%9B%B8%E3%81%84%E3%81%9F%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>初期段階：普通に書いた場合</h2>
+
+<p>まずは何も考えずに記述した場合を考える</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">state</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">weight</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="na">height</span><span class="p">:</span> <span class="mi">0</span>
+  <span class="p">};</span>
+  <span class="nx">computeBMI</span><span class="p">(</span><span class="nx">weight</span><span class="p">,</span> <span class="nx">height</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">meterHeight</span> <span class="o">=</span> <span class="nx">height</span> <span class="o">/</span> <span class="mi">100</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">weight</span> <span class="o">/</span> <span class="p">(</span><span class="nx">meterHeight</span> <span class="o">*</span> <span class="nx">meterHeight</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="nx">handleWeight</span> <span class="o">=</span> <span class="nx">e</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+      <span class="na">weight</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+  <span class="nx">handleHeight</span> <span class="o">=</span> <span class="nx">e</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+      <span class="na">height</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">weight</span><span class="p">,</span> <span class="nx">height</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">;</span>
+    <span class="kd">const</span> <span class="nx">bmi</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">computeBMI</span><span class="p">(</span><span class="nx">weight</span><span class="p">,</span> <span class="nx">height</span><span class="p">);</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"App"</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>BMI tool<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Input<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+            Height:
+            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">value=</span><span class="si">{</span><span class="nx">height</span><span class="si">}</span> <span class="na">type=</span><span class="s2">"number"</span> <span class="na">onChange=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">handleHeight</span><span class="si">}</span> <span class="p">/&gt;</span>
+            cm
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+            Weight:
+            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">value=</span><span class="si">{</span><span class="nx">weight</span><span class="si">}</span> <span class="na">type=</span><span class="s2">"number"</span> <span class="na">onChange=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">handleWeight</span><span class="si">}</span> <span class="p">/&gt;</span>
+            kg
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Result<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>BMI: <span class="si">{</span><span class="nx">bmi</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>1コンポーネントの行数としてはそこそこで、例えばここに「標準体重の計算も入れたい！」とか、「数値によって結果を出し分けたい」とかを考えると徐々にしんどくなってくるのが想像できる。</p>
+
+<p>画面的にはこんな感じ。<br>
+<a href="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Ff3baebd3-7fe4-3e44-61c0-c9be31c73a9a.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=a579abf57b48ed7e3296700328ff964a" target="_blank" rel="nofollow noopener"><img width="288" alt="91316a4b.png" src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Ff3baebd3-7fe4-3e44-61c0-c9be31c73a9a.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;s=a579abf57b48ed7e3296700328ff964a" data-canonical-src="https://qiita-image-store.s3.amazonaws.com/0/7307/f3baebd3-7fe4-3e44-61c0-c9be31c73a9a.png" srcset="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F7307%2Ff3baebd3-7fe4-3e44-61c0-c9be31c73a9a.png?ixlib=rb-1.2.2&amp;auto=format&amp;gif-q=60&amp;q=75&amp;w=1400&amp;fit=max&amp;s=75076b3db2f24bccaab6107be078e555 1x" loading="lazy"></a></p>
+
+<h2>
+<span id="第一段階formと結果表示を別コンポーネントにする" class="fragment"></span><a href="#%E7%AC%AC%E4%B8%80%E6%AE%B5%E9%9A%8Eform%E3%81%A8%E7%B5%90%E6%9E%9C%E8%A1%A8%E7%A4%BA%E3%82%92%E5%88%A5%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E3%81%AB%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>第一段階：Formと結果表示を別コンポーネントにする</h2>
+
+<p>ここから分離をはじめていく。<br>
+本題であるFunction as Childrenを利用する前に、それ以外のところをわかりやすさのために切り出していく</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">InputForm</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">weight</span><span class="p">,</span> <span class="nx">height</span><span class="p">,</span> <span class="nx">onChangeWeight</span><span class="p">,</span> <span class="nx">onChangeHeight</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        Height:
+        <span class="p">&lt;</span><span class="nt">input</span> <span class="na">value=</span><span class="si">{</span><span class="nx">height</span><span class="si">}</span> <span class="na">type=</span><span class="s2">"number"</span> <span class="na">onChange=</span><span class="si">{</span><span class="nx">onChangeHeight</span><span class="si">}</span> <span class="p">/&gt;</span>
+        cm
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>,
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        Weight:
+        <span class="p">&lt;</span><span class="nt">input</span> <span class="na">value=</span><span class="si">{</span><span class="nx">weight</span><span class="si">}</span> <span class="na">type=</span><span class="s2">"number"</span> <span class="na">onChange=</span><span class="si">{</span><span class="nx">onChangeWeight</span><span class="si">}</span> <span class="p">/&gt;</span>
+        kg
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">};</span>
+
+<span class="kd">class</span> <span class="nx">BMIResult</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">compute</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">weight</span><span class="p">,</span> <span class="nx">height</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="kd">const</span> <span class="nx">meterHeight</span> <span class="o">=</span> <span class="nx">height</span> <span class="o">/</span> <span class="mi">100</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">weight</span> <span class="o">/</span> <span class="p">(</span><span class="nx">meterHeight</span> <span class="o">*</span> <span class="nx">meterHeight</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">compute</span><span class="p">();</span>
+    <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>BMI: <span class="si">{</span><span class="nx">result</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">state</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">weight</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="na">height</span><span class="p">:</span> <span class="mi">0</span>
+  <span class="p">};</span>
+  <span class="nx">handleWeight</span> <span class="o">=</span> <span class="nx">e</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+      <span class="na">weight</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+  <span class="nx">handleHeight</span> <span class="o">=</span> <span class="nx">e</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+      <span class="na">height</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"App"</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>BMI tool<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Input<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nc">InputForm</span>
+            <span class="err">{</span><span class="p">...</span><span class="nt">this</span><span class="p">.</span><span class="nt">state</span><span class="err">}</span>
+            <span class="na">onChangeHeight=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">handleHeight</span><span class="si">}</span>
+            <span class="na">onChangeWeight=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">handleWeight</span><span class="si">}</span>
+          <span class="p">/&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Result<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nc">BMIResult</span> <span class="err">{</span><span class="p">...</span><span class="nt">this</span><span class="p">.</span><span class="nt">state</span><span class="err">}</span> <span class="p">/&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><code>&lt;InputForm&gt;</code>とそれを利用する<code>&lt;BMIResult&gt;</code>として切り離された。この時点でもコンポーネントはかなりすっきりしたが、まだ<code>&lt;App&gt;</code>が大きい。</p>
+
+<h2>
+<span id="第二段階-stateだけ管理する部分を切り出す" class="fragment"></span><a href="#%E7%AC%AC%E4%BA%8C%E6%AE%B5%E9%9A%8E-state%E3%81%A0%E3%81%91%E7%AE%A1%E7%90%86%E3%81%99%E3%82%8B%E9%83%A8%E5%88%86%E3%82%92%E5%88%87%E3%82%8A%E5%87%BA%E3%81%99"><i class="fa fa-link"></i></a>第二段階: Stateだけ管理する部分を切り出す</h2>
+
+<p>いよいよ本題。今回はReduxの名前を借りて<code>Container</code>という名前をもらう。<br>
+体格のState部位のみを保持するContainerを作りたい</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="c1">//InputFormとBMIResultは上記と同じなので省略する</span>
+
+<span class="kd">class</span> <span class="nx">BodyStateContainer</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">state</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">weight</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="na">height</span><span class="p">:</span> <span class="mi">0</span>
+  <span class="p">};</span>
+  <span class="nx">handleWeight</span> <span class="o">=</span> <span class="nx">e</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+      <span class="na">weight</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+  <span class="nx">handleHeight</span> <span class="o">=</span> <span class="nx">e</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+      <span class="na">height</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span>
+    <span class="p">});</span>
+  <span class="p">};</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">children</span><span class="p">({</span>
+      <span class="p">...</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span>
+      <span class="na">handleHeight</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">handleHeight</span><span class="p">,</span>
+      <span class="na">handleWeight</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">handleWeight</span>
+    <span class="p">});</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><code>&lt;BodyStateContainer&gt;</code>を使う側はこうなる。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nc">BodyStateContainer</span><span class="p">&gt;</span>
+        <span class="si">{</span><span class="p">({</span> <span class="nx">handleWeight</span><span class="p">,</span> <span class="nx">handleHeight</span><span class="p">,</span> <span class="p">...</span><span class="nx">rest</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+          <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"App"</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Health tool<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+              <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Input<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+              <span class="p">&lt;</span><span class="nc">InputForm</span>
+                <span class="err">{</span><span class="p">...</span><span class="nt">rest</span><span class="err">}</span>
+                <span class="na">onChangeHeight=</span><span class="si">{</span><span class="nx">handleHeight</span><span class="si">}</span>
+                <span class="na">onChangeWeight=</span><span class="si">{</span><span class="nx">handleWeight</span><span class="si">}</span>
+              <span class="p">/&gt;</span>
+            <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+              <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>BMI Result<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+              <span class="p">&lt;</span><span class="nc">BMIResult</span> <span class="err">{</span><span class="p">...</span><span class="nt">rest</span><span class="err">}</span> <span class="p">/&gt;</span>
+            <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">)</span><span class="si">}</span>
+      <span class="p">&lt;/</span><span class="nc">BodyStateContainer</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</pre></div></div>
+
+<p><code>return this.props.children({...})</code> という表記が出てきた。これがFunction as Childrenになる。<br>
+<code>BodyStateContainer</code>のみが状態を持ち、<code>App</code>はもう状態を管理していない。<br>
+しかし利用側では<code>&lt;BodyStateContainer&gt;{(props) =&gt; ...}</code>として相変わらずstateの値を受け取ったり、handlerを介して変更することが可能になっている。</p>
+
+<p>また、もしほかの場所で同じように体重と慎重を扱いたい場合は<code>&lt;BodyStateContainer&gt;</code>を使い回すことも可能だろう。</p>
+
+<p>仮にこのまま使いまわした場合、それぞれの<code>BodyStateContainer</code>がstateを持つが、もしそれをグローバルに扱いたければ<code>React.Context</code>の出番になってくるだろう（あんまり無いケースだとは思う）</p>
+
+<h2>
+<span id="第三段階型をつける" class="fragment"></span><a href="#%E7%AC%AC%E4%B8%89%E6%AE%B5%E9%9A%8E%E5%9E%8B%E3%82%92%E3%81%A4%E3%81%91%E3%82%8B"><i class="fa fa-link"></i></a>第三段階:型をつける</h2>
+
+<p>通常の場合、childrenは必ずReactの要素であったが、このFunction as Childrenなどを使うとchildrenが何が何だか分からないという状況が起きる。<br>
+このへんもあるので、<a href="https://americanexpress.io/faccs-are-an-antipattern/" rel="nofollow noopener" target="_blank">Function as Childrenはアンチパターンだ！</a> という話もある。</p>
+
+<p>ただ個人的にはTypeScriptで型があればある程度は秩序が保たれるとも思うので、型の付け方を記載しておきたい</p>
+
+<p>まずBodyStateContainerを考える。childrenを関数にして、<code>ReactNode</code>を返すのがキモになる</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre>
+<span class="nx">type</span> <span class="nx">BodyState</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">weight</span><span class="p">:</span> <span class="nx">number</span><span class="p">;</span>
+  <span class="nl">height</span><span class="p">:</span> <span class="nx">number</span><span class="p">;</span>
+<span class="p">};</span>
+<span class="nx">type</span> <span class="nx">Handlers</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">handleHeight</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">ChangeEventHandler</span><span class="p">;</span>
+  <span class="nl">handleWeight</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">ChangeEventHandler</span><span class="p">;</span>
+  <span class="c1">// もうちょっと雑にするなら (e: any) =&gt; void;</span>
+
+<span class="p">};</span>
+<span class="nx">type</span> <span class="nx">BodyChildrenProps</span> <span class="o">=</span> <span class="nx">Handlers</span> <span class="o">&amp;</span> <span class="nx">BodyState</span><span class="p">;</span>
+<span class="nx">type</span> <span class="nx">BodyStateProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">children</span><span class="p">:</span> <span class="p">(</span><span class="na">props</span><span class="p">:</span> <span class="nx">BodyChildrenProps</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">React</span><span class="p">.</span><span class="nx">ReactNode</span><span class="p">;</span>
+  <span class="c1">// もうちょっと雑にするなら  Function とか (props: any) =&gt; ReactNode とか</span>
+<span class="p">};</span>
+
+
+<span class="kd">class</span> <span class="nx">BodyStateContainer</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="o">&lt;</span><span class="nx">BodyStateProps</span><span class="p">,</span> <span class="nx">BodyState</span><span class="o">&gt;</span> <span class="p">{</span>
+   <span class="p">:</span> 
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">children</span><span class="p">({</span>
+     <span class="p">:</span>
+     <span class="p">:</span>
+    <span class="p">})</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>そして子については、spread operatorを使うことでChildrenPropsがそのまま使える（ただし不要なパラメータも渡すので少々雑な型付けではある）</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre>
+<span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span><span class="o">&lt;</span><span class="p">{},{}</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nc">BodyStateContainer</span><span class="p">&gt;</span>
+        <span class="si">{</span><span class="nx">params</span> <span class="o">=&gt;</span> <span class="p">(</span>
+          <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"App"</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Health tool<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+              <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Input<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+              <span class="p">&lt;</span><span class="nc">InputForm</span> <span class="err">{</span><span class="p">...</span><span class="nt">params</span><span class="err">}</span> <span class="p">/&gt;</span>
+            <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">)</span><span class="si">}</span>
+      <span class="p">&lt;/</span><span class="nc">BodyStateContainer</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// spread operatorで受け取るのでChildrenPropsをそのまま流用</span>
+<span class="kd">const</span> <span class="na">InputForm</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">SFC</span><span class="o">&lt;</span><span class="nx">BodyChildrenProps</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">({</span>
+  <span class="nx">weight</span><span class="p">,</span>
+  <span class="nx">height</span><span class="p">,</span>
+  <span class="nx">handleWeight</span><span class="p">,</span>
+  <span class="nx">handleHeight</span>
+<span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+     <span class="p">...</span>
+  <span class="p">);</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p>型については、HoCsの場合OuterPropsとInnerPropsがあってややこしい感じがあったが、Function as Childrenの場合はほとんど迷わないしなんならきれいに書ける感じは良い。</p>
+
+<h1>
+<span id="余談" class="fragment"></span><a href="#%E4%BD%99%E8%AB%87"><i class="fa fa-link"></i></a>余談</h1>
+
+<p>以下、いろいろ書いてて思いついた使い方などを余談的に記述していく<br>
+あくまで実験的なことも書いているので予めご了承いただきたい。</p>
+
+<h2>
+<span id="その1さらに他のfunction-as-childrenを追加する" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE1%E3%81%95%E3%82%89%E3%81%AB%E4%BB%96%E3%81%AEfunction-as-children%E3%82%92%E8%BF%BD%E5%8A%A0%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>その1:さらに他のFunction as Childrenを追加する</h2>
+
+<p>実用的なパターンは少ないが、複数のFunction as Childrenを組み合わせるパターンを示したい。</p>
+
+<p>例えばここで「子供の場合はBMIじゃなくて別な指標を作りたい」みたいな場合を考える。<br>
+分離した<code>Container</code>のstateを増やしていくのものいいが、それも続けていくと肥大化してしまいそうだ。<br>
+例えば今回は<code>BodyStateContainer</code>はそのまま体重身長という部分にフォーカスさせたまま、別途年齢を管理するContainerを作ってみることを考える。</p>
+
+<p>そして今回はついでに、「年齢は外に露見したくなくて、若いかどうかだけを返したい」みたいなreadonlyなケースで考えてみる。<br>
+するとこんな感じになるだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="kd">class</span> <span class="nx">AgeStateContainer</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">state</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">age</span><span class="p">:</span> <span class="mi">20</span>
+  <span class="p">};</span>
+  <span class="nx">isYoung</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">age</span> <span class="o">&lt;</span> <span class="mi">16</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="nx">handleChange</span> <span class="o">=</span> <span class="nx">e</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span> <span class="na">age</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span> <span class="p">});</span>
+  <span class="p">};</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        Age <span class="p">&lt;</span><span class="nt">input</span> <span class="na">value=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">age</span><span class="si">}</span> <span class="na">onChange=</span><span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">handleChange</span><span class="si">}</span> <span class="p">/&gt;</span>
+        <span class="si">{</span><span class="cm">/*子に返すのはisYoungだけ*/</span><span class="si">}</span>
+        <span class="si">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">children</span><span class="p">({</span> <span class="na">isYoung</span><span class="p">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">isYoung</span><span class="p">()</span> <span class="p">})</span><span class="si">}</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>説明のためにFunction as Children側に<code>&lt;input&gt;</code>を配置しているが、表示要素をもたせるのとデザイン的に辛くなる可能性があるので注意したい</p>
+
+<p>利用側はこんな具合。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="c1">// ネストしまくるのを回避したいので、Containerのとこだけ切り出して子に渡す</span>
+<span class="kd">const</span> <span class="nx">MixedContainer</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">children</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">AgeStateContainer</span><span class="p">&gt;</span>
+      <span class="si">{</span><span class="nx">ageContainerProps</span> <span class="o">=&gt;</span> <span class="p">(</span>
+        <span class="p">&lt;</span><span class="nc">BodyStateContainer</span><span class="p">&gt;</span>
+          <span class="si">{</span><span class="nx">bodyStateContainerProps</span> <span class="o">=&gt;</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">children</span><span class="p">({</span>
+              <span class="p">...</span><span class="nx">ageContainerProps</span><span class="p">,</span>
+              <span class="p">...</span><span class="nx">bodyStateContainerProps</span>
+            <span class="p">});</span>
+          <span class="p">}</span><span class="si">}</span>
+        <span class="p">&lt;/</span><span class="nc">BodyStateContainer</span><span class="p">&gt;</span>
+      <span class="p">)</span><span class="si">}</span>
+    <span class="p">&lt;/</span><span class="nc">AgeStateContainer</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">};</span>
+
+<span class="kd">class</span> <span class="nx">App</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s2">"App"</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Health tool<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">MixedContainer</span><span class="p">&gt;</span>
+          <span class="si">{</span><span class="p">({</span> <span class="nx">isYoung</span><span class="p">,</span> <span class="nx">handleWeight</span><span class="p">,</span> <span class="nx">handleHeight</span><span class="p">,</span> <span class="nx">height</span><span class="p">,</span> <span class="nx">weigth</span>  <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+            <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+              <span class="si">{</span><span class="cm">/* 今までと同じなので入力らへんは省略 */</span><span class="si">}</span>
+              <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+                <span class="si">{</span><span class="nx">isYoung</span> <span class="p">?</span> <span class="p">(</span>
+                  <span class="p">&lt;</span><span class="nc">ForYoungHealthResult</span> <span class="na">height=</span><span class="si">{</span><span class="nx">height</span><span class="si">}</span><span class="err">,</span> <span class="na">weight=</span><span class="si">{</span><span class="nx">weigth</span><span class="si">}</span><span class="p">/&gt;</span>
+                <span class="p">)</span> <span class="p">:</span> <span class="p">(</span>
+                  <span class="p">&lt;</span><span class="nc">ForAdultHealthResult</span> <span class="na">height=</span><span class="si">{</span><span class="nx">height</span><span class="si">}</span><span class="err">,</span> <span class="na">weight=</span><span class="si">{</span><span class="nx">weigth</span><span class="si">}</span><span class="p">/&gt;</span>                  
+                <span class="p">)</span><span class="si">}</span>
+              <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+            <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">)</span><span class="si">}</span>
+        <span class="p">&lt;/</span><span class="nc">MixedContainer</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p><code>isYoung</code>の結果フラグを使いつつ、<code>height</code>と<code>weight</code>をさらにその子に渡すことで、それぞれのContainerからの値を使えている</p>
+
+<p>また、型をつけるならこんな感じになるはずだ。</p>
+
+<div class="code-frame" data-lang="tsx"><div class="highlight"><pre><span class="nx">type</span> <span class="nx">AgeContainerChildrenProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">isYoung</span><span class="p">:</span> <span class="nx">boolean</span><span class="p">;</span>
+<span class="p">};</span>
+<span class="nx">type</span> <span class="nx">AgeContainerProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">children</span><span class="p">:</span> <span class="p">(</span><span class="na">props</span><span class="p">:</span> <span class="nx">AgeContainerChildProps</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">React</span><span class="p">.</span><span class="nx">ReactNode</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">type</span> <span class="nx">MixedChildrenProps</span> <span class="o">=</span> <span class="nx">BodyChildrenProps</span> <span class="o">&amp;</span> <span class="nx">AgeContainerChildrenProps</span><span class="p">;</span>
+<span class="nx">type</span> <span class="nx">MixedContaienrProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">children</span><span class="p">:</span> <span class="p">(</span><span class="na">props</span><span class="p">:</span> <span class="nx">MixedChildrenProps</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">React</span><span class="p">.</span><span class="nx">ReactNode</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p>MixedChildrenPropsなどは利用するContainerのChildrenPropsのIntersection Typesになってちょっと気持ちが良い</p>
+
+<h2>
+<span id="その2-componentをただの関数化してやる" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE2-component%E3%82%92%E3%81%9F%E3%81%A0%E3%81%AE%E9%96%A2%E6%95%B0%E5%8C%96%E3%81%97%E3%81%A6%E3%82%84%E3%82%8B"><i class="fa fa-link"></i></a>その2: Componentをただの関数化してやる</h2>
+
+<p>ここまで来ると、Componentをただの関数にできそうな事に気づく。<br>
+例えばBMIの計算周りは、こんな感じにできるはずだ。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre>
+<span class="kd">const</span> <span class="nx">ComputeBMI</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">weight</span><span class="p">,</span> <span class="nx">height</span><span class="p">,</span> <span class="nx">children</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">meterHeight</span> <span class="o">=</span> <span class="nx">height</span> <span class="o">/</span> <span class="mi">100</span><span class="p">;</span>
+  <span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">weight</span> <span class="o">/</span> <span class="p">(</span><span class="nx">meterHeight</span> <span class="o">*</span> <span class="nx">meterHeight</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nx">children</span><span class="p">({</span> <span class="nx">result</span> <span class="p">});</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p>利用側はこんな具合になる</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">ForAdultHealthResult</span> <span class="o">=</span> <span class="nx">rest</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>BMI Result<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">ComputeBMI</span><span class="err">　{</span><span class="p">...</span><span class="nt">rest</span><span class="err">}</span><span class="p">&gt;</span>
+        <span class="si">{</span><span class="p">({</span> <span class="nx">result</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+          <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Your</span> <span class="na">BMI</span><span class="p">:</span> <span class="p">{</span><span class="nx">result</span><span class="p">}&lt;</span><span class="err">/</span><span class="nt">div</span><span class="p">&gt;</span>;
+        }<span class="si">}</span>
+      <span class="p">&lt;/</span><span class="nc">ComputeBMI</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">};</span>
+</pre></div></div>
+
+<p>もはやこれはコンポーネントと呼ぶべきなのか関数と呼ぶべきなのかわからないが、「しょうがないからClass化してメソッド生やすしか無かった」みたいな部分に対するソリューションとしては使える場合がありそうだ。</p>
+
+<h2>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h2>
+
+<p>ということで、Function as Childrenについてまとめてきた。<br>
+肥大化したComponentを分離する場合や、Redux使わずうまくしのぎたい場合にはいろいろ使い道があるだろう。</p>
+
+<p>ただ、おそらくこの手法は型が無いと相当厳しくなっていくとも思われる。</p>
+
+<p>当然、HoCs同様乱用すると可読性に影響がありうるものなので、適宜使える場合を見つけて導入すると良いだろう</p>

@@ -1,0 +1,171 @@
+<p>画像などを遅延読み込みをするlazyloaderが久々に必要になってナウいやつを探してたら見つけた。<br>
+<a href="http://afarkas.github.io/lazysizes/" rel="nofollow noopener" target="_blank">the ultimate and lightweigth lazyLoader</a>だそうです。つよそう。</p>
+
+<p>軽く使って良さそうなのにあまり記事がなかったので個人的まとめ。</p>
+
+<h1>
+<span id="良いとこ" class="fragment"></span><a href="#%E8%89%AF%E3%81%84%E3%81%A8%E3%81%93"><i class="fa fa-link"></i></a>良いとこ</h1>
+
+<ul>
+<li>ピュアな実装でjqueryなどフレームワークに依存していない
+
+<ul>
+<li>jquery.lazyloadあたり使いたいけどjqueryを入れねば、みたいな問題がない。</li>
+</ul>
+</li>
+<li>レスポンシブ対応などが豊富</li>
+<li>プラガブルな実装</li>
+<li>画像以外にもスクリプトやiframeにも対応しているよう</li>
+<li>Star数:2625（2014/12/27時点）。</li>
+<li>作者はhtml5shivなどの作者らしい
+
+<ul>
+<li><a href="https://github.com/aFarkas" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/aFarkas</a></li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="悪いとこ" class="fragment"></span><a href="#%E6%82%AA%E3%81%84%E3%81%A8%E3%81%93"><i class="fa fa-link"></i></a>悪いとこ</h1>
+
+<ul>
+<li>initial commitが3ヶ月前(2014/10）でまだまだ枯れてない</li>
+<li>バージョンは0.6。まだベータ的扱いかも。</li>
+<li>testなどまだなさそう</li>
+</ul>
+
+<h1>
+<span id="使い方" class="fragment"></span><a href="#%E4%BD%BF%E3%81%84%E6%96%B9"><i class="fa fa-link"></i></a>使い方</h1>
+
+<p><a href="https://github.com/aFarkas/lazysizes" rel="nofollow noopener" target="_blank">github</a>から大いに抜粋</p>
+
+<h2>
+<span id="基本" class="fragment"></span><a href="#%E5%9F%BA%E6%9C%AC"><i class="fa fa-link"></i></a>基本</h2>
+
+<p>bowerなりnpmなりからリソースは落とすところは省略します。<br>
+(筆者はrailsプロジェクトでの利用だったので<code>rails-assets-lazysizes</code>を使いました。）</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"lazysizes.min.js"</span> <span class="na">async=</span><span class="s">""</span><span class="nt">&gt;&lt;/script&gt;</span>
+</pre></div></div>
+
+<p><code>script</code>のasyncは必須というわけではなさそうです。</p>
+
+<h3>
+<span id="普通のlazyloaderっぽい使い方" class="fragment"></span><a href="#%E6%99%AE%E9%80%9A%E3%81%AElazyloader%E3%81%A3%E3%81%BD%E3%81%84%E4%BD%BF%E3%81%84%E6%96%B9"><i class="fa fa-link"></i></a>普通のlazyloaderっぽい使い方</h3>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">"placeholder.jpg"</span> <span class="na">data-src=</span><span class="s">"imageurl.jpg"</span> <span class="na">class=</span><span class="s">"lazyload"</span> <span class="nt">/&gt;</span>
+</pre></div></div>
+
+<p>ふつうですね。<br>
+<code>&lt;img class="lazyload"&gt;</code>というクラス指定で遅延対象を指定します。<br>
+対象とするクラス名は設定で変更可能（後述）</p>
+
+<h3>
+<span id="レスポンシブ対応" class="fragment"></span><a href="#%E3%83%AC%E3%82%B9%E3%83%9D%E3%83%B3%E3%82%B7%E3%83%96%E5%AF%BE%E5%BF%9C"><i class="fa fa-link"></i></a>レスポンシブ対応</h3>
+
+<p>未検証。<br>
+<code>srcset</code>をlazyにしてくれるみたい。<br>
+個人的に使ったことは無いけど使いどころありそう。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;img</span> <span class="na">data-srcset=</span><span class="s">"responsive-image1.jpg 1x, 
+responsive-image2.jpg 2x"</span> <span class="na">class=</span><span class="s">"lazyload"</span> <span class="nt">/&gt;</span>
+</pre></div></div>
+
+<p>これを利用して<a href="https://github.com/aFarkas/lazysizes#lqip" rel="nofollow noopener" target="_blank">LQIP</a>という荒い画像を先行で読み込ませて遅延で高解像度に切り替えるという手法が紹介されています。</p>
+
+<h3>
+<span id="設定変更" class="fragment"></span><a href="#%E8%A8%AD%E5%AE%9A%E5%A4%89%E6%9B%B4"><i class="fa fa-link"></i></a>設定変更</h3>
+
+<p><code>window.lazySizesConfig</code>に記載。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre>
+<span class="nb">window</span><span class="p">.</span><span class="nx">lazySizesConfig</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">lazyClass</span><span class="p">:</span> <span class="dl">'</span><span class="s1">postbone</span><span class="dl">'</span><span class="p">,</span> <span class="c1">// lazyloadの対象とするクラスの指定。</span>
+<span class="p">};</span>
+
+</pre></div></div>
+
+<p>オプションはたくさんあるので詳しくは<a href="https://github.com/aFarkas/lazysizes#js-api---options" rel="nofollow noopener" target="_blank">このへん</a></p>
+
+<h2>
+<span id="プラグインの話" class="fragment"></span><a href="#%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%81%AE%E8%A9%B1"><i class="fa fa-link"></i></a>プラグインの話</h2>
+
+<p>lazysizesは<code>lazybeforeunveil</code>というイベントを発火するため、これをフックすることで何がしかの処理をかませることが出来ます。<br>
+幾つか同梱されているプラグインはだいたいこのhookを利用しているようです。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="nb">document</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="dl">'</span><span class="s1">lazybeforeunveil</span><span class="dl">'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+    <span class="c1">// 何らかの処理</span>
+<span class="p">},</span> <span class="kc">false</span><span class="p">);</span>
+</pre></div></div>
+
+<h3>
+<span id="便利機能詰め合わせなunveilhooks-plugin" class="fragment"></span><a href="#%E4%BE%BF%E5%88%A9%E6%A9%9F%E8%83%BD%E8%A9%B0%E3%82%81%E5%90%88%E3%82%8F%E3%81%9B%E3%81%AAunveilhooks-plugin"><i class="fa fa-link"></i></a>便利機能詰め合わせな<a href="https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/unveilhooks" rel="nofollow noopener" target="_blank">unveilhooks plugin</a>
+</h3>
+
+<p>これscriptを遅延させたり動画を遅延させたり地味にいろんな機能があります。<br>
+背景画像なんかはよく使いたくなる割にドキュメントが奥のほうにあって見つけるの時間かかったりしたのではまった。</p>
+
+<h4>
+<span id="背景画像" class="fragment"></span><a href="#%E8%83%8C%E6%99%AF%E7%94%BB%E5%83%8F"><i class="fa fa-link"></i></a>背景画像</h4>
+
+<p><code>unveilhooks</code>を読み込んで<code>data-bg</code>を使うだけ。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"bg lazyload"</span> <span class="na">data-bg=</span><span class="s">"http://cdn.qiita.com/assets/siteid-reverse-cd0519106e5814e34d402b3e821820cf.png"</span><span class="nt">&gt;&lt;/div&gt;</span>
+
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"./lazysizes/plugins/unveilhooks/ls.unveilhooks.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"./lazysizes/lazysizes.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+</pre></div></div>
+
+<h3>
+<span id="他のプラグインざっくり" class="fragment"></span><a href="#%E4%BB%96%E3%81%AE%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%81%96%E3%81%A3%E3%81%8F%E3%82%8A"><i class="fa fa-link"></i></a>他のプラグインざっくり</h3>
+
+<p>他のはあんまり触ってないのも多いのでドキュメント見つつ</p>
+
+<ul>
+<li>
+<a href="https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/rias" rel="nofollow noopener" target="_blank">RIAS plugin</a>
+
+<ul>
+<li>responsiveな画像処理を外部サービスなんかに任せてしまうためのものらしい</li>
+<li>
+<code>data-src="http://foo.com/img/{width}x{height}"</code>みたいな具合？</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/optimumx" rel="nofollow noopener" target="_blank">OPTIMUMX</a>
+
+<ul>
+<li>スマホなどで最適なサイズを見つけているっぽいけどよくわからなかった・・・・</li>
+</ul>
+</li>
+<li>
+<a href="https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/bgset" rel="nofollow noopener" target="_blank">bgset plugin</a>
+
+<ul>
+<li>背景に<code>srcset</code>的な動きをさせるもの。</li>
+<li>最初普通の背景のlazyにこっちを使ってしまったのでちょっと触った</li>
+<li>
+<a href="https://github.com/aFarkas/respimage" rel="nofollow noopener" target="_blank">respimage</a>というpolyfillを使わないとchrome以外のブラウザなどでは動かない</li>
+<li>そして体感たまに読み込み成功してくれない気がする（要調査）</li>
+</ul>
+</li>
+<li>
+<p><a href="https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/include" rel="nofollow noopener" target="_blank">include plugin</a></p>
+
+<ul>
+<li>htmlをパーシャル的にlazyでincludeするプラグインらしい。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://github.com/aFarkas/lazysizes/tree/gh-pages/plugins/print" rel="nofollow noopener" target="_blank">print plugin</a></p>
+
+<ul>
+<li>印刷時に全部ロードするよーというものらしい。なるほど。</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<p>lazysizesとてもよいし未来を感じる。</p>

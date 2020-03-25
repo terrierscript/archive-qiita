@@ -1,0 +1,99 @@
+<p>react-hooksの<code>useState</code>はこれまでのstateのように値を保持してくれる重要な関数だ。</p>
+
+<p>例えば単純なカウンターならこんな具合になるだろう</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">useCounter</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">count</span><span class="p">,</span> <span class="nx">setCounter</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">{</span> <span class="nx">count</span><span class="p">,</span> <span class="nx">setCounter</span> <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">MyApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">count</span><span class="p">,</span> <span class="nx">setCounter</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useCounter</span><span class="p">()</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">count</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  　　  <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">setCounter</span><span class="p">(</span><span class="nx">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>この<code>useState</code>に関数を保持させたい場合、ちょっと注意が必要になる。</p>
+
+<p>例えばこんな風に書くと、意図しない挙動になるだろう。</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">initialHelloFn</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">initial</span><span class="dl">"</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="kd">const</span> <span class="nx">useCounter</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">count</span><span class="p">,</span> <span class="nx">setCounter</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">helloFn</span><span class="p">,</span> <span class="nx">setHelloFn</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="nx">initialHelloFn</span><span class="p">)</span>
+  <span class="c1">// このnewFnが何度も呼び出される</span>
+  <span class="kd">const</span> <span class="nx">newFn</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">hello!</span><span class="dl">"</span><span class="p">,</span> <span class="nx">count</span><span class="p">)</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">count</span><span class="p">])</span>
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">setHelloFn</span><span class="p">(</span><span class="nx">newFn</span><span class="p">)</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">newFn</span><span class="p">,</span> <span class="nx">setHelloFn</span><span class="p">])</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">helloFn</span><span class="p">)</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">count</span><span class="p">,</span>
+    <span class="nx">setCounter</span><span class="p">,</span>
+    <span class="nx">helloFn</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">MyApp</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">count</span><span class="p">,</span> <span class="nx">setCounter</span><span class="p">,</span> <span class="nx">helloFn</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">useCounter</span><span class="p">()</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">count</span><span class="si">}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">setCounter</span><span class="p">(</span><span class="nx">count</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="p">&gt;</span>+<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="na">onClick=</span><span class="si">{</span><span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">helloFn</span><span class="p">()</span><span class="si">}</span><span class="p">&gt;</span>hello<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<p>おそらくこのようにすると、<code>hello! 0</code>のような出力が大量に出てしまうだろう</p>
+
+<h1>
+<span id="正しく動かす場合はどうするか" class="fragment"></span><a href="#%E6%AD%A3%E3%81%97%E3%81%8F%E5%8B%95%E3%81%8B%E3%81%99%E5%A0%B4%E5%90%88%E3%81%AF%E3%81%A9%E3%81%86%E3%81%99%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>正しく動かす場合はどうするか？</h1>
+
+<p><code>{fn: 管理したい関数}</code> のようにobjectで管理する。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="kd">const</span> <span class="nx">useCounter</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">count</span><span class="p">,</span> <span class="nx">setCounter</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="c1">// {fn: Function}などobjectの形にラップする</span>
+  <span class="kd">const</span> <span class="p">[</span><span class="nx">helloFn</span><span class="p">,</span> <span class="nx">setHelloFn</span><span class="p">]</span> <span class="o">=</span> <span class="nx">useState</span><span class="p">({</span> <span class="na">fn</span><span class="p">:</span> <span class="nx">initialHelloFn</span> <span class="p">})</span>
+  <span class="kd">const</span> <span class="nx">newFn</span> <span class="o">=</span> <span class="nx">useCallback</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">hello!</span><span class="dl">"</span><span class="p">,</span> <span class="nx">count</span><span class="p">)</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">count</span><span class="p">])</span>
+
+  <span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">setHelloFn</span><span class="p">({</span> <span class="na">fn</span><span class="p">:</span> <span class="nx">newFn</span> <span class="p">})</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">newFn</span><span class="p">,</span> <span class="nx">setHelloFn</span><span class="p">])</span>
+
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">count</span><span class="p">,</span>
+    <span class="nx">setCounter</span><span class="p">,</span>
+    <span class="na">helloFn</span><span class="p">:</span> <span class="nx">helloFn</span><span class="p">.</span><span class="nx">fn</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div></div>
+
+<h1>
+<span id="なぜこうする必要があるか" class="fragment"></span><a href="#%E3%81%AA%E3%81%9C%E3%81%93%E3%81%86%E3%81%99%E3%82%8B%E5%BF%85%E8%A6%81%E3%81%8C%E3%81%82%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>なぜこうする必要があるか？</h1>
+
+<p>結論から言えば<code>useState</code>から返ってくる<code>setFoo</code>のようなハンドラーはFunctional Updateに対応しているため、単純に関数を渡してしまうとFunctional Updateとして処理されてしまうからになる。</p>
+
+<p><a href="https://reactjs.org/docs/hooks-reference.html#functional-updates" class="autolink" rel="nofollow noopener" target="_blank">https://reactjs.org/docs/hooks-reference.html#functional-updates</a></p>
+
+<p>Functional Update自体は便利で、下記のように、現在の値を引き継がずに関数だけで利用することができる</p>
+
+<div class="code-frame" data-lang="jsx"><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">button</span> <span class="nx">onClick</span><span class="o">=</span><span class="p">{()</span> <span class="o">=&gt;</span> <span class="nx">setCount</span><span class="p">(</span><span class="nx">prevCount</span> <span class="o">=&gt;</span> <span class="nx">prevCount</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)}</span><span class="o">&gt;+</span><span class="p">&lt;</span><span class="err">/</span><span class="nt">button</span><span class="p">&gt;</span>
+</pre></div></div>
+
+<p>これはhooksで新しく入ったわけではなく、<code>React.Component.setState</code>にも同様の機能が存在していたものだ<br>
+<a href="https://reactjs.org/docs/react-component.html#setstate" class="autolink" rel="nofollow noopener" target="_blank">https://reactjs.org/docs/react-component.html#setstate</a></p>
+
+<p>ただComponentの場合はstate自体がobjectなのでほとんどこのような引っかかり方をすることは無かった。<code>useState</code>が単純な値を格納するものとして利用できてる分、この点は気をつけるべき部分だろう</p>

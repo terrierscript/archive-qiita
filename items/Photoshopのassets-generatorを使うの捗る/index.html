@@ -1,0 +1,63 @@
+<p>Photoshop CCでsvg吐き出すのどうやんだろうかと調べたら<br>
+<a href="http://stocker.jp/diary/photoshop-generator-svg/" rel="nofollow noopener" target="_blank">こちら</a>の記事を見つけた。<br>
+ほほー、assets-generatorなんてあんのかーと色々調べると色々面白かったのでメモ</p>
+
+<h2>
+<span id="セットアップ" class="fragment"></span><a href="#%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97"><i class="fa fa-link"></i></a>セットアップ</h2>
+
+<ol>
+<li>
+<p>homeディレクトリに<code>.generator.json</code>を作成</p>
+
+<ul>
+<li>最初<code>generator.json</code>じゃないといけないのかなー、ヤだなーと思っていたけど<a href="https://github.com/adobe-photoshop/generator-core/wiki/Generator-Configuration-File-Format" rel="nofollow noopener" target="_blank">調べたら</a>dotfile的な感じでもOKらしい。</li>
+<li>homesickの管理下に置くと捗る</li>
+</ul>
+</li>
+<li>
+<p><code>.generator.json</code>をこんな感じで下記を記載</p>
+
+<ul>
+<li>svgを吐き出したかったのでやったけどしなくても動くかも</li>
+</ul>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="p">{</span><span class="w">
+      </span><span class="nl">"generator-assets"</span><span class="p">:</span><span class="w">  </span><span class="p">{</span><span class="w"> 
+        </span><span class="nl">"svg-enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"webp-enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<ul>
+<li>ほかにも<a href="https://github.com/adobe-photoshop/generator-assets/wiki/Configuration-Options" rel="nofollow noopener" target="_blank">こんなオプションが設定可能</a>
+</li>
+</ul>
+</li>
+<li><p><strong>Photoshopを再起動</strong>（重要）</p></li>
+<li>
+<p>Photoshopのメニューから「ファイル」→「生成」→「画像アセット」を選択してチェックを入れる</p>
+
+<ul>
+<li>このチェック、起動のたびに押さないといけなそう</li>
+</ul>
+</li>
+<li><p>ファイル名_assetsというディレクトリにもりもり出てくる</p></li>
+</ol>
+
+<h2>
+<span id="使い方tips" class="fragment"></span><a href="#%E4%BD%BF%E3%81%84%E6%96%B9tips"><i class="fa fa-link"></i></a>使い方＆Tips</h2>
+
+<ul>
+<li>基本的にはレイヤーの名前を<code>foo.png</code>のようにすることで画像がぼこぼこ生成される</li>
+<li>グループ化されたレイヤーにつけると、グループがまとまった状態で生成される</li>
+<li>複数フォーマットほしいときは<code>foo.png, foo.svg</code>のようにできて熱い</li>
+<li>
+<code>200% foo.png</code> とすると二倍化された画像が出てきて熱い
+
+<ul>
+<li>
+<code>100x100 foo.png</code>なんかも<a href="http://helpx.adobe.com/photoshop/using/generate-assets-layers.html" rel="nofollow noopener" target="_blank">動くらしい</a>けど未検証</li>
+</ul>
+</li>
+</ul>

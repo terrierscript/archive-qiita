@@ -1,0 +1,188 @@
+<p>例えばVue.jsでモーダルを実装し、それを開くフックは別なところに引っ掛けたい、みたいなパターンでどうするか？</p>
+
+<h1>
+<span id="eventbusを利用する" class="fragment"></span><a href="#eventbus%E3%82%92%E5%88%A9%E7%94%A8%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>EventBusを利用する</h1>
+
+<p>この解決として、EventBusというのが公式に提案されている</p>
+
+<ul>
+<li><a href="https://jp.vuejs.org/v2/guide/components.html#%E8%A6%AA%E5%AD%90%E9%96%93%E4%BB%A5%E5%A4%96%E3%81%AE%E9%80%9A%E4%BF%A1" rel="nofollow noopener" target="_blank">親子間以外の通信</a></li>
+</ul>
+
+<p><code>new Vue()</code>でインスタンスを生成し、それを仲介してイベントを疎通しあう、という物になる。<br>
+windowグローバルにイベントを飛ばしたりするのと実質は変わらないが、ある程度キレイに実装出来そうだと感じる。</p>
+
+<h1>
+<span id="modalでのサンプル" class="fragment"></span><a href="#modal%E3%81%A7%E3%81%AE%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB"><i class="fa fa-link"></i></a>Modalでのサンプル</h1>
+
+<h2>
+<span id="ベース" class="fragment"></span><a href="#%E3%83%99%E3%83%BC%E3%82%B9"><i class="fa fa-link"></i></a>ベース</h2>
+
+<p>今回の基礎となるModalEventはこういう感じでシンプル。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">ModalEvent.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="nx">Vue</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">vue</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">ModalEvent</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Vue</span><span class="p">()</span>
+</pre></div>
+</div>
+
+<p>今回はModalの<code>vue-js-modal</code>を利用する。</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!--HelloModal.vue --&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;modal</span> <span class="na">name=</span><span class="s">"hello-modal"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"container"</span><span class="nt">&gt;</span>
+      Hello!
+    <span class="nt">&lt;/div&gt;</span>
+  <span class="nt">&lt;/modal&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">import</span> <span class="nx">Vue</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">vue</span><span class="dl">"</span>
+<span class="k">import</span> <span class="nx">VModal</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">vue-js-modal</span><span class="dl">"</span>
+<span class="c1">// ModalEventをimportする</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">ModalEvent</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./ModalEvent</span><span class="dl">"</span>
+
+<span class="nx">Vue</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">VModal</span><span class="p">)</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="nx">created</span><span class="p">(){</span>
+    <span class="c1">// created / mountedでMountEventをlistenさせて、modalを開く</span>
+    <span class="nx">ModalEvent</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="dl">"</span><span class="s2">openModal</span><span class="dl">"</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">$modal</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="dl">"</span><span class="s2">hello-modal</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">})</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<h2>
+<span id="別々にmountしたvueコンポーネント" class="fragment"></span><a href="#%E5%88%A5%E3%80%85%E3%81%ABmount%E3%81%97%E3%81%9Fvue%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88"><i class="fa fa-link"></i></a>別々にmountしたvueコンポーネント</h2>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">index.html</span></div>
+<div class="highlight"><pre>   :
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"app"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;modal-open-button&gt;&lt;/modal-open-button&gt;</span>
+      <span class="nt">&lt;hello-modal&gt;&lt;/hello-modal&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+   :
+</pre></div>
+</div>
+
+<p>Modalを開く側のボタンはこんな具合になる</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="c">&lt;!--ModalOpenButton.vue--&gt;</span>
+<span class="nt">&lt;template&gt;</span>
+  <span class="nt">&lt;div&gt;</span>
+    <span class="nt">&lt;button</span> <span class="err">@</span><span class="na">click=</span><span class="s">"onClick"</span><span class="nt">&gt;</span>Open from Vue<span class="nt">&lt;/button&gt;</span>
+  <span class="nt">&lt;/div&gt;</span>
+<span class="nt">&lt;/template&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">ModalEvent</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./ModalEvent</span><span class="dl">"</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="na">methods</span><span class="p">:{</span>
+    <span class="nx">onClick</span><span class="p">(){</span>
+      <span class="c1">// クリックしたらイベントを発火</span>
+      <span class="nx">ModalEvent</span><span class="p">.</span><span class="nx">$emit</span><span class="p">(</span><span class="dl">"</span><span class="s2">openModal</span><span class="dl">"</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="nt">&lt;/script&gt;</span>
+</pre></div></div>
+
+<p>これで<code>ModalEvent</code>を介してイベントが疎通して開くようになる</p>
+
+<h2>
+<span id="jqueryの場合" class="fragment"></span><a href="#jquery%E3%81%AE%E5%A0%B4%E5%90%88"><i class="fa fa-link"></i></a>jQueryの場合</h2>
+
+<p>あんまり用途は無い（ことが望ましい）が、jQueryから発火するのも出来るようになった。</p>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">index.html</span></div>
+<div class="highlight"><pre>    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"app"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div&gt;</span>
+        <span class="nt">&lt;button</span> <span class="na">id=</span><span class="s">"jquery-external-button"</span><span class="nt">&gt;</span>Open from jQuery<span class="nt">&lt;/button&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+      <span class="nt">&lt;hello-modal&gt;&lt;/hello-modal&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+</pre></div>
+</div>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">$</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">jquery</span><span class="dl">"</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">ModalEvent</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">./ModalEvent</span><span class="dl">"</span>
+
+<span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">$</span><span class="p">(</span><span class="dl">"</span><span class="s2">#jquery-external-button</span><span class="dl">"</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">ModalEvent</span><span class="p">.</span><span class="nx">$emit</span><span class="p">(</span><span class="dl">"</span><span class="s2">openModal</span><span class="dl">"</span><span class="p">)</span>
+  <span class="p">})</span>
+<span class="p">})</span>
+</pre></div></div>
+
+<h2>
+<span id="vanillaなjsからの発火" class="fragment"></span><a href="#vanilla%E3%81%AAjs%E3%81%8B%E3%82%89%E3%81%AE%E7%99%BA%E7%81%AB"><i class="fa fa-link"></i></a>vanillaなjsからの発火</h2>
+
+<p>jQueryとさして変わらないが、もう一歩踏み込んでjQueryも使わない場合。<br>
+あまりキレイではないが、<code>window</code>にModalEventを渡して呼び出せる。</p>
+
+<div class="code-frame" data-lang="js"><div class="highlight"><pre><span class="k">import</span> <span class="nx">Vue</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">vue</span><span class="dl">"</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">ModalEvent</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Vue</span><span class="p">()</span>
+<span class="nb">window</span><span class="p">.</span><span class="nx">ModalEvent</span> <span class="o">=</span> <span class="nx">ModalEvent</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">index.html</span></div>
+<div class="highlight"><pre>    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"app"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div&gt;</span>
+        <span class="nt">&lt;button</span> <span class="na">id=</span><span class="s">"vanilla-external-button"</span><span class="nt">&gt;</span>Open from Vanilla<span class="nt">&lt;/button&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+      <span class="nt">&lt;hello-modal&gt;&lt;/hello-modal&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="c">&lt;!-- built files will be auto injected --&gt;</span>
+    <span class="nt">&lt;script&gt;</span>
+      <span class="nb">document</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="kd">var</span> <span class="nx">elm</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">"</span><span class="s2">vanilla-external-button</span><span class="dl">"</span><span class="p">);</span>
+        <span class="nx">elm</span><span class="p">.</span><span class="nx">onclick</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+          <span class="nb">window</span><span class="p">.</span><span class="nx">ModalEvent</span><span class="p">.</span><span class="nx">$emit</span><span class="p">(</span><span class="dl">"</span><span class="s2">openModal</span><span class="dl">"</span><span class="p">);</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="nt">&lt;/script&gt;</span>
+</pre></div>
+</div>
+
+<h1>
+<span id="おまけもうちょっとeventを整然とする" class="fragment"></span><a href="#%E3%81%8A%E3%81%BE%E3%81%91%E3%82%82%E3%81%86%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8event%E3%82%92%E6%95%B4%E7%84%B6%E3%81%A8%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>おまけ：もうちょっとEventを整然とする</h1>
+
+<p>無造作にEventを飛ばすのを防ぐのに、<code>methods</code>で限定しておくと少しは整然とするであろう。</p>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">ModalEvent.js</span></div>
+<div class="highlight"><pre><span class="k">import</span> <span class="nx">Vue</span> <span class="k">from</span> <span class="dl">"</span><span class="s2">vue</span><span class="dl">"</span>
+
+<span class="kd">const</span> <span class="nx">OPEN_MODAL</span> <span class="o">=</span> <span class="dl">"</span><span class="s2">openModal</span><span class="dl">"</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">ModalEvent</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Vue</span><span class="p">({</span>
+  <span class="na">methods</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nx">emitOpenModal</span><span class="p">(</span><span class="nx">event</span><span class="p">){</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">$emit</span><span class="p">(</span><span class="nx">OPEN_MODAL</span><span class="p">,</span> <span class="nx">event</span><span class="p">)</span>
+    <span class="p">},</span>
+    <span class="nx">onOpenModal</span><span class="p">(</span><span class="nx">cb</span><span class="p">){</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="nx">OPEN_MODAL</span><span class="p">,</span> <span class="nx">cb</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">})</span>
+
+</pre></div>
+</div>
+
+<h1>
+<span id="参考資料" class="fragment"></span><a href="#%E5%8F%82%E8%80%83%E8%B3%87%E6%96%99"><i class="fa fa-link"></i></a>参考資料</h1>
+
+<ul>
+<li><a href="https://medium.com/@jilsonthomas/create-a-global-event-bus-in-vue-js-838a5d9ab03a" class="autolink" rel="nofollow noopener" target="_blank">https://medium.com/@jilsonthomas/create-a-global-event-bus-in-vue-js-838a5d9ab03a</a></li>
+<li><a href="https://medium.com/@andrejsabrickis/https-medium-com-andrejsabrickis-create-simple-eventbus-to-communicate-between-vue-js-components-cdc11cd59860" class="autolink" rel="nofollow noopener" target="_blank">https://medium.com/@andrejsabrickis/https-medium-com-andrejsabrickis-create-simple-eventbus-to-communicate-between-vue-js-components-cdc11cd59860</a></li>
+<li><a href="https://alligator.io/vuejs/global-event-bus/" class="autolink" rel="nofollow noopener" target="_blank">https://alligator.io/vuejs/global-event-bus/</a></li>
+</ul>

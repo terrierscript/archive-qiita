@@ -1,0 +1,23 @@
+<p>勢いで入れたDocker for macが<code>docker ps</code>しても<code>Cannot connect to the Docker daemon</code>とか言われてしまい、<code>sudo docker ps</code>としないと動かなくて<code>boot2docker</code>も消したのにおかしいなーとなってハマった。</p>
+
+<h3>
+<span id="解決" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA"><i class="fa fa-link"></i></a>解決</h3>
+
+<p>下記に<code>boot2docker</code>と<code>Docker for mac</code>の関係性についての記事があると教えてもらった</p>
+
+<p><a href="https://docs.docker.com/docker-for-mac/docker-toolbox/" class="autolink" rel="nofollow noopener" target="_blank">https://docs.docker.com/docker-for-mac/docker-toolbox/</a></p>
+
+<p><code>DOCKER_*</code>のenv設定があると、どうもboot2dockerを動かしてしまいDocker for mac見てくれないらしい。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>unset DOCKER_TLS_VERIFY
+unset DOCKER_CERT_PATH
+unset DOCKER_MACHINE_NAME
+unset DOCKER_HOST
+</pre></div></div>
+
+<p><code>.zshrc</code>などにも上記設定に関する項目が入っている時はそっちも削除する</p>
+
+<h3>
+<span id="教訓" class="fragment"></span><a href="#%E6%95%99%E8%A8%93"><i class="fa fa-link"></i></a>教訓</h3>
+
+<p>ドキュメントちゃんと読もう</p>

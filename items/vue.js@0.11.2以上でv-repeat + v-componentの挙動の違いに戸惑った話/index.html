@@ -1,0 +1,178 @@
+<p><strong>2014/12/20: ご指摘を受けた部分について修正しました</strong></p>
+
+<h1>
+<span id="0110での話" class="fragment"></span><a href="#0110%E3%81%A7%E3%81%AE%E8%A9%B1"><i class="fa fa-link"></i></a>0.11.0での話</h1>
+
+<p>もともと0.11.0で下記のような感じで作っていた</p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"sample"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">v-repeat=</span><span class="s">"items"</span> <span class="na">v-component=</span><span class="s">"item"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;span&gt;</span>baz<span class="nt">&lt;/span&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"build.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">app.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">Vue</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">vue</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="c1">// 子要素はコンポーネント化</span>
+<span class="nx">Vue</span><span class="p">.</span><span class="nx">component</span><span class="p">(</span><span class="dl">"</span><span class="s2">item</span><span class="dl">"</span><span class="p">,</span> <span class="p">{})</span>
+
+<span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Vue</span><span class="p">({</span>
+  <span class="na">data</span> <span class="p">:{</span>
+    <span class="na">items</span> <span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span><span class="na">v</span> <span class="p">:</span><span class="mi">1</span><span class="p">},</span>
+      <span class="p">{</span><span class="na">v</span> <span class="p">:</span><span class="mi">2</span><span class="p">},</span>
+      <span class="p">{</span><span class="na">v</span> <span class="p">:</span><span class="mi">3</span><span class="p">},</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">})</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">$mount</span><span class="p">(</span><span class="dl">"</span><span class="s2">#sample</span><span class="dl">"</span><span class="p">)</span>
+</pre></div>
+</div>
+
+<p>で、出力はこんな具合。</p>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">output.html</span></div>
+<div class="highlight"><pre>    <span class="nt">&lt;div&gt;</span>
+      <span class="nt">&lt;span&gt;</span>baz<span class="nt">&lt;/span&gt;</span>
+    <span class="nt">&lt;/div&gt;&lt;div&gt;</span>
+      <span class="nt">&lt;span&gt;</span>baz<span class="nt">&lt;/span&gt;</span>
+    <span class="nt">&lt;/div&gt;&lt;div&gt;</span>
+      <span class="nt">&lt;span&gt;</span>baz<span class="nt">&lt;/span&gt;</span>
+    <span class="nt">&lt;/div&gt;</span><span class="c">&lt;!--v-repeat--&gt;</span>
+</pre></div>
+</div>
+
+<h1>
+<span id="さーて0114にしてみるかー" class="fragment"></span><a href="#%E3%81%95%E3%83%BC%E3%81%A60114%E3%81%AB%E3%81%97%E3%81%A6%E3%81%BF%E3%82%8B%E3%81%8B%E3%83%BC"><i class="fa fa-link"></i></a>さーて0.11.4にしてみるかー</h1>
+
+<p>とするとどうも出力が・・・</p>
+
+<div class="code-frame" data-lang="html">
+<div class="code-lang"><span class="bold">output.html</span></div>
+<div class="highlight"><pre>
+      <span class="nt">&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;&lt;div&gt;&lt;/div&gt;</span><span class="c">&lt;!--v-repeat--&gt;</span>
+</pre></div>
+</div>
+
+<p>あれーーーー<br>
+どうなってんのーーー</p>
+
+<p>しばらく格闘して0.11.2以上でこうなることはわかったけど<br>
+どうすりゃいいのかわからんと思ってつたない英語で質問してみた。</p>
+
+<p><a href="https://github.com/yyx990803/vue/issues/646" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/yyx990803/vue/issues/646</a></p>
+
+<p><del>ふむ、<code>&lt;span&gt;</code>は外出しにして<code>&lt;content&gt;</code>に挿入するように書き換えよということ</del><br>
+↑2014/12/20：勘違いしておりました。contentは必要ありませんでした</p>
+
+<p><a href="http://vuejs.org/2014/12/08/011-component/#Where_Does_It_Belong?" rel="nofollow noopener" target="_blank">公式ブログ</a>情報もあわせて教えてもらった。</p>
+
+<h3>
+<span id="解決編" class="fragment"></span><a href="#%E8%A7%A3%E6%B1%BA%E7%B7%A8"><i class="fa fa-link"></i></a>解決編</h3>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre><span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"sample"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">v-repeat=</span><span class="s">"items"</span> <span class="na">v-component=</span><span class="s">"item"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"item"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;span&gt;</span>baz<span class="nt">&lt;/span&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+</pre></div></div>
+
+<div class="code-frame" data-lang="javascript">
+<div class="code-lang"><span class="bold">app.js</span></div>
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">Vue</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">vue</span><span class="dl">"</span><span class="p">)</span>
+
+<span class="c1">// 子要素はコンポーネント化</span>
+<span class="nx">Vue</span><span class="p">.</span><span class="nx">component</span><span class="p">(</span><span class="dl">"</span><span class="s2">item</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+  <span class="na">template</span> <span class="p">:</span> <span class="dl">"</span><span class="s2">#item</span><span class="dl">"</span> <span class="c1">// テンプレート利用</span>
+<span class="p">})</span>
+
+<span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Vue</span><span class="p">({</span>
+  <span class="na">data</span> <span class="p">:{</span>
+    <span class="na">items</span> <span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span><span class="na">v</span> <span class="p">:</span><span class="mi">1</span><span class="p">},</span>
+      <span class="p">{</span><span class="na">v</span> <span class="p">:</span><span class="mi">2</span><span class="p">},</span>
+      <span class="p">{</span><span class="na">v</span> <span class="p">:</span><span class="mi">3</span><span class="p">},</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">})</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">$mount</span><span class="p">(</span><span class="dl">"</span><span class="s2">#sample</span><span class="dl">"</span><span class="p">)</span>
+</pre></div>
+</div>
+
+<p>こうすることで確かに期待通り動いた！</p>
+
+<p>これ困る人いるんじゃないかなあ・・・</p>
+
+<p>warn出してくれたらいいのにと思ってコード追っかけてみたけどさすがにどこの変更の影響なのかは特定できず。。。</p>
+
+<h3>
+<span id="もうちょっと試した" class="fragment"></span><a href="#%E3%82%82%E3%81%86%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E8%A9%A6%E3%81%97%E3%81%9F"><i class="fa fa-link"></i></a>もうちょっと試した</h3>
+
+<p><a href="http://qiita.com/suisho/items/62f9572bb40c3c3ea378#comment-f27514d091e5482ec57e">@tejitakさんからコメント</a>を受けて&lt;content&gt;についてもうちょっと試してみた。</p>
+
+<p>上記の例では簡略化のため<code>&lt;span&gt;</code>には何もつけていなかったが、子要素にディレクティブではcontentを使う/使わないが変わってきそうだった。</p>
+
+<h4>
+<span id="まずcontentを使う例" class="fragment"></span><a href="#%E3%81%BE%E3%81%9Acontent%E3%82%92%E4%BD%BF%E3%81%86%E4%BE%8B"><i class="fa fa-link"></i></a>まず&lt;content&gt;を使う例</h4>
+
+<p><a href="http://jsfiddle.net/suisho/xetpretq/5/" class="autolink" rel="nofollow noopener" target="_blank">http://jsfiddle.net/suisho/xetpretq/5/</a></p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;div</span> <span class="na">v-repeat=</span><span class="s">"items"</span> <span class="na">v-component=</span><span class="s">"item"</span> <span class="nt">&gt;</span>        
+        <span class="nt">&lt;span</span> <span class="na">v-text=</span><span class="s">"str"</span><span class="nt">&gt;&lt;/span&gt;</span> 
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"item2"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;content&gt;&lt;/content&gt;</span>
+    <span class="nt">&lt;/template&gt;</span>
+</pre></div></div>
+
+<p>こんな具合。<br>
+出力は</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>&lt;span&gt;&lt;/span&gt;
+</pre></div></div>
+
+<p>となってしまいディレクティブは無視されてしまう。</p>
+
+<h4>
+<span id="template側にデータをつける" class="fragment"></span><a href="#template%E5%81%B4%E3%81%AB%E3%83%87%E3%83%BC%E3%82%BF%E3%82%92%E3%81%A4%E3%81%91%E3%82%8B"><i class="fa fa-link"></i></a>template側にデータをつける</h4>
+
+<p><a href="http://jsfiddle.net/suisho/xetpretq/4/" class="autolink" rel="nofollow noopener" target="_blank">http://jsfiddle.net/suisho/xetpretq/4/</a></p>
+
+<div class="code-frame" data-lang="html"><div class="highlight"><pre>    <span class="nt">&lt;div</span> <span class="na">v-repeat=</span><span class="s">"items"</span> <span class="na">v-component=</span><span class="s">"item"</span> <span class="nt">&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+    <span class="nt">&lt;template</span> <span class="na">id=</span><span class="s">"item2"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;span</span> <span class="na">v-text=</span><span class="s">"str"</span><span class="nt">&gt;&lt;/span&gt;</span> 
+    <span class="nt">&lt;/template&gt;</span>
+</pre></div></div>
+
+<p>こんな具合。<br>
+これだとちゃんとディレクティブが効いてくれた。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>  &lt;span&gt;baz&lt;/span&gt; 
+</pre></div></div>
+
+<h3>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h3>
+
+<p>componentのディレクティブを効かせるためには、やっぱり<code>&lt;template&gt;</code>側にディレクティブ付きの子要素を書く必要がある模様。<br>
+<code>&lt;content&gt;</code>はそういうのが必要無くinjectしたいときに使うと良いのだろう。</p>
+
+<h2>
+<span id="どうでもいいはなし" class="fragment"></span><a href="#%E3%81%A9%E3%81%86%E3%81%A7%E3%82%82%E3%81%84%E3%81%84%E3%81%AF%E3%81%AA%E3%81%97"><i class="fa fa-link"></i></a>どうでもいいはなし</h2>
+
+<p>vue 0.11.4で<code>Vue.config.debug=true</code>たいへんべんり。今までのデバッグしづらさが一気に解消した感じ。</p>

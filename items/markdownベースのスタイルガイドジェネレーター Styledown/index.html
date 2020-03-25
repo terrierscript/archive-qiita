@@ -1,0 +1,146 @@
+<p><a href="https://github.com/styledown/styledown" rel="nofollow noopener" target="_blank">Styledown</a>についての話。あんまり日本語記事がなさそうなので</p>
+
+<h1>
+<span id="デザインスタイルガイド" class="fragment"></span><a href="#%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB%E3%82%AC%E3%82%A4%E3%83%89"><i class="fa fa-link"></i></a>デザインスタイルガイド</h1>
+
+<p>存在自体は割りとメジャー感出てきた気がするデザインのスタイルガイド。<br>
+生成ツールとして有名どころはだいたい下記な感じではなかろうか</p>
+
+<ul>
+<li>KSS</li>
+<li>Kalei</li>
+<li>Styledocco</li>
+</ul>
+
+<p>今まで自分の体験ではKSSをがっつり使ってみたりStyledoccoはちょっと触ったりとか。<br>
+でもkssはkss-railsがどうもイマイチだったりで再度使うのもなあ、と思ったりで新しくスタイルガイドを作る上で再選定を考えて<a href="http://vinspee.me/style-guide-guide/" rel="nofollow noopener" target="_blank">The styleguide guide</a>とかでstyledownというのにぶちあたった。</p>
+
+<p>特徴としてはこんな感じ</p>
+
+<ul>
+<li>Markdownで記載</li>
+<li>CSSのコメントとしても書けるし分離したmarkdownファイルでも書ける
+
+<ul>
+<li>個人的には分離した.mdファイルがおすすめ（理由は後述）</li>
+</ul>
+</li>
+<li>サンプルのHTMLコードに <strong>jade</strong> が使える
+
+<ul>
+<li>これかなり魅力。サンプル書くのがすごい楽。</li>
+</ul>
+</li>
+<li>headタグ部分やレイアウトもmarkdwon + jadeで記載</li>
+</ul>
+
+<h1>
+<span id="usage" class="fragment"></span><a href="#usage"><i class="fa fa-link"></i></a>Usage</h1>
+
+<p>すげーシンプルで<a href="https://github.com/styledown/styledown" rel="nofollow noopener" target="_blank">公式</a>見ればだいたいわかるのでざっくり</p>
+
+<h4>
+<span id="cssコメントモードでの記法" class="fragment"></span><a href="#css%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88%E3%83%A2%E3%83%BC%E3%83%89%E3%81%A7%E3%81%AE%E8%A8%98%E6%B3%95"><i class="fa fa-link"></i></a>cssコメントモードでの記法</h4>
+
+<p>ほぼ公式通りですがこんなん。styledoccoチックなものなんで特に何がという感じでもないですね。</p>
+
+<div class="code-frame" data-lang="css">
+<div class="code-lang"><span class="bold">compoennt.css</span></div>
+<div class="highlight"><pre><span class="c">/**
+ * コンポーネント名:
+ * `.button` - このへんマークダウンで記載
+ *
+ *     @example
+ *     .button
+ *       h3 Sample code
+ *       p goes here
+ */</span>
+
+<span class="nc">.your-component-here</span> <span class="p">{</span>
+  <span class="nl">display</span><span class="p">:</span> <span class="nb">block</span><span class="p">;</span>
+  <span class="err">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+
+<p>こんな感じだけど雑感を下記に</p>
+
+<ul>
+<li>結構コメントの記述がだいぶシビアで、上記のようなちゃんとしたブロックコメントでないと今のところダメらしい。
+
+<ul>
+<li>なのでこのモードを使うならstyledoccoとかでいいかもと思ってしまう。</li>
+<li>この問題は<a href="https://github.com/styledown/styledown/issues/3#issuecomment-62667881" rel="nofollow noopener" target="_blank">Issue</a>としては上がっているのでいつか解決されることを期待したいところ。</li>
+</ul>
+</li>
+<li>一応ソースを見るとcss,　scss, jadeあたりは上記で書ける模様。</li>
+</ul>
+
+<h4>
+<span id="markdownモード" class="fragment"></span><a href="#markdown%E3%83%A2%E3%83%BC%E3%83%89"><i class="fa fa-link"></i></a>markdownモード</h4>
+
+<p>個人的にはこっちのほうが好き。</p>
+
+<div class="code-frame" data-lang="gcc-machine-description">
+<div class="code-lang"><span class="bold">compoennt.md</span></div>
+<div class="highlight"><pre>### Button
+`.button` - ボタンです 
+
+    @example
+    a.button Button
+    a.button.primary Button
+</pre></div>
+</div>
+
+<p>罠としてはh1にあたる<code># hoge</code>のような記載をするとその下から全部表示されなくなること。<br>
+configとして認識される模様？。</p>
+
+<p>こっちをメインで使ってみると、実はこいつの比較対象はKSSやstyledoccoなどではなく<a href="http://bjankord.github.io/Style-Guide-Boilerplate/" rel="nofollow noopener" target="_blank">Styleguide Boilerplate</a>、または<a href="http://assemble.io/" rel="nofollow noopener" target="_blank">Assemble</a>のような静的サイトジェネレーターみたいなものなんじゃないかと思う。</p>
+
+<h4>
+<span id="build" class="fragment"></span><a href="#build"><i class="fa fa-link"></i></a>build</h4>
+
+<p>公式に乗っているのはこんな感じ。</p>
+
+<div class="code-frame" data-lang="sh"><div class="highlight"><pre><span class="nv">$ </span>styledown css/<span class="k">*</span>.css css/config.md <span class="o">&gt;</span> styleguides.html
+</pre></div></div>
+
+<p>ちょっとこれしばらくわかっていなかったんだけどこういうことらしい。</p>
+
+<div class="code-frame" data-lang="sh"><div class="highlight"><pre><span class="nv">$ </span>styledown 対象ファイル configファイル <span class="o">&gt;</span> 出力
+</pre></div></div>
+
+<p>最後のパラメータがconfigであるというわけではなく、読み込んだものの最後の<code>h1</code>ブロックがconfigとして使われているよう。</p>
+
+<h4>
+<span id="configファイル" class="fragment"></span><a href="#config%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB"><i class="fa fa-link"></i></a>configファイル</h4>
+
+<p>レイアウトファイルという言い方のほうがイメージつきやすいかも。</p>
+
+<div class="code-frame" data-lang="sh"><div class="highlight"><pre><span class="nv">$ </span>styledown <span class="nt">--conf</span> <span class="o">&gt;</span> config.md
+</pre></div></div>
+
+<p>で生成するデフォルト設定が生成できる。<br>
+こなれてくるまではデフォルトでよさそう。</p>
+
+<h3>
+<span id="gulp--grunt" class="fragment"></span><a href="#gulp--grunt"><i class="fa fa-link"></i></a>gulp / grunt</h3>
+
+<p>どちらもある。けどまだまだstar数とか少ないしまだまだマイナー感高い。</p>
+
+<ul>
+<li><a href="https://github.com/drakeh/grunt-styledown" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/drakeh/grunt-styledown</a></li>
+<li><a href="https://github.com/st44100/gulp-styledown" class="autolink" rel="nofollow noopener" target="_blank">https://github.com/st44100/gulp-styledown</a></li>
+</ul>
+
+<h1>
+<span id="まとめ" class="fragment"></span><a href="#%E3%81%BE%E3%81%A8%E3%82%81"><i class="fa fa-link"></i></a>まとめ</h1>
+
+<ul>
+<li>全体的にシンプルで好き</li>
+<li>markdown + jade でさくさく書けるのとてもいい</li>
+<li>cssに埋め込む記法はだいぶ融通が効かなくて今はだいぶ辛い</li>
+<li>個人的には上記の理由でmarkdownファイルに別途記載するやり方がおすすめ</li>
+<li>KSSやstyledoccoとの比較というより<a href="http://assemble.io/" rel="nofollow noopener" target="_blank">Assemble</a>のような静的サイトジェネレーターの特化版とかんがえると良い。</li>
+<li>config.mdをいじれば色々できる</li>
+</ul>

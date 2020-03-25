@@ -1,0 +1,167 @@
+<p>勢いで<a href="http://qiita.com/suisho/items/dcf48f56d8f484c0a1a8" id="reference-4362c6a0ae3d4ff96749">前の記事</a>書いてみたけどちゃんと触るとちょいちょいハマりどころもあったのでメモ程度に細かいことを。</p>
+
+<h1>
+<span id="editorの設定すると捗る" class="fragment"></span><a href="#editor%E3%81%AE%E8%A8%AD%E5%AE%9A%E3%81%99%E3%82%8B%E3%81%A8%E6%8D%97%E3%82%8B"><i class="fa fa-link"></i></a>Editorの設定すると捗る。</h1>
+
+<p>このへん見ると良い<br>
+<a href="http://eslint.org/docs/integrations/" class="autolink" rel="nofollow noopener" target="_blank">http://eslint.org/docs/integrations/</a></p>
+
+<p>僕はatom推しなのでこいつらでさくっと入れれた。ちゃんと.eslintrc読んでくれるし今のところいい感じ。<br>
+<a href="https://atom.io/packages/linter-eslint" class="autolink" rel="nofollow noopener" target="_blank">https://atom.io/packages/linter-eslint</a><br>
+<a href="https://atom.io/packages/linter" class="autolink" rel="nofollow noopener" target="_blank">https://atom.io/packages/linter</a></p>
+
+<h1>
+<span id="eslintignoreでlintしたくないものを設定" class="fragment"></span><a href="#eslintignore%E3%81%A7lint%E3%81%97%E3%81%9F%E3%81%8F%E3%81%AA%E3%81%84%E3%82%82%E3%81%AE%E3%82%92%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>.eslintignoreでlintしたくないものを設定</h1>
+
+<p>lintしないファイルの指定。gitignoreとかと一緒の形式<br>
+このあたりが鉄板か。testを含めるかどうかは趣味によるところかも<br>
+bowerとか使わずDLしたファイルをどこから持ってきているような場合だとそいつらも含めるべきだろう。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>node_modules/
+test/
+</pre></div></div>
+
+<h1>
+<span id="eslintrcについて" class="fragment"></span><a href="#eslintrc%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6"><i class="fa fa-link"></i></a>.eslintrcについて</h1>
+
+<p>例えばこんな具合で設定する。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>{
+  "env": {
+    "node" : true,
+    "browser" : true
+  },
+  "ecmaFeatures" : {
+    "jsx": true,
+    "objectLiteralShorthandMethods" : true
+  },
+  "plugins": [
+    "react"
+  ],
+  "rules": {
+    "react/display-name": 1,
+    "semi" : [2 , "never"],
+    "strict" : false,
+    "key-spacing" : [2, {
+      "beforeColon" : true,
+      "afterColon" : true,
+    }],
+    "no-unused-vars": [1, {"vars" : "all", "args" : "after-used"} ],
+    "no-comma-dangle" : false
+  }
+}
+</pre></div></div>
+
+<h2>
+<span id="es6--jsxを使うのにecmafeaturesを指定する" class="fragment"></span><a href="#es6--jsx%E3%82%92%E4%BD%BF%E3%81%86%E3%81%AE%E3%81%ABecmafeatures%E3%82%92%E6%8C%87%E5%AE%9A%E3%81%99%E3%82%8B"><i class="fa fa-link"></i></a>ES6 &amp;&amp; JSXを使うのに　<code>ecmaFeatures</code>を指定する</h2>
+
+<del>
+[このへんの設定](http://eslint.org/docs/configuring/#specifying-language-options)が必要。
+
+とりあえず僕はこんなもんで使っている。
+一括設定とかあればいいのに。
+</del>
+
+<p><strong>2015/05/11追記：</strong><br>
+いつの間にかenvでes6と指定すると一気にecmafeatureを見てくれるようになりました。<br>
+jsxだけはes6ではないので当然今までどおりecmaFeaturesとして必要です。</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="nl">"env"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="nl">"es6"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="err">,</span><span class="w">
+</span><span class="nl">"ecmaFeatures"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="nl">"jsx"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<h2>
+<span id="rules" class="fragment"></span><a href="#rules"><i class="fa fa-link"></i></a>rules</h2>
+
+<p>ここが肝になる。<br>
+僕が設定したのはこんな感じ。</p>
+
+<div class="code-frame" data-lang="json"><div class="highlight"><pre><span class="w">  </span><span class="nl">"rules"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"strict"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">       </span><span class="err">//</span><span class="w"> </span><span class="err">strictはbabelとかに任せる</span><span class="w">
+    </span><span class="nl">"key-spacing"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">   </span><span class="err">//</span><span class="w"> </span><span class="err">セミコロンの前後どっちにも空白つける（個人的な癖）</span><span class="w">
+      </span><span class="nl">"beforeColon"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"afterColon"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+    </span><span class="p">}],</span><span class="w">
+    </span><span class="nl">"semi"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="s2">"never"</span><span class="p">],</span><span class="w"> </span><span class="err">//</span><span class="w"> </span><span class="err">趣味コードはアンチセミコロン派</span><span class="w">
+    </span><span class="nl">"no-unused-vars"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nl">"vars"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"all"</span><span class="p">,</span><span class="w"> </span><span class="nl">"args"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"after-used"</span><span class="p">}</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="err">//</span><span class="w"> </span><span class="err">未使用変数については警告レベルに</span><span class="w">
+    </span><span class="nl">"no-comma-dangle"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="err">//</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,]</span><span class="err">みたいなのへの警告はbrowserifyを通すので除外</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span></pre></div></div>
+
+<h2>
+<span id="plugin" class="fragment"></span><a href="#plugin"><i class="fa fa-link"></i></a><a href="http://eslint.org/docs/configuring/#configuring-plugins" rel="nofollow noopener" target="_blank">plugin</a>
+</h2>
+
+<p><a href="http://npmsearch.com/?q=keywords:eslintplugin" rel="nofollow noopener" target="_blank">npmsearch.comでkeywords:eslintplugin</a>を検索するとわりとあるみたい。</p>
+
+<p>試しに<a href="https://github.com/yannickcr/eslint-plugin-react" rel="nofollow noopener" target="_blank">eslint-plugin-react</a>を使ってみる</p>
+
+<p>globalなeslintを使う場合であれば</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm install eslint -g
+$ npm install eslint-plugin-react -g
+</pre></div></div>
+
+<p>という感じ。</p>
+
+<p>ここで僕もはまったので注意なのが、eslintをglobalにインストールして使う場合、pluginもまたglobalにインストールしないと使えない。</p>
+
+<p>ローカルに扱う場合は</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm install eslint -D
+$ npm install eslint-plugin-react -D
+</pre></div></div>
+
+<p>とする。ローカルにeslintが入っているとglobalなeslintコマンドでもローカルのを方を見るようになるらしい。</p>
+
+<p>あとは使いたいルールをrulesのセクションに入れる</p>
+
+<div class="code-frame" data-lang="eslintrc"><div class="highlight"><pre>  "plugins": [
+    "react"
+  ],
+  "rules": {
+       :
+    "react/display-name": 1,
+       :
+  }
+</pre></div></div>
+
+<h1>
+<span id="envの指定" class="fragment"></span><a href="#env%E3%81%AE%E6%8C%87%E5%AE%9A"><i class="fa fa-link"></i></a>envの指定</h1>
+
+<p>設定を変えたりグローバルを幾つか設定してくれたりする（例えばjQueryなら$をグローバルな変数として扱ってくれるとか）</p>
+
+<p>ソースの<a href="https://github.com/eslint/eslint/blob/master/conf/environments.js" rel="nofollow noopener" target="_blank">environment.js</a>を見ればだいたい何やっているかわかる。どんな値をglobalにしてるかを知りたければ<a href="https://github.com/sindresorhus/globals/blob/master/globals.json" rel="nofollow noopener" target="_blank">globals</a>を見るのが良さそう。</p>
+
+<p>browserifyで変換する前提なので今回はこんな具合。<br>
+IE8などのレガシーなブラウザな場合だとnode environmentで<code>no-console</code>など幾つか対策が必要なものが落とされるので注意したほうが良い。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>"env": {
+  "node" : true,
+  "browser" : true
+}
+
+</pre></div></div>
+
+<h1>
+<span id="実行コマンドをpackagejsonにまとめておく" class="fragment"></span><a href="#%E5%AE%9F%E8%A1%8C%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%82%92packagejson%E3%81%AB%E3%81%BE%E3%81%A8%E3%82%81%E3%81%A6%E3%81%8A%E3%81%8F"><i class="fa fa-link"></i></a>実行コマンドをpackage.jsonにまとめておく</h1>
+
+<p>このあたりは趣味。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm run lint
+</pre></div></div>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="nl">"lint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eslint js/**/*.jsx"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<p>npm-script の実行時には自動的にプロジェクトディレクトリの [./node_modules/.bin/ にPATHが通ります](<a href="https://docs.npmjs.com/misc/scripts#path%EF%BC%89" class="autolink" rel="nofollow noopener" target="_blank">https://docs.npmjs.com/misc/scripts#path）</a><br>
+<code>npm i -D eslint</code>をした上で上記のように指定しておけばローカルの<code>./node_modules</code>を見に行ってくれます（<a href="/shinnn" class="user-mention js-hovercard" title="shinnn" data-hovercard-target-type="user" data-hovercard-target-name="shinnn">@shinnn</a>さん 編集リクエストありがとうございました！）</p>

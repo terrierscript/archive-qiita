@@ -1,0 +1,176 @@
+<p>結構ちゃんと調べて知っておくと無駄なクエリ書かなくて済むのがある。</p>
+
+<ul>
+<li>このあたりのドキュメントが基本
+
+<ul>
+<li><a href="https://prestodb.io/docs/current/" class="autolink" rel="nofollow noopener" target="_blank">https://prestodb.io/docs/current/</a></li>
+<li><a href="http://docs.treasuredata.com/articles/presto-udfs" class="autolink" rel="nofollow noopener" target="_blank">http://docs.treasuredata.com/articles/presto-udfs</a></li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="case-1-x日前からの日付指定したい時-td_time_add-td_time_range-td_scheduled_time" class="fragment"></span><a href="#case-1-x%E6%97%A5%E5%89%8D%E3%81%8B%E3%82%89%E3%81%AE%E6%97%A5%E4%BB%98%E6%8C%87%E5%AE%9A%E3%81%97%E3%81%9F%E3%81%84%E6%99%82-td_time_add-td_time_range-td_scheduled_time"><i class="fa fa-link"></i></a>Case 1. X日前からの日付指定したい時: <a href="https://docs.treasuredata.com/articles/presto-udfs#tdtimeadd" rel="nofollow noopener" target="_blank">TD_TIME_ADD</a> ,<a href="https://docs.treasuredata.com/articles/presto-udfs#tdtimerange" rel="nofollow noopener" target="_blank">TD_TIME_RANGE</a>, <a href="https://docs.treasuredata.com/articles/presto-udfs#tdscheduledtime" rel="nofollow noopener" target="_blank">TD_SCHEDULED_TIME</a>
+</h2>
+
+<p>集計する時　X日前までほしい、とかいう要件多いけど、「今日が何日で何日前までで・・・」とかカレンダー見るのめんどい。</p>
+
+<p>下記を覚えとけばいつでも実行タイミングからX日前とかで取得できるので何も考えずにコピペで使いまわせる。</p>
+
+<p><code>TD_SCHEDULED_TIME</code> でクエリの実行タイミングを起点とし、<code>TD_TIME_ADD</code>で1日前にして、それを<code>TD_TIME_RANGE</code>で区間としている</p>
+
+<div class="code-frame" data-lang="sql"><div class="highlight"><pre><span class="k">SELECT</span>
+  <span class="p">:</span>
+<span class="k">WHERE</span> 
+  <span class="c1">-- 1日間のデータなら -1d。一ヶ月なら-30dとか。</span>
+  <span class="n">TD_TIME_RANGE</span><span class="p">(</span><span class="nb">time</span><span class="p">,</span>
+    <span class="n">TD_TIME_ADD</span><span class="p">(</span><span class="n">TD_SCHEDULED_TIME</span><span class="p">(),</span> <span class="s1">'-1d'</span><span class="p">,</span> <span class="s1">'JST'</span><span class="p">),</span> 
+    <span class="k">null</span><span class="p">,</span>
+    <span class="s1">'JST'</span>
+  <span class="p">)</span>
+</pre></div></div>
+
+<p>覚えづらいのでだいたいどっかからコピペしてくる。</p>
+
+<h2>
+<span id="case-2-urlのパースしたいpresto-url-function" class="fragment"></span><a href="#case-2-url%E3%81%AE%E3%83%91%E3%83%BC%E3%82%B9%E3%81%97%E3%81%9F%E3%81%84presto-url-function"><i class="fa fa-link"></i></a>Case 2. URLのパースしたい(presto): <a href="https://prestodb.io/docs/current/functions/url.html" rel="nofollow noopener" target="_blank">URL function</a>
+</h2>
+
+<p>prestoの標準関数<br>
+<code>regexp_like</code>とかで頑張りたくなるけど<code>url_extract_***</code>という関数が用意されている。<br>
+超便利。</p>
+
+<div class="code-frame" data-lang="sql"><div class="highlight"><pre><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="k">access</span>
+<span class="k">WHERE</span> 
+  <span class="n">url_extract_host</span><span class="p">(</span><span class="n">referer</span><span class="p">)</span> <span class="o">=</span> <span class="nv">"google.com"</span>
+  <span class="c1">-- 正規表現でやるとこんな感じ</span>
+  <span class="c1">-- regexp_like(referer, '.*google.com/.*')</span>
+</pre></div></div>
+
+<h2>
+<span id="case-3-uaからのブラウザ判定したいtd_parse_agent" class="fragment"></span><a href="#case-3-ua%E3%81%8B%E3%82%89%E3%81%AE%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B6%E5%88%A4%E5%AE%9A%E3%81%97%E3%81%9F%E3%81%84td_parse_agent"><i class="fa fa-link"></i></a>Case 3. UAからのブラウザ判定したい：<a href="https://docs.treasuredata.com/articles/presto-udfs#tdparseagent" rel="nofollow noopener" target="_blank">TD_PARSE_AGENT</a>
+</h2>
+
+<p>ブラウザをUAから簡単に判定してくれる関数。超便利。</p>
+
+<div class="code-frame" data-lang="sql"><div class="highlight"><pre><span class="k">SELECT</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'os_family'</span><span class="p">]</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'os_major'</span><span class="p">]</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'os_minor'</span><span class="p">]</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'ua_family'</span><span class="p">]</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'ua_major'</span><span class="p">]</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'ua_minor'</span><span class="p">]</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'device'</span><span class="p">]</span>
+<span class="k">FROM</span> <span class="k">access</span>
+</pre></div></div>
+
+<table>
+<thead>
+<tr>
+<th>os_family</th>
+<th>os_major</th>
+<th>os_minor</th>
+<th>ua_family</th>
+<th>ua_major</th>
+<th>ua_minor</th>
+<th>device</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows 7</td>
+<td>null</td>
+<td>null</td>
+<td>IE</td>
+<td>11</td>
+<td>0</td>
+<td>Other</td>
+</tr>
+<tr>
+<td>Android</td>
+<td>5</td>
+<td>0</td>
+<td>Chrome Mobile</td>
+<td>47</td>
+<td>0</td>
+<td>SC-04F</td>
+</tr>
+</tbody>
+</table>
+
+<p>この関数使うときだいたいIEだけバージョン取りたいとかなるので<code>WITH</code>と組み合わせてこんなふうにする</p>
+
+<div class="code-frame" data-lang="sql"><div class="highlight"><pre><span class="k">WITH</span> <span class="n">a</span> <span class="k">AS</span> <span class="p">(</span>
+  <span class="k">SELECT</span> 
+    <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'ua_family'</span><span class="p">]</span> <span class="k">AS</span> <span class="n">family</span><span class="p">,</span>
+    <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'ua_major'</span><span class="p">]</span> <span class="k">AS</span> <span class="k">version</span>
+  <span class="k">FROM</span> 
+    <span class="k">access</span>
+<span class="p">),</span>
+<span class="n">b</span> <span class="k">AS</span> <span class="p">(</span>
+  <span class="k">SELECT</span>
+    <span class="n">if</span><span class="p">(</span><span class="n">family</span> <span class="o">=</span> <span class="s1">'IE'</span><span class="p">,</span> <span class="n">family</span> <span class="o">||</span> <span class="k">version</span><span class="p">,</span> <span class="n">family</span><span class="p">)</span> <span class="k">AS</span> <span class="n">browser</span>
+  <span class="k">FROM</span> <span class="n">a</span>
+<span class="p">)</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">b</span>
+</pre></div></div>
+
+<h2>
+<span id="case-4-ボット判定したい-td_parse_agentagentcategory" class="fragment"></span><a href="#case-4-%E3%83%9C%E3%83%83%E3%83%88%E5%88%A4%E5%AE%9A%E3%81%97%E3%81%9F%E3%81%84-td_parse_agentagentcategory"><i class="fa fa-link"></i></a>Case 4. ボット判定したい <a href="https://docs.treasuredata.com/articles/presto-udfs#tdparseagent" rel="nofollow noopener" target="_blank">TD_PARSE_AGENT</a>(agent)['category']</h2>
+
+<p><code>TD_PARSE_AGENT</code>は、ボット判定などにも便利<br>
+アクセスログ解析だとBotも厄介な問題。だが<code>category</code>を利用すると、これが結構いい感じに解決出来る。</p>
+
+<p>値としては "pc", "smartphone", "mobilephone", "appliance", "crawler", "misc", "unknown"のどれかが返ってくるようなので、これを判定すると良い</p>
+
+<div class="code-frame" data-lang="sql"><div class="highlight"><pre><span class="k">SELECT</span> 
+  <span class="o">*</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'ua_family'</span><span class="p">]</span> <span class="k">AS</span> <span class="n">family</span><span class="p">,</span>
+  <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)[</span><span class="s1">'ua_major'</span><span class="p">]</span> <span class="k">AS</span> <span class="k">version</span>
+<span class="k">FROM</span>
+  <span class="k">access</span>
+<span class="k">WHERE</span> <span class="n">TD_PARSE_AGENT</span><span class="p">(</span><span class="n">user_agent</span><span class="p">)</span> <span class="k">IN</span> <span class="p">[</span><span class="s1">'pc'</span><span class="p">,</span> <span class="s1">'smartphone'</span><span class="p">]</span>
+</pre></div></div>
+
+<h2>
+<span id="case-5-x分間のアクセスを同一としてセッション数で取りたい-td_sessionize" class="fragment"></span><a href="#case-5-x%E5%88%86%E9%96%93%E3%81%AE%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%82%92%E5%90%8C%E4%B8%80%E3%81%A8%E3%81%97%E3%81%A6%E3%82%BB%E3%83%83%E3%82%B7%E3%83%A7%E3%83%B3%E6%95%B0%E3%81%A7%E5%8F%96%E3%82%8A%E3%81%9F%E3%81%84-td_sessionize"><i class="fa fa-link"></i></a>Case 5. X分間のアクセスを同一としてセッション数で取りたい: <a href="https://docs.treasuredata.com/articles/presto-udfs#tdsessionize" rel="nofollow noopener" target="_blank">TD_SESSIONIZE</a>
+</h2>
+
+<p>第三引数をキーとして、第二引数で指定した時間以内のアクセスであれば同一のセッションとしてIDを生成してくれる。<br>
+滞在時間とか知りたい時良さそう。<br>
+TD_SESSIONIZEする値は、ソートされている必要があるので注意（これちゃんと読んでなくて</p>
+
+<div class="code-frame" data-lang="sql"><div class="highlight"><pre><span class="k">SELECT</span> <span class="n">TD_SESSIONIZE</span><span class="p">(</span><span class="nb">time</span><span class="p">,</span> <span class="mi">3600</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">)</span> <span class="k">as</span> <span class="n">session_id</span>
+<span class="k">FROM</span> <span class="p">...</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">ip_address</span><span class="p">,</span> <span class="nb">time</span> 
+<span class="c1">-- ↑ソートしないと正しく出ない！</span>
+</pre></div></div>
+
+<h2>
+<span id="case-6-arrayのunique化prestoしたい--map_keys-histogram" class="fragment"></span><a href="#case-6-array%E3%81%AEunique%E5%8C%96presto%E3%81%97%E3%81%9F%E3%81%84--map_keys-histogram"><i class="fa fa-link"></i></a>Case 6. arrayのunique化(presto)したい : <code>map_keys</code>, <code>histogram</code>
+</h2>
+
+<p>ハック的。<code>array_agg</code>で特定のカラムの値を<code>array&lt;T&gt;</code>型にしてくれのだが、同値が大量に並んだ状態になる</p>
+
+<div class="code-frame" data-lang="sql"><div class="highlight"><pre><span class="k">SELECT</span> 
+  <span class="n">some_name</span><span class="p">,</span>
+  <span class="n">map_keys</span><span class="p">(</span>
+    <span class="n">histogram</span><span class="p">(</span><span class="n">some_type</span><span class="p">)</span>
+  <span class="p">)</span>
+<span class="k">FROM</span> <span class="n">foo</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">some_name</span>
+</pre></div></div>
+
+<h2>
+<span id="case-7-大きいテーブルに対して試しで実行したいpresto-tablesample" class="fragment"></span><a href="#case-7-%E5%A4%A7%E3%81%8D%E3%81%84%E3%83%86%E3%83%BC%E3%83%96%E3%83%AB%E3%81%AB%E5%AF%BE%E3%81%97%E3%81%A6%E8%A9%A6%E3%81%97%E3%81%A7%E5%AE%9F%E8%A1%8C%E3%81%97%E3%81%9F%E3%81%84presto-tablesample"><i class="fa fa-link"></i></a>Case 7. 大きいテーブルに対して試しで実行したい(presto) <a href="https://prestodb.io/docs/current/sql/select.html#tablesample" rel="nofollow noopener" target="_blank">TABLESAMPLE</a>
+</h2>
+
+<p>でかいテーブルに対して、そのままクエリ投げて遅くて試しづらい時は<code>TABLESAMPLE</code>が使える。</p>
+
+<div class="code-frame" data-lang="sql"><div class="highlight"><pre><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="k">access</span> <span class="n">TABLESAMPLE</span> <span class="n">BERNOULLI</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div></div>
+
+<p>入れる値はパーセンテージらしいので、上記なら1%。</p>

@@ -1,0 +1,271 @@
+<p><a href="https://docs.npmjs.com/files/npmrc" rel="nofollow noopener" target="_blank">npmrc</a>のドキュメントを読みなおしていたら、<code>.npmrc</code>は<code>/path/to/my/project/.npmrc</code>のようにプロジェクト毎に配置することが出来る事に気づいて、ちょっと使ってみたら便利だった。</p>
+
+<p>globalやhomeディレクトリへの設定を前提とした<code>npm config</code>の記事は結構あるが、プロジェクト毎で<code>npm-config</code>について書かれている記事があんまり無かったのでまとめてみる。</p>
+
+<h2>
+<span id="npm-configの何が良いのか-project毎に出来ると何が良いのか" class="fragment"></span><a href="#npm-config%E3%81%AE%E4%BD%95%E3%81%8C%E8%89%AF%E3%81%84%E3%81%AE%E3%81%8B-project%E6%AF%8E%E3%81%AB%E5%87%BA%E6%9D%A5%E3%82%8B%E3%81%A8%E4%BD%95%E3%81%8C%E8%89%AF%E3%81%84%E3%81%AE%E3%81%8B"><i class="fa fa-link"></i></a>npm-configの何が良いのか？ project毎に出来ると何が良いのか？</h2>
+
+<p><a href="https://docs.npmjs.com/misc/config" rel="nofollow noopener" target="_blank">npm-config</a>の設定をすると、色々コマンドを省略出来たりして良い事がある。<br>
+ (参考:<a href="http://qiita.com/ksato9700/items/b21383e613b6dc308dca#2-%E8%B3%A2%E3%81%8Fnpmrc%E3%82%92%E4%BD%BF%E3%81%88" id="reference-ff68dce6954f84061518">2016年版 Node.jsで幸せになれる10の習慣</a>)</p>
+
+<p>npmrcやnpm-configは、個人開発用であれば、<code>$HOME/.npmrc</code>への設定だったり<code>npm config set</code>での設定で十分。<br>
+また、npm registryに登録するライブラリやオープンソース向けのプロジェクトの場合だと、プロジェクト毎の<code>.npmrc</code>があるとむしろ弊害になることもありそう。</p>
+
+<p>しかし、frontend向けの開発をチームで行う際では色々設定しておくのは便利に使えるものが多い。</p>
+
+<p>例えば「<code>npm shrinkwrap</code>するときは<code>--dev</code>つけてください」と言わなくても済むなど効果が見込める。</p>
+
+<h3>
+<span id="この記事の対象者対象プロジェクト" class="fragment"></span><a href="#%E3%81%93%E3%81%AE%E8%A8%98%E4%BA%8B%E3%81%AE%E5%AF%BE%E8%B1%A1%E8%80%85%E5%AF%BE%E8%B1%A1%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88"><i class="fa fa-link"></i></a>この記事の対象者・対象プロジェクト</h3>
+
+<ul>
+<li>npmを実行するメンバーが一定数以上いるプロジェクト
+
+<ul>
+<li>個人開発とかならglobalで設定しましょう</li>
+</ul>
+</li>
+<li>node.js、javascriptに明るくないメンバーが一定数いるプロジェクト
+
+<ul>
+<li>みんなが詳しいチームだったら不要でしょう</li>
+</ul>
+</li>
+<li>npm registryに登録したり、オープンソースで運用したりする予定ではないプロジェクト
+
+<ul>
+<li>例：frontend開発のために、npmをパッケージマネージャとして利用しているプロジェクト</li>
+<li>オープンソース前提の場合は、多分無いほうが良いでしょう</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="npmrcの基本記法" class="fragment"></span><a href="#npmrc%E3%81%AE%E5%9F%BA%E6%9C%AC%E8%A8%98%E6%B3%95"><i class="fa fa-link"></i></a>npmrcの基本・記法</h1>
+
+<h2>
+<span id="記法" class="fragment"></span><a href="#%E8%A8%98%E6%B3%95"><i class="fa fa-link"></i></a>記法</h2>
+
+<p>iniファイルっぽい。こんな感じ</p>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>some-setting=value
+</pre></div></div>
+
+<p>複数値を設定する方法も紹介されている</p>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>key[] = "first value"
+key[] = "second value"
+</pre></div></div>
+
+<h2>
+<span id="故障かなと思ったら" class="fragment"></span><a href="#%E6%95%85%E9%9A%9C%E3%81%8B%E3%81%AA%E3%81%A8%E6%80%9D%E3%81%A3%E3%81%9F%E3%82%89"><i class="fa fa-link"></i></a>故障かな？と思ったら</h2>
+
+<p>意図した設定されてない！となった場合は、下記のコマンドを叩くと良い</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm config list
+</pre></div></div>
+
+<p>これで、<code>.nprmc</code>のパース結果を出してくれる。globalの設定も含めてくれる。</p>
+
+<p>間違った値を入れた場合はこの結果一覧には出てこなくなる。</p>
+
+<h1>
+<span id="個人的おすすめ便利設定" class="fragment"></span><a href="#%E5%80%8B%E4%BA%BA%E7%9A%84%E3%81%8A%E3%81%99%E3%81%99%E3%82%81%E4%BE%BF%E5%88%A9%E8%A8%AD%E5%AE%9A"><i class="fa fa-link"></i></a>個人的おすすめ便利設定</h1>
+
+<p>とりあえず個人的におすすめ設定を晒してみる。<br>
+詳細は後述</p>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>### だいたい設定しといて良さそう（スタメン）
+also=dev
+save-exact=true
+progress=false
+engine-strict=true
+
+### 場合によっては使うことがありそう
+# loglevel="error"
+# if-present=true
+# save-prefix="~"
+# link=true
+</pre></div></div>
+
+<h1>
+<span id="スタメンだいたいのプロジェクトで使える系" class="fragment"></span><a href="#%E3%82%B9%E3%82%BF%E3%83%A1%E3%83%B3%E3%81%A0%E3%81%84%E3%81%9F%E3%81%84%E3%81%AE%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E3%81%A7%E4%BD%BF%E3%81%88%E3%82%8B%E7%B3%BB"><i class="fa fa-link"></i></a>スタメン（だいたいのプロジェクトで使える系）</h1>
+
+<h2>
+<span id="alsodev" class="fragment"></span><a href="#alsodev"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#also" rel="nofollow noopener" target="_blank">also</a>=dev</h2>
+
+<p><code>dev</code>か<code>development</code>を設定することで、<code>shrinkwrap</code>、<code>outdated</code>、<code>update</code>コマンドを実行するときに<code>dev</code>を含めるようにしてくれる。<br>
+<code>shrinkwrap</code>などは<code>--dev</code>つけないと警告が辛い事がほとんどなので、<code>dev</code>にしておくのがベターなイージ</p>
+
+<p>この逆っぽい<a href="https://docs.npmjs.com/misc/config#only" rel="nofollow noopener" target="_blank"><code>only</code></a>というのもある。（個人的に必要になった事が無いのでそんなに調べてない）</p>
+
+<h2>
+<span id="save-exacttrue" class="fragment"></span><a href="#save-exacttrue"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#save-exact" rel="nofollow noopener" target="_blank">save-exact</a>=true</h2>
+
+<p><code>npm install</code>、<code>npm rm</code>時に自動的にオプションをつけるように変更してくれる。</p>
+
+<p><code>save-exact=true</code>にすると、<code>npm install -S some-package</code>が<code>npm install -S -E some-package</code>と同じ動きをしてくれる。</p>
+
+<p>フロントエンド向け開発だと、<code>shrinkwrap</code>をする場合が多いので、結局<code>exact</code>もしてしまって差し支えない事がそれなりにある。<br>
+そういう場合にこのオプションが便利。</p>
+
+<h2>
+<span id="progressfalse" class="fragment"></span><a href="#progressfalse"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#progress" rel="nofollow noopener" target="_blank">progress</a>=false</h2>
+
+<p>falseにするとnpm installするときに出てくるprogressバーを抑止出来る。<br>
+「<a href="https://github.com/npm/npm/issues/11283" rel="nofollow noopener" target="_blank">progressしてるとnpm installめっちゃ遅い！</a>」という話があったりするので、progressあんまりいらないな、と思ったら切って良い。</p>
+
+<p>CI向けの高速化としても使える。</p>
+
+<h2>
+<span id="engine-stricttrue" class="fragment"></span><a href="#engine-stricttrue"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#engine-strict" rel="nofollow noopener" target="_blank">engine-strict</a>=true</h2>
+
+<p>install対象のpackageの<a href="https://docs.npmjs.com/files/package.json#enginestrict" rel="nofollow noopener" target="_blank">package.json</a>の<code>engines</code>を見て、Node.jsのバージョンが合致しなかった場合は<code>npm install</code>を失敗扱いにしてくれる。</p>
+
+<p>ちゃんとしたパッケージならそれなりのバージョン対応しているし、このへんが甘めなパッケージは<code>engines</code>を設定してない可能性が高いので防御力は低いが、それでも無いよりマシぐらいな物ではあるだろう。</p>
+
+<h1>
+<span id="ベンチ入り必要に応じて使いそう" class="fragment"></span><a href="#%E3%83%99%E3%83%B3%E3%83%81%E5%85%A5%E3%82%8A%E5%BF%85%E8%A6%81%E3%81%AB%E5%BF%9C%E3%81%98%E3%81%A6%E4%BD%BF%E3%81%84%E3%81%9D%E3%81%86"><i class="fa fa-link"></i></a>ベンチ入り（必要に応じて使いそう）</h1>
+
+<h2>
+<span id="save関連" class="fragment"></span><a href="#save%E9%96%A2%E9%80%A3"><i class="fa fa-link"></i></a>save関連</h2>
+
+<p>save-exact以外も結構色々あるので、必要に応じて使い分ける</p>
+
+<h3>
+<span id="save-save-dev" class="fragment"></span><a href="#save-save-dev"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#save" rel="nofollow noopener" target="_blank">save</a>, <a href="https://docs.npmjs.com/misc/config#save-dev" rel="nofollow noopener" target="_blank">save-dev</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>save=true
+save-dev=true
+</pre></div></div>
+
+<p>「とりあえずこのプロジェクトは全部<code>devDependency</code>にしときたい」という場合があればこのあたりが使えそう</p>
+
+<p>ちなみに、<code>save-dev=true</code>にすると、<code>npm install -S hoge</code>でも<code>devDependency</code>に保存されてしまう。バグなのか仕様なのかは追ってない。</p>
+
+<p><a href="https://docs.npmjs.com/misc/config#save-bundle" rel="nofollow noopener" target="_blank">save-bundle</a>、<a href="https://docs.npmjs.com/misc/config#save-optional" rel="nofollow noopener" target="_blank">save-optional</a> というのもあるが、あんまり用途が思いつかない</p>
+
+<h3>
+<span id="save-prefix" class="fragment"></span><a href="#save-prefix"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#save-prefix" rel="nofollow noopener" target="_blank">save-prefix</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>save-prefix="~"
+</pre></div></div>
+
+<p>defaultで<code>npm install</code>すると、<code>^1.0.0</code>という、バージョニングになるのを変更出来る。</p>
+
+<p>参考：<a href="http://semver.org/lang/ja/" rel="nofollow noopener" target="_blank">semantic versioning</a></p>
+
+<h3>
+<span id="link" class="fragment"></span><a href="#link"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#link" rel="nofollow noopener" target="_blank">link</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>link=true
+</pre></div></div>
+
+<p><code>npm install</code>時の挙動を<code>npm install --link</code>にする。<br>
+結構癖があるイメージなので、ちょっと取り扱い注意かもしれない</p>
+
+<h2>
+<span id="エラー抑止ci関連" class="fragment"></span><a href="#%E3%82%A8%E3%83%A9%E3%83%BC%E6%8A%91%E6%AD%A2ci%E9%96%A2%E9%80%A3"><i class="fa fa-link"></i></a>エラー抑止・CI関連</h2>
+
+<h3>
+<span id="loglevel" class="fragment"></span><a href="#loglevel"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#loglevel" rel="nofollow noopener" target="_blank">loglevel</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>loglevel=error
+</pre></div></div>
+
+<p>npm実行のログレベルをいじる。デフォルトは<code>warn</code>。</p>
+
+<p>warnだと、依存したパッケージのエラーが出てしまってどうしようもなかったりすることがある（当然消せたほうが良いが）。<br>
+あまり綺麗な方向ではないのですごく悩ましいが、チームの考え方次第では<code>error</code>に設定するのもアリかもしれない。</p>
+
+<p>ちなみに、この設定があっても下記のようなオプションをつければログが出てくれる。</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ npm i --loglevel=warn
+</pre></div></div>
+
+<h3>
+<span id="if-present" class="fragment"></span><a href="#if-present"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#if-present" rel="nofollow noopener" target="_blank">if-present</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>if-present=true
+</pre></div></div>
+
+<p><code>npm run sonza-sinai-command</code>のように、存在しないコマンドを叩いた時、デフォルトではerrorを吐くが、何も吐かなくなる。<br>
+circle-ciなどCIツールの邪魔をしないようにするなどが想定されている。（<code>npm set if-present true</code>とかでも十分かもしれない）</p>
+
+<p>当然だが、設定すると、エラー時に何が起きたかわからない。</p>
+
+<h3>
+<span id="color" class="fragment"></span><a href="#color"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#color" rel="nofollow noopener" target="_blank">color</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>color=false
+</pre></div></div>
+
+<p>色をオフにする。CIとかで使いたい時に使う</p>
+
+<h2>
+<span id="通信系" class="fragment"></span><a href="#%E9%80%9A%E4%BF%A1%E7%B3%BB"><i class="fa fa-link"></i></a>通信系</h2>
+
+<h3>
+<span id="proxy-http-proxy" class="fragment"></span><a href="#proxy-http-proxy"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#proxy" rel="nofollow noopener" target="_blank">proxy</a>, <a href="https://docs.npmjs.com/misc/config#https-proxy" rel="nofollow noopener" target="_blank">http-proxy</a>
+</h3>
+
+<p>Proxyを通す必要がある場合など、プロジェクト単位で設定しておけばデザイナーなど非エンジニアの環境セットアップが少し楽になりそう。<br>
+個人的に必要に迫られたことが無いのであんまりちゃんと追ってない</p>
+
+<h2>
+<span id="補欠おまけ工夫次第で使えそうなもの" class="fragment"></span><a href="#%E8%A3%9C%E6%AC%A0%E3%81%8A%E3%81%BE%E3%81%91%E5%B7%A5%E5%A4%AB%E6%AC%A1%E7%AC%AC%E3%81%A7%E4%BD%BF%E3%81%88%E3%81%9D%E3%81%86%E3%81%AA%E3%82%82%E3%81%AE"><i class="fa fa-link"></i></a>補欠（おまけ。工夫次第で使えそうなもの）</h2>
+
+<p>別名：global向けなのでprojectスコープだと使い所が見つけづらいもの</p>
+
+<h3>
+<span id="heading" class="fragment"></span><a href="#heading"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#heading" rel="nofollow noopener" target="_blank">heading</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>heading="some-heading"
+</pre></div></div>
+
+<p>コンソール出力の「npm」ってなっているところを変更できる。</p>
+
+<p>絵文字とか使えるので、コンソールを華やかにしたいときに使える</p>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>heading="🌸"
+</pre></div></div>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>% npm i react                                              
+example-dir@1.0.0 /project/example-dir
+└── react@15.3.0
+
+🌸 WARN example-dir@1.0.0 No description
+🌸 WARN example-dir1.0.0 No repository field.
+</pre></div></div>
+
+<h3>
+<span id="editor" class="fragment"></span><a href="#editor"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#editor" rel="nofollow noopener" target="_blank">editor</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>editor="emacs"
+editor="vi"
+</pre></div></div>
+
+<p><code>npm edit</code> <code>npm config edit</code>時に利用するエディタを<code>$EDITOR</code>を使わせずに、強制させる。<br>
+どうしてもエディタについて喧嘩をしなければならない時の嫌がらせとして使える。</p>
+
+<p>同類で<a href="https://docs.npmjs.com/misc/config#shell" rel="nofollow noopener" target="_blank"><code>shell</code></a>というのもある。shellで争う場合はこちら。</p>
+
+<p>※ みんな仲良くnpmを使おう</p>
+
+<h3>
+<span id="searchexclude" class="fragment"></span><a href="#searchexclude"><i class="fa fa-link"></i></a><a href="https://docs.npmjs.com/misc/config#searchexclude" rel="nofollow noopener" target="_blank">searchexclude</a>
+</h3>
+
+<div class="code-frame" data-lang="npmrc"><div class="highlight"><pre>searchexclude=grunt
+</pre></div></div>
+
+<p><code>$ npm search</code>する際のexclude条件を指定する。<br>
+なにか強い意思で特定のプロダクト関連を検索させたくないという場合はつかえるが、そもそも<code>npm search</code>を使わないので、プロジェクト毎設定する意味は無い。（global設定だとそれなりに活きる）</p>

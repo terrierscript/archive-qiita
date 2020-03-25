@@ -1,0 +1,169 @@
+
+<h1>
+<span id="概要" class="fragment"></span><a href="#%E6%A6%82%E8%A6%81"><i class="fa fa-link"></i></a>概要</h1>
+
+<p>CircleCI上でフロントエンドビルドしてpushまでする、みたいなのをworkflow使うといい感じにできるよという話。1.0の頃は全部実行されていたのが、manual approvalによってほしいときだけに実行する素敵機能になってくれた。</p>
+
+<p>（ビルドの生成物gitにpushするのどうよ？という話もありそうだけど、今回そこは置いておく）</p>
+
+<p>今回は、CircleCIのこのへんの機能を利用する</p>
+
+<ul>
+<li><a href="https://circleci.com/docs/2.0/workflows" rel="nofollow noopener" target="_blank">workflow</a></li>
+<li><a href="https://circleci.com/docs/2.0/workflows/#holding-a-workflow-for-a-manual-approval" rel="nofollow noopener" target="_blank">manual approval</a></li>
+<li><a href="https://circleci.com/docs/2.0/env-vars/" rel="nofollow noopener" target="_blank">environment</a></li>
+<li><a href="https://circleci.com/docs/2.0/configuration-reference/#the-when-attribute" rel="nofollow noopener" target="_blank">when attribute</a></li>
+</ul>
+
+<h1>
+<span id="configyml" class="fragment"></span><a href="#configyml"><i class="fa fa-link"></i></a>config.yml</h1>
+
+<p>今回はlaravel-mixなprojecteでの例示をする。<br>
+多分フロントエンドじゃないプロジェクトでも使えると思う</p>
+
+<div class="code-frame" data-lang="yaml">
+<div class="code-lang"><span class="bold">config.yml</span></div>
+<div class="highlight"><pre>
+<span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">unittest</span><span class="pi">:</span> <span class="c1"># 通常のテスト処理など</span>
+    <span class="na">docker</span><span class="pi">:</span> <span class="s">php:5.3</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span> <span class="s">some-test-command</span> 
+  <span class="na">frontend-push</span><span class="pi">:</span>
+    <span class="na">docker</span><span class="pi">:</span> <span class="s">node:8</span>
+    <span class="na">steps</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">checkout</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">git configの設定 ( botのメアドとnameを設定 )</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">git config user.email "0000000+some-bot@users.noreply.github.com"</span>
+            <span class="s">git config user.name "some-bot"</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">merge ( originのマージ。やらなくてもいいかも）</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="s">git merge origin/master -m "AUTO MERGE ${CIRCLE_BUILD_URL}"</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">Build実行</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">yarn install</span>
+            <span class="s">yarn lint</span>
+            <span class="s">yarn production --no-progress</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">必要箇所をcommit ( 全部addしてしまうと色々おかしなものが紛れ込む"</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s"># プロジェクトごとにいい感じにadd。</span>
+            <span class="s">git add yarn.lock</span>
+            <span class="s">git add resources/assets</span>
+            <span class="s">git add public/build</span>
+            <span class="s">git add public/mix-manifest.json</span>
+            <span class="s">git commit -m "AUTO BUILD ${CIRCLE_BUILD_URL}"</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">失敗時のデバッグ</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">git status</span>
+          <span class="na">when</span><span class="pi">:</span> <span class="s">on_fail</span>
+      <span class="pi">-</span> <span class="na">run</span><span class="pi">:</span>
+          <span class="na">name</span><span class="pi">:</span> <span class="s">push ( $GITHUB_ACCESS_TOKEN は自分で設定しておく )</span>
+          <span class="na">command</span><span class="pi">:</span> <span class="pi">|</span>
+            <span class="s">git remote add upstream https://${GITHUB_ACCESS_TOKEN}@github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}</span>
+            <span class="s">git push upstream ${CIRCLE_BRANCH}:${CIRCLE_BRANCH}</span>
+<span class="na">workflows</span><span class="pi">:</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">my_workflow</span><span class="pi">:</span>
+    <span class="na">jobs</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">unittest</span>
+      <span class="pi">-</span> <span class="na">HOLD-FRONT-BUILD</span><span class="pi">:</span> <span class="c1"># ボタン押したら実行。</span>
+          <span class="na">type</span><span class="pi">:</span> <span class="s">approval</span>
+          <span class="na">filters</span><span class="pi">:</span>
+            <span class="na">branches</span><span class="pi">:</span>
+              <span class="na">ignore</span><span class="pi">:</span> <span class="s">master</span> <span class="c1"># masterにpushさせるのは微妙なのでやらない</span>
+      <span class="pi">-</span> <span class="na">frontend-push</span><span class="pi">:</span>
+          <span class="na">requires</span><span class="pi">:</span>
+            <span class="pi">-</span> <span class="s">HOLD-FRONT-BUILD</span>
+</pre></div>
+</div>
+
+<h1>
+<span id="ポイントなど" class="fragment"></span><a href="#%E3%83%9D%E3%82%A4%E3%83%B3%E3%83%88%E3%81%AA%E3%81%A9"><i class="fa fa-link"></i></a>ポイントなど</h1>
+
+<ul>
+<li>
+<code>type: approval</code>を使う
+
+<ul>
+<li>今までのCircleCIのこれ系のビルドだと、毎回実行されるので、うっとおしかった
+
+<ul>
+<li>Holdボタンがあるので、必要なときだけ使える</li>
+</ul>
+</li>
+<li>1.0の頃は毎回実行されるので、無限ビルドされないように工夫が必要だった。
+
+<ul>
+<li>実行は手動なので、特にやらなくてもいい</li>
+<li>必要があれば、コミットメッセージに<code>[skip ci]</code>を含めると良い</li>
+</ul>
+</li>
+<li>1.0の頃は「変に失敗されると困る」みたいな感じで色々実行するしないの判定が必要だったが、やってない
+
+<ul>
+<li>「手動でやるのでコケたらコケたでまあいいや」ぐらいなスタンスで使える</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>ビルドしてる部分はビルド&amp;addすることでconflictはわりと無理やり解決してるので、このやり方が合うケースとそうじゃないケースはあるかも</li>
+<li>X-OAUTH-TOKENを利用して、pull/push周りを簡素化している
+
+<ul>
+<li>sshでもいいのだけど、結構面倒なので最近はX-OAUTH-TOKEN使ってpull/pushするの楽だなと感じている</li>
+<li>GITHUB_ACCESS_TOKENはenvironmentで自前設定する必要あり
+
+<ul>
+<li>githubにtokenを含んだcommitをpushすると、自動でrevokeされるので注意</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>全部addせず、必要なところだけaddしている</li>
+<li>
+<code>on_fail</code>を使って失敗時はstatus出すようにしとくとデバッグが便利になる</li>
+<li>見つけやすいようにHOLDのジョブ名を大文字にしている</li>
+<li>今は同じbranchにpushしているけど、このあとでAPIまで駆使すれば自動でPull req作るとこまでできるかも
+
+<ul>
+<li>masterのときは別branch作ってpushしてpull req作る、とかまでやったらカッチョ良さそうだけど面倒だったので諦めた</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="微妙なところ" class="fragment"></span><a href="#%E5%BE%AE%E5%A6%99%E3%81%AA%E3%81%A8%E3%81%93%E3%82%8D"><i class="fa fa-link"></i></a>微妙なところ</h1>
+
+<ul>
+<li>CircleCIのボタンの反応がイマイチ
+
+<ul>
+<li>なんか押されてるのか押されてないのかわからないときがある</li>
+</ul>
+</li>
+<li>CircleCIのアクセスが面倒
+
+<ul>
+<li>github上から押せるボタンとか出せるAPIとかあればいいのに</li>
+</ul>
+</li>
+<li>色々整合性あわなかったときはコケる
+
+<ul>
+<li>良し悪し。個人的にはこれはこれでいいかなと思っているけど、「絶対に成功させたい」みたいな場合は微妙そう</li>
+</ul>
+</li>
+<li>config.emailとconfig.nameの設定が必要
+
+<ul>
+<li>地味にめんどくさい。</li>
+</ul>
+</li>
+</ul>

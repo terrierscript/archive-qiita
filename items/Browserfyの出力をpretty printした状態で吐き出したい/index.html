@@ -1,0 +1,20 @@
+<p>Browserifyさんどんな出力吐いてるの？と思って研究したい時に欲しくなった。</p>
+
+<h1>
+<span id="答え" class="fragment"></span><a href="#%E7%AD%94%E3%81%88"><i class="fa fa-link"></i></a>答え</h1>
+
+<p><a href="https://github.com/beautify-web/js-beautify" rel="nofollow noopener" target="_blank">js-beautify</a>使う。</p>
+
+<div class="code-frame" data-lang="sh"><div class="highlight"><pre><span class="nv">$ </span>npm i <span class="nt">-D</span> js-beautify
+</pre></div></div>
+
+<div class="code-frame" data-lang="json">
+<div class="code-lang"><span class="bold">package.json</span></div>
+<div class="highlight"><pre><span class="nl">"scripts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="nl">"beautify-build"</span><span class="p">:</span><span class="s2">"browserify -e ./src/index.js | js-beautify -f - &gt; build/index.js"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></pre></div>
+</div>
+
+<p>だいたいこんな感じ。<br>
+beautifyfyとかあるかなと思ったけど無かった。</p>

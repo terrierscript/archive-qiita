@@ -1,0 +1,337 @@
+<p><a href="http://deeplearning.net/tutorial/lstm.html" class="autolink" rel="nofollow noopener" target="_blank">http://deeplearning.net/tutorial/lstm.html</a></p>
+
+<p>このサンプルが中で何やってんのかざっと読んだ時のメモ。<br>
+LSTMの本実装部分は正直全然読み込めてない。</p>
+
+<p>一旦ある程度自由に検証出来るようにいじれるぐらいまでの読み具合。</p>
+
+<h1>
+<span id="訓練データの分類" class="fragment"></span><a href="#%E8%A8%93%E7%B7%B4%E3%83%87%E3%83%BC%E3%82%BF%E3%81%AE%E5%88%86%E9%A1%9E"><i class="fa fa-link"></i></a>訓練データの分類</h1>
+
+<p>コード全体として、入力される訓練データは3種類ある。</p>
+
+<ul>
+<li>
+<code>train</code>
+
+<ul>
+<li>学習に使われるデータ</li>
+</ul>
+</li>
+<li>
+<code>valid</code> 
+
+<ul>
+<li>誤差率を検証するためのデータ</li>
+<li>誤差の数値はhistoryとして記録されている</li>
+</ul>
+</li>
+<li>
+<code>test</code> 
+
+<ul>
+<li>訓練とは独立して誤差検証に利用されるデータ</li>
+<li>過学習が起きてないかどうかを検証するために使っているっぽい。
+
+<ul>
+<li>実訓練とは完全に独立して利用されている。</li>
+</ul>
+</li>
+<li>
+<code>valid</code>のエラー率同様、<code>test</code>の誤差率もhistoryに記録される（後述）</li>
+</ul>
+</li>
+</ul>
+
+<h1>
+<span id="コードリーディング" class="fragment"></span><a href="#%E3%82%B3%E3%83%BC%E3%83%89%E3%83%AA%E3%83%BC%E3%83%87%E3%82%A3%E3%83%B3%E3%82%B0"><i class="fa fa-link"></i></a>コードリーディング</h1>
+
+<h2>
+<span id="imdbpy" class="fragment"></span><a href="#imdbpy"><i class="fa fa-link"></i></a><a href="http://deeplearning.net/tutorial/code/imdb.py" rel="nofollow noopener" target="_blank">imdb.py</a>
+</h2>
+
+<p>データの準備、などを行っている。独自データを扱う際にはこの部分の拡張をするのが一番手軽。</p>
+
+<h3>
+<span id="prepare_data" class="fragment"></span><a href="#prepare_data"><i class="fa fa-link"></i></a><code>prepare_data()</code>
+</h3>
+
+<ul>
+<li>複数の訓練サンプルを受け取り、転置行列、labelとして渡された値、maskの配列を返す。</li>
+<li>
+<code>maxlen</code>で指定された以上の要素数を持つデータは、除外される（縮められるとかではない）</li>
+<li>独自データを使いたいとしてもこっちをいじる必要はなさそう</li>
+</ul>
+
+<h3>
+<span id="load_data" class="fragment"></span><a href="#load_data"><i class="fa fa-link"></i></a><code>load_data()</code>
+</h3>
+
+<ul>
+<li>train, valid, testのデータを生データから準備している</li>
+<li>引数
+
+<ul>
+<li>
+<code>path</code>:キャッシュ的な働きをしてるっぽい
+
+<ul>
+<li>
+<a href="http://www.iro.umontreal.ca/%7Elisa/deep/data" rel="nofollow noopener" target="_blank">ここ</a>からデータをダウンロードしたりとかやっている</li>
+<li>元データが<code>train</code>用と<code>test</code>用がそもそも別れており、<code>valid_portion</code>に設定された割合で<code>train</code>のデータを<code>train</code>と<code>valid</code>に分割している</li>
+</ul>
+</li>
+<li>その他オプションでこのへん
+
+<ul>
+<li>
+<code>n_words</code>
+
+<ul>
+<li>ボキャブラリの数の上限決定</li>
+</ul>
+</li>
+<li>
+<code>sort_by_len</code>
+
+<ul>
+<li>配列長でのソート。やったほうが早くなるらしい？</li>
+</ul>
+</li>
+<li>
+<code>maxlen</code>
+
+<ul>
+<li>
+<code>prepare_data</code>と同様。これを超えているデータはスキップされる</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="imdb_preprocesspy" class="fragment"></span><a href="#imdb_preprocesspy"><i class="fa fa-link"></i></a><a href="http://deeplearning.net/tutorial/code/imdb_preprocess.py" rel="nofollow noopener" target="_blank">imdb_preprocess.py</a>
+</h3>
+
+<p>データ準備のためのスクリプト</p>
+
+<ul>
+<li>word -&gt; idへの変換などをしているっぽい。</li>
+<li>
+<a href="https://github.com/moses-smt/mosesdecoder/raw/master/scripts/tokenizer/tokenizer.perl" rel="nofollow noopener" target="_blank">perl</a>を使ってtokenizeしている
+
+<ul>
+<li>なんかHTMLのタグとかを外してるっぽい。</li>
+<li>わざわざperlなのは単に歴史的経緯とかに思える。（正直pythonでも全然出来そうな処理）</li>
+<li>多言語対応できてるっぽいけど当然、形態素解析とかしないとわかち書きできない日本語は未対応。</li>
+</ul>
+</li>
+</ul>
+
+<h2>
+<span id="lstmpy" class="fragment"></span><a href="#lstmpy"><i class="fa fa-link"></i></a><a href="http://deeplearning.net/tutorial/code/lstm.py" rel="nofollow noopener" target="_blank">lstm.py</a>
+</h2>
+
+<p>学習実行のスクリプト</p>
+
+<div class="code-frame" data-lang="text"><div class="highlight"><pre>$ python lstm.py
+</pre></div></div>
+
+<p>で動かせる</p>
+
+<h3>
+<span id="メインの関数" class="fragment"></span><a href="#%E3%83%A1%E3%82%A4%E3%83%B3%E3%81%AE%E9%96%A2%E6%95%B0"><i class="fa fa-link"></i></a>メインの関数</h3>
+
+<h4>
+<span id="train_lstm" class="fragment"></span><a href="#train_lstm"><i class="fa fa-link"></i></a><code>train_lstm()</code>
+</h4>
+
+<p>実質のエンドポイント。<br>
+ここ関数の引数が色々いじれるパラメータになっている。結構多い。<br>
+とりあえずいじりそうなものを列挙。</p>
+
+<ul>
+<li>学習関連
+
+<ul>
+<li>
+<code>dim_proj</code>
+
+<ul>
+<li>hidden unitの数。</li>
+<li>デフォルトの128で試すと結構時間かかる。</li>
+</ul>
+</li>
+<li>
+<code>vaildFreq</code>
+
+<ul>
+<li>誤差率の検証を行う頻度に関する設定値。</li>
+</ul>
+</li>
+<li>
+<code>patience</code>
+
+<ul>
+<li>早期終了を行うタイミングに関するの変数。</li>
+<li>ざっくり見ると<code>validFreq</code>の結果が同一なパターンが<code>patience</code>回続くとEary stoppingする</li>
+</ul>
+</li>
+<li>
+<code>max_epochs</code>
+
+<ul>
+<li>エポック実行の最大数</li>
+</ul>
+</li>
+<li>
+<code>use_dropout</code> 
+
+<ul>
+<li>dropout層の有無。デフォルトTrue</li>
+</ul>
+</li>
+<li>
+<code>optimizer</code>
+
+<ul>
+<li>最適化関数。</li>
+<li>デフォルトはAdaGrad。AdaGrad, RMSprop, SGDが選べる
+
+<ul>
+<li>けど「SGDは扱い難しいから注意な」とある。</li>
+<li>
+<a href="http://qiita.com/hogefugabar/items/1d4f6c905d0edbc71af2" id="reference-8d242ad7c4434daff408">こちらの記事</a> を参考にすると、デフォルトのAdaGradは十分に精度が高いと見える。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<code>decay_c</code>
+
+<ul>
+<li>Weight decay。重み減衰。</li>
+<li>まだちゃんと使ってない</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>学習データ関連
+
+<ul>
+<li>
+<code>n_words</code>
+
+<ul>
+<li>ボキャブラリの最大数。デフォルト10000</li>
+</ul>
+</li>
+<li>
+<code>maxlen</code>
+
+<ul>
+<li>１学習サンプルあたりの要素数上限。これが<code>imdb</code>の学習データ読み込みに渡される</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>その他
+
+<ul>
+<li>
+<code>saveto</code>
+
+<ul>
+<li>モデルの最終結果ファイルの出力先</li>
+</ul>
+</li>
+<li>
+<code>reload_model</code>
+
+<ul>
+<li>前回保存したモデルを初期値として学習を開始する</li>
+<li>多分バグっぽいが、<code>lstm_model.npz</code>というファイルを読み込んでいる。</li>
+</ul>
+</li>
+<li>
+<code>dispFreq</code>
+
+<ul>
+<li>ログ表示頻度。</li>
+<li>デフォルト10だが1にしとくほうが実行速度見れて楽しい</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<h3>
+<span id="その他ちょっと知っておくと良かった関数" class="fragment"></span><a href="#%E3%81%9D%E3%81%AE%E4%BB%96%E3%81%A1%E3%82%87%E3%81%A3%E3%81%A8%E7%9F%A5%E3%81%A3%E3%81%A6%E3%81%8A%E3%81%8F%E3%81%A8%E8%89%AF%E3%81%8B%E3%81%A3%E3%81%9F%E9%96%A2%E6%95%B0"><i class="fa fa-link"></i></a>その他ちょっと知っておくと良かった関数</h3>
+
+<h4>
+<span id="build_model" class="fragment"></span><a href="#build_model"><i class="fa fa-link"></i></a><code>build_model()</code>
+</h4>
+
+<p>LSTMモデルを構築している部分。<code>train_lstm</code>で学習し終わったモデルの再現にも使う。</p>
+
+<h4>
+<span id="init_tparams" class="fragment"></span><a href="#init_tparams"><i class="fa fa-link"></i></a><code>init_tparams()</code>
+</h4>
+
+<p>パラメータをtheano向けに変換している。<br>
+<code>build_model</code>に投げるパラメータはこの関数通す必要アリ。</p>
+
+<h4>
+<span id="init_params" class="fragment"></span><a href="#init_params"><i class="fa fa-link"></i></a><code>init_params()</code>
+</h4>
+
+<p>LSTM以外についてのグローバル設定</p>
+
+<h4>
+<span id="pred_error-pred_probs" class="fragment"></span><a href="#pred_error-pred_probs"><i class="fa fa-link"></i></a><code>pred_error()</code>, <code>pred_probs()</code>
+</h4>
+
+<p>モデルを実行する関数ら。<br>
+<code>pred_error</code>は誤差計算に利用される。<br>
+<code>pred_probs</code>は結果出力をする。学習時には利用されない。<br>
+両者は<code>f_pred</code>を使うか<code>f_pred_prob</code>を使うかが違う。</p>
+
+<p><code>f_pred_prob</code>はそれぞれの確率の結果を出し、<code>f_pred</code>はそのうち最大である要素数（＝どのクラスに属したか）を返している。</p>
+
+<h4>
+<span id="sgd-adadelta-rmsprop" class="fragment"></span><a href="#sgd-adadelta-rmsprop"><i class="fa fa-link"></i></a><code>sgd()</code>, <code>adadelta()</code>, <code>rmsprop()</code>
+</h4>
+
+<p>最適化関数。optimizerで選ぶ奴</p>
+
+<h4>
+<span id="param_init_lstm-lstm_layer" class="fragment"></span><a href="#param_init_lstm-lstm_layer"><i class="fa fa-link"></i></a><code>param_init_lstm()</code>, <code>lstm_layer()</code>
+</h4>
+
+<p>LSTMの本実装部分。このへんから奥がまだ謎。<br>
+しかし<code>lstm_layer</code>でやっているコードと数式を照らし合わせるとだいたい同じような事が行われている事がわかる</p>
+
+<h3>
+<span id="dropout_layer" class="fragment"></span><a href="#dropout_layer"><i class="fa fa-link"></i></a><code>dropout_layer()</code>
+</h3>
+
+<p>dropoutの実装部分。</p>
+
+<h1>
+<span id="構築済みモデルの中身に何入っているか" class="fragment"></span><a href="#%E6%A7%8B%E7%AF%89%E6%B8%88%E3%81%BF%E3%83%A2%E3%83%87%E3%83%AB%E3%81%AE%E4%B8%AD%E8%BA%AB%E3%81%AB%E4%BD%95%E5%85%A5%E3%81%A3%E3%81%A6%E3%81%84%E3%82%8B%E3%81%8B"><i class="fa fa-link"></i></a>構築済みモデルの中身に何入っているか</h1>
+
+<div class="code-frame" data-lang="python"><div class="highlight"><pre><span class="n">model</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">"lstm_model.npz"</span><span class="p">)</span>
+</pre></div></div>
+
+<p>numpyのデータ形式で保存されるので、<code>numpy.load</code>で読み込める。</p>
+
+<ul>
+<li>
+<code>train_err</code>,<code>valid_err</code>, <code>test_err</code>にそれぞれ最後に取得できたエラー率が入る</li>
+<li>
+<code>history_errs</code>が割りと便利そう。<code>validFreq</code>ごとに記録された誤差率が<code>[valid_err, test_err]</code>という形で入っている。</li>
+<li>その他はLSTMの学習結果のパラメータ</li>
+</ul>
